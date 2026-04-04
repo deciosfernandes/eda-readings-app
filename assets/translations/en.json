@@ -85,6 +85,15 @@
         "github_issue": "Open Issue on GitHub",
         "description": "This application was developed to facilitate the process of sending electricity readings to EDA (Empresa de Electricidade dos Açores)."
     },
+    "settings": {
+        "title": "Settings",
+        "section_appearance": "Appearance",
+        "section_data": "Data",
+        "theme_label": "App Theme",
+        "theme_light": "Light",
+        "theme_dark": "Dark",
+        "theme_system": "Follow System"
+    },
     "import_export": {
         "title": "Import / Export",
         "select_properties": "Select properties to export readings from:",
