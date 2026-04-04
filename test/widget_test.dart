@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:eda_app/screens/about_screen.dart';
+import 'package:eda_app/screens/settings_screen.dart';
+import 'package:eda_app/services/theme_service.dart';
 import 'package:eda_app/theme/app_theme.dart';
 
 // ---------------------------------------------------------------------------
@@ -174,6 +176,76 @@ void main() {
       );
 
       expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+  });
+
+  group('SettingsScreen widget', () {
+    testWidgets('renders app bar title', (WidgetTester tester) async {
+      await EasyLocalization.ensureInitialized();
+      await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Settings'), findsOneWidget);
+    });
+
+    testWidgets('renders Appearance section header', (WidgetTester tester) async {
+      await EasyLocalization.ensureInitialized();
+      await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Appearance'), findsOneWidget);
+    });
+
+    testWidgets('renders theme label', (WidgetTester tester) async {
+      await EasyLocalization.ensureInitialized();
+      await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('App Theme'), findsOneWidget);
+    });
+
+    testWidgets('renders About section header', (WidgetTester tester) async {
+      await EasyLocalization.ensureInitialized();
+      await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('About'), findsOneWidget);
+    });
+
+    testWidgets('renders copyright notice', (WidgetTester tester) async {
+      await EasyLocalization.ensureInitialized();
+      await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Décio Fernandes'), findsOneWidget);
+    });
+  });
+
+  group('ThemeService', () {
+    test('defaults to ThemeMode.system', () {
+      final service = ThemeService();
+      expect(service.themeMode, equals(ThemeMode.system));
+    });
+
+    test('setThemeMode persists and updates themeMode', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = ThemeService();
+      await service.setThemeMode(ThemeMode.dark);
+      expect(service.themeMode, equals(ThemeMode.dark));
+    });
+
+    test('loadTheme reads persisted value', () async {
+      SharedPreferences.setMockInitialValues({'theme_mode': ThemeMode.light.index});
+      final service = ThemeService();
+      await service.loadTheme();
+      expect(service.themeMode, equals(ThemeMode.light));
+    });
+
+    test('loadTheme falls back to system when no value stored', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = ThemeService();
+      await service.loadTheme();
+      expect(service.themeMode, equals(ThemeMode.system));
     });
   });
 }

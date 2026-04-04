@@ -208,21 +208,12 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.import_export),
-            title: Text('import_export.title'.tr()),
+            leading: const Icon(Icons.settings),
+            title: Text('settings.title'.tr()),
             mouseCursor: SystemMouseCursors.click,
             onTap: () {
               Navigator.pop(context); // Close drawer
-              Navigator.pushNamed(context, '/import_export');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: Text('about.title'.tr()),
-            mouseCursor: SystemMouseCursors.click,
-            onTap: () {
-              Navigator.pop(context); // Close drawer
-              Navigator.pushNamed(context, '/about');
+              Navigator.pushNamed(context, '/settings');
             },
           ),
           const SizedBox(height: 16),
