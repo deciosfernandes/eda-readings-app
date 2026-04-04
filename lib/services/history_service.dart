@@ -14,12 +14,38 @@ class HistoryService {
     await prefs.setStringList(keyHistory, historyStrings);
   }
 
-  Future<List<LocalReadingHistory>> getHistory() async {
+  Future<List<LocalReadingHistory>> getHistory({String? profileId}) async {
     final prefs = await SharedPreferences.getInstance();
     List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
     
-    return historyStrings.map((item) {
+    final all = historyStrings.map((item) {
       return LocalReadingHistory.fromJson(json.decode(item));
     }).toList();
+
+    if (profileId == null) return all;
+    return all.where((r) => r.profileId == profileId).toList();
+  }
+
+  Future<void> addReadings(List<LocalReadingHistory> readings) async {
+    if (readings.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
+
+    // Prepend all new readings (most recent first)
+    final newStrings = readings.map((r) => json.encode(r.toJson())).toList();
+    historyStrings.insertAll(0, newStrings);
+    await prefs.setStringList(keyHistory, historyStrings);
+  }
+
+  Future<List<LocalReadingHistory>> getHistoryForProfiles(List<String> profileIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
+
+    final all = historyStrings.map((item) {
+      return LocalReadingHistory.fromJson(json.decode(item));
+    }).toList();
+
+    if (profileIds.isEmpty) return all;
+    return all.where((r) => r.profileId != null && profileIds.contains(r.profileId)).toList();
   }
 }
