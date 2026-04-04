@@ -10,12 +10,14 @@ class EDAClient {
       : 'https://smile.eda.pt/api/leitura';
   final String clientNumber; // CIL
   final String contractNumber;
+  final http.Client _client;
 
-  EDAClient({required this.clientNumber, required this.contractNumber});
+  EDAClient({required this.clientNumber, required this.contractNumber, http.Client? client})
+      : _client = client ?? http.Client();
 
   Future<ReadingResponse> getReading() async {
     final uri = Uri.parse('$baseUrl?cil=${Uri.encodeComponent(clientNumber)}&contrato=${Uri.encodeComponent(contractNumber)}');
-    final response = await http.get(uri);
+    final response = await _client.get(uri);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -27,7 +29,7 @@ class EDAClient {
 
   Future<void> sendReading(SendReadingPayload payload) async {
     final uri = Uri.parse('$baseUrl?cil=${Uri.encodeComponent(clientNumber)}');
-    final response = await http.put(
+    final response = await _client.put(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: json.encode(payload.toJson()),
