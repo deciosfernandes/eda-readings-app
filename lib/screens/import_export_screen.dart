@@ -132,6 +132,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       if (lines.isEmpty) throw Exception('Empty file');
 
       int importCount = 0;
+      final newReadings = <LocalReadingHistory>[];
       // Skip header line
       for (int i = 1; i < lines.length; i++) {
         final line = lines[i].trim();
@@ -159,7 +160,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         final matchingProfiles = _appState?.profiles.where((p) => p.name == profileName) ?? [];
         final matchingProfile = matchingProfiles.isEmpty ? null : matchingProfiles.first;
 
-        await HistoryService().addReading(LocalReadingHistory(
+        newReadings.add(LocalReadingHistory(
           date: date,
           valorContador1: c1,
           valorContador2: c2,
@@ -168,6 +169,8 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         ));
         importCount++;
       }
+
+      await HistoryService().addReadings(newReadings);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
