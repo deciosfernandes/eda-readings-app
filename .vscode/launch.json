@@ -3,67 +3,51 @@
     "configurations": [
         {
             "name": "EDA App (Debug)",
-            "cwd": "eda_app",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
             "program": "lib/main.dart",
             "type": "dart"
         },
         {
             "name": "EDA App (Profile)",
-            "cwd": "eda_app",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
+            "program": "lib/main.dart",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
             "name": "EDA App (Release)",
-            "cwd": "eda_app",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
+            "program": "lib/main.dart",
             "type": "dart",
             "flutterMode": "release"
         },
         {
             "name": "EDA App (Chrome)",
-            "cwd": "eda_app",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
+            "program": "lib/main.dart",
             "type": "dart",
             "args": ["-d", "chrome"],
             "preLaunchTask": "Run Proxy"
         },
         {
             "name": "EDA App (Edge)",
-            "cwd": "eda_app",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
+            "program": "lib/main.dart",
             "type": "dart",
             "args": ["-d", "edge"],
             "preLaunchTask": "Run Proxy"
         },
         {
             "name": "EDA Proxy Server",
-            "cwd": "eda_app",
+            "cwd": "${workspaceFolder}",
             "request": "launch",
             "type": "dart",
             "program": "bin/proxy.dart"
-        },
-        {
-            "name": "Node: Run tests",
-            "type": "node",
-            "request": "launch",
-            "program": "test/**/*.test.ts",
-            "runtimeExecutable": "npx",
-            "runtimeArgs": ["tsx", "--test"],
-            "console": "integratedTerminal",
-            "skipFiles": ["<node_internals>/**"]
-        },
-        {
-            "name": "Node: Run index.ts",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/index.ts",
-            "runtimeExecutable": "npx",
-            "runtimeArgs": ["tsx"],
-            "console": "integratedTerminal",
-            "skipFiles": ["<node_internals>/**"]
         }
     ]
 }
