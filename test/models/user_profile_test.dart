@@ -3,7 +3,7 @@ import 'package:eda_app/models/user_profile.dart';
 
 void main() {
   group('UserProfile', () {
-    test('toJson serialises name and picturePath', () {
+    test('toJson serializes name and picturePath', () {
       final profile = UserProfile(name: 'João Silva', picturePath: '/images/avatar.png');
       final json = profile.toJson();
 
@@ -11,7 +11,7 @@ void main() {
       expect(json['picturePath'], '/images/avatar.png');
     });
 
-    test('fromJson deserialises name and picturePath', () {
+    test('fromJson deserializes name and picturePath', () {
       final json = {'name': 'Maria', 'picturePath': '/path/img.jpg'};
       final profile = UserProfile.fromJson(json);
 
@@ -47,7 +47,7 @@ void main() {
       expect(profile.iconCodePoint, 0xe318);
     });
 
-    test('toJson serialises all fields', () {
+    test('toJson serializes all fields', () {
       final profile = ContractProfile(
         id: 'id1',
         name: 'Office',
@@ -65,7 +65,7 @@ void main() {
       expect(json['iconCodePoint'], 0xe3ab);
     });
 
-    test('fromJson deserialises all fields', () {
+    test('fromJson deserializes all fields', () {
       final json = {
         'id': 'id2',
         'name': 'Warehouse',
@@ -132,7 +132,7 @@ void main() {
       expect(state.activeProfileIndex, 0);
     });
 
-    test('toJson serialises userProfile, profiles and activeProfileIndex', () {
+    test('toJson serializes userProfile, profiles and activeProfileIndex', () {
       final state = AppStateData(
         userProfile: UserProfile(name: 'Bob', picturePath: '/img.png'),
         profiles: [
@@ -148,7 +148,7 @@ void main() {
       expect(json['activeProfileIndex'], 0);
     });
 
-    test('fromJson deserialises correctly', () {
+    test('fromJson deserializes correctly', () {
       final json = {
         'userProfile': {'name': 'Charlie', 'picturePath': ''},
         'profiles': [

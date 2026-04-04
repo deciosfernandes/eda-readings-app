@@ -227,7 +227,7 @@ void main() {
       expect(history.profileId, isNull);
     });
 
-    test('toJson serialises all fields including nulls', () {
+    test('toJson serializes all fields including nulls', () {
       final date = DateTime(2024, 3, 15, 10, 30);
       final history = LocalReadingHistory(
         date: date,
