@@ -5,6 +5,7 @@ import 'services/notification_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/reading_screen.dart';
 import 'screens/about_screen.dart';
+import 'screens/import_export_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,7 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardScreen(),
         '/reading': (context) => const ReadingScreen(),
         '/about': (context) => const AboutScreen(),
+        '/import_export': (context) => const ImportExportScreen(),
       },
     );
   }

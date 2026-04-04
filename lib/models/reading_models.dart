@@ -141,12 +141,14 @@ class LocalReadingHistory {
   final String valorContador1;
   final String? valorContador2;
   final String? valorContador3;
+  final String? profileId;
 
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
+    this.profileId,
   });
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
@@ -155,6 +157,7 @@ class LocalReadingHistory {
       valorContador1: json['valorContador1'],
       valorContador2: json['valorContador2'],
       valorContador3: json['valorContador3'],
+      profileId: json['profileId'],
     );
   }
 
@@ -164,6 +167,7 @@ class LocalReadingHistory {
       'valorContador1': valorContador1,
       'valorContador2': valorContador2,
       'valorContador3': valorContador3,
+      'profileId': profileId,
     };
   }
 }

@@ -84,5 +84,18 @@
         "open_source": "This is an open source application.",
         "github_issue": "Open Issue on GitHub",
         "description": "This application was developed to facilitate the process of sending electricity readings to EDA (Empresa de Electricidade dos Açores)."
+    },
+    "import_export": {
+        "title": "Import / Export",
+        "select_properties": "Select properties to export readings from:",
+        "export": "Export Readings",
+        "import": "Import Readings",
+        "no_selection": "Please select at least one property.",
+        "no_properties": "No properties found. Add a property first.",
+        "export_error": "Failed to export readings.",
+        "import_error": "Failed to import readings.",
+        "import_success": "Successfully imported {} readings.",
+        "share_subject": "EDA Readings Export",
+        "csv_header": "Property,Date,Counter 1,Counter 2,Counter 3"
     }
 }

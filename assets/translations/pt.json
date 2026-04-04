@@ -87,5 +87,18 @@
         "open_source": "Esta é uma aplicação de código aberto.",
         "github_issue": "Abrir Problema no GitHub",
         "description": "Esta aplicação foi desenvolvida para facilitar o processo de envio de leituras de eletricidade à EDA (Empresa de Electricidade dos Açores)."
+    },
+    "import_export": {
+        "title": "Importar / Exportar",
+        "select_properties": "Selecione as propriedades para exportar leituras:",
+        "export": "Exportar Leituras",
+        "import": "Importar Leituras",
+        "no_selection": "Selecione pelo menos uma propriedade.",
+        "no_properties": "Sem propriedades. Adicione uma propriedade primeiro.",
+        "export_error": "Falha ao exportar leituras.",
+        "import_error": "Falha ao importar leituras.",
+        "import_success": "Importadas {} leituras com sucesso.",
+        "share_subject": "Exportação de Leituras EDA",
+        "csv_header": "Propriedade,Data,Contador 1,Contador 2,Contador 3"
     }
 }

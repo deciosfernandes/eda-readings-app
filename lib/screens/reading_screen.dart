@@ -36,6 +36,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   String? _error;
   ReadingResponse? _currentData;
   EDAClient? _client;
+  String? _activeProfileId;
 
   @override
   void initState() {
@@ -77,8 +78,12 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       );
 
       final data = await _client!.getReading();
+      final appState = await SecureStorageService().getAppState();
       setState(() {
         _currentData = data;
+        _activeProfileId = appState.profiles.isNotEmpty
+            ? appState.profiles[appState.activeProfileIndex].id
+            : null;
         _isLoading = false;
       });
       
@@ -135,6 +140,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
         valorContador1: _c1Controller.text.trim(),
         valorContador2: _c2Controller.text.trim(),
         valorContador3: _c3Controller.text.trim(),
+        profileId: _activeProfileId,
       ));
 
       if (!mounted) return;
