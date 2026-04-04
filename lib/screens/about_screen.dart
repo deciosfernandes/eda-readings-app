@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   Future<void> _launchURL() async {
-    final Uri url = Uri.parse('https://github.com/deciosfernandes/eda-readings/issues');
+    final Uri url = Uri.parse(
+      'https://github.com/deciosfernandes/eda-readings-app/issues',
+    );
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $url');
     }
@@ -15,10 +17,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('about.title'.tr()),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text('about.title'.tr()), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -34,9 +33,9 @@ class AboutScreen extends StatelessWidget {
             Text(
               'app_name'.tr(),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -63,7 +62,10 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                     onPressed: _launchURL,
                     icon: const Icon(Icons.bug_report_outlined),
