@@ -1,0 +1,91 @@
+{
+    "app_name": "Leituras EDA",
+    "login": {
+        "title": "Bem-vindo",
+        "welcome": "Bem-vindo",
+        "onboarding": "Introdução",
+        "profile_name_label": "Nome da Propriedade",
+        "profile_name_hint": "(ex: Casa 1)",
+        "default_profile_name": "Casa 1",
+        "cil_hint": "Código de Identificação Local (CIL)",
+        "contract_hint": "Nº de Contrato",
+        "submit": "Entrar",
+        "error_empty": "Este campo é obrigatório",
+        "error_login": "Falha ao entrar. Verifique as suas credenciais.",
+        "login_tooltip": "Autenticar e entrar na aplicação"
+    },
+    "dashboard": {
+        "title": "Painel",
+        "add_reading": "Enviar Leitura",
+        "no_history": "Ainda sem leituras. Clique abaixo para enviar a primeira!",
+        "history_tab": "Histórico",
+        "chart_tab": "Consumo",
+        "menu_tooltip": "Abrir menu principal",
+        "add_reading_tooltip": "Registar nova leitura do contador",
+        "no_properties": "Não existem propriedades",
+        "no_properties_desc": "Não existem propriedades. Adicione uma para poder enviar leituras"
+    },
+    "reading": {
+        "title": "Enviar Leitura",
+        "counter_1": "Contador 1",
+        "counter_2": "Contador 2",
+        "counter_3": "Contador 3",
+        "submit": "Enviar",
+        "success": "Leitura enviada com sucesso!",
+        "error_send": "Falha ao enviar a leitura.",
+        "min_max_helper": "Mín: {} / Máx: {}",
+        "last_reading": "Última Leitura: {}",
+        "confirm_title": "Confirmar Leitura",
+        "confirm_message": "Deseja enviar a seguinte leitura?",
+        "confirm_send": "Enviar",
+        "error_out_of_bounds": "O valor deve estar entre {} e {}",
+        "error_not_number": "Insira um número válido",
+        "submit_tooltip": "Submeter leitura à EDA"
+    },
+    "common": {
+        "ok": "OK",
+        "cancel": "Cancelar",
+        "loading": "A carregar...",
+        "save": "Guardar"
+    },
+    "drawer": {
+        "edit_user_name": "Editar Nome de Utilizador",
+        "name_label": "Nome",
+        "add_profile": "Adicionar Propriedade",
+        "profile_name": "Nome da Propriedade",
+        "cil": "CIL",
+        "contract": "Nº Contrato",
+        "add": "Adicionar",
+        "remove_profile_title": "Remover Propriedade?",
+        "remove_profile_content": "Tem a certeza que deseja remover esta propriedade?",
+        "remove": "Remover",
+        "change_picture": "Alterar foto de perfil",
+        "edit_name_tooltip": "Editar nome",
+        "remove_profile_tooltip": "Remover propriedade",
+        "select_icon": "Selecionar Ícone"
+    },
+    "tutorial": {
+        "menu_title": "Menu de Propriedades",
+        "menu_desc": "Toque aqui para gerir as suas propriedades e definições de utilizador.",
+        "views_title": "Visualização de Dados",
+        "views_desc": "Alterne entre o gráfico visual e o histórico textual do seu consumo.",
+        "add_title": "Adicionar Leituras",
+        "add_desc": "Quando estiver pronto, toque aqui para submeter uma nova leitura.",
+        "reading_input_title": "Introduzir Leitura",
+        "reading_input_desc": "Introduza aqui o valor atual do seu contador.",
+        "reading_submit_title": "Submeter Leitura",
+        "reading_submit_desc": "Toque aqui para enviar a sua leitura à EDA."
+    },
+    "notification": {
+        "title": "Agendar Lembrete?",
+        "message": "Deseja agendar um lembrete para a próxima leitura de '{}' em {}?",
+        "scheduled": "Lembrete agendado para {}!",
+        "error_schedule": "Não foi possível agendar o lembrete."
+    },
+    "about": {
+        "title": "Sobre",
+        "open_source": "Esta é uma aplicação de código aberto.",
+        "github_issue": "Abrir Problema no GitHub",
+        "description": "Esta aplicação foi desenvolvida para facilitar o processo de envio de leituras de eletricidade à EDA (Empresa de Electricidade dos Açores)."
+    }
+}

@@ -1,0 +1,88 @@
+{
+    "app_name": "EDA Readings",
+    "login": {
+        "title": "Welcome",
+        "welcome": "Welcome",
+        "onboarding": "Onboarding",
+        "profile_name_label": "Property Name",
+        "profile_name_hint": "(e.g. House 1)",
+        "default_profile_name": "House 1",
+        "cil_hint": "Código de Identificação Local (CIL)",
+        "contract_hint": "Contract Number",
+        "submit": "Login",
+        "error_empty": "This field is required",
+        "error_login": "Failed to log in. Check your credentials.",
+        "login_tooltip": "Authenticate and enter the app"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "add_reading": "Send Reading",
+        "no_history": "No readings yet. Click down below to send your first reading!",
+        "history_tab": "History",
+        "chart_tab": "Consumption",
+        "menu_tooltip": "Open main menu",
+        "add_reading_tooltip": "Record new meter reading"
+    },
+    "reading": {
+        "title": "Send Reading",
+        "counter_1": "Counter 1",
+        "counter_2": "Counter 2",
+        "counter_3": "Counter 3",
+        "submit": "Send",
+        "success": "Reading sent successfully!",
+        "error_send": "Failed to send reading.",
+        "min_max_helper": "Min: {} / Max: {}",
+        "last_reading": "Last Reading: {}",
+        "confirm_title": "Confirm Reading",
+        "confirm_message": "Do you want to send the following reading?",
+        "confirm_send": "Send",
+        "error_out_of_bounds": "Value must be between {} and {}",
+        "error_not_number": "Enter a valid number",
+        "submit_tooltip": "Submit reading to EDA"
+    },
+    "common": {
+        "ok": "OK",
+        "cancel": "Cancel",
+        "loading": "Loading...",
+        "save": "Save"
+    },
+    "drawer": {
+        "edit_user_name": "Edit User Name",
+        "name_label": "Name",
+        "add_profile": "Add Property",
+        "profile_name": "Property Name",
+        "cil": "CIL",
+        "contract": "Contract",
+        "add": "Add",
+        "remove_profile_title": "Remove Property?",
+        "remove_profile_content": "Are you sure you want to remove this property?",
+        "remove": "Remove",
+        "change_picture": "Change profile picture",
+        "edit_name_tooltip": "Edit name",
+        "remove_profile_tooltip": "Remove property"
+    },
+    "tutorial": {
+        "menu_title": "Profile Menu",
+        "menu_desc": "Tap here to manage your different properties and user settings.",
+        "views_title": "Data Views",
+        "views_desc": "Switch between a visual chart and a textual history of your consumption.",
+        "add_title": "Add Readings",
+        "add_desc": "Once you are ready, tap here to submit a new meter reading.",
+        "reading_input_title": "Enter Reading",
+        "reading_input_desc": "Enter the current value of your meter here.",
+        "reading_submit_title": "Submit Reading",
+        "reading_submit_desc": "Tap here to send your reading to EDA."
+    },
+    "notification": {
+        "title": "Schedule Reminder?",
+        "message": "Do you want to schedule a reminder for the next reading of '{}' on {}?",
+        "scheduled": "Reminder scheduled for {}!",
+        "error_schedule": "Failed to schedule reminder."
+    },
+    "about": {
+        "title": "About",
+        "open_source": "This is an open source application.",
+        "github_issue": "Open Issue on GitHub",
+        "description": "This application was developed to facilitate the process of sending electricity readings to EDA (Empresa de Electricidade dos Açores)."
+    }
+}
