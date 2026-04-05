@@ -21,7 +21,9 @@
         "history_tab": "History",
         "chart_tab": "Consumption",
         "menu_tooltip": "Open main menu",
-        "add_reading_tooltip": "Record new meter reading"
+        "add_reading_tooltip": "Record new meter reading",
+        "no_properties": "No properties",
+        "no_properties_desc": "No properties. Add a property to send readings"
     },
     "reading": {
         "title": "Send Reading",

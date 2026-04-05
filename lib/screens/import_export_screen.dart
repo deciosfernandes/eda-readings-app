@@ -76,17 +76,18 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       final csv = _buildCsv(readings, profileNames);
 
       if (kIsWeb) {
-        await SharePlus.instance.share(
-          ShareParams(text: csv, subject: 'import_export.share_subject'.tr()),
+        await Share.share(
+          csv,
+          subject: 'import_export.share_subject'.tr(),
         );
       } else {
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/eda_readings_export.csv');
         await file.writeAsString(csv);
-        await SharePlus.instance.share(ShareParams(
-          files: [XFile(file.path)],
+        await Share.shareXFiles(
+          [XFile(file.path)],
           subject: 'import_export.share_subject'.tr(),
-        ));
+        );
       }
     } catch (e) {
       if (!mounted) return;

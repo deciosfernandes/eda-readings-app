@@ -105,21 +105,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final csv = _buildCsv(readings, profileNames);
 
       if (kIsWeb) {
-        await SharePlus.instance.share(
-          ShareParams(
-            text: csv,
-            subject: 'import_export.share_subject'.tr(),
-          ),
+        await Share.share(
+          csv,
+          subject: 'import_export.share_subject'.tr(),
         );
       } else {
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/eda_readings_export.csv');
         await file.writeAsString(csv);
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(file.path)],
-            subject: 'import_export.share_subject'.tr(),
-          ),
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: 'import_export.share_subject'.tr(),
         );
       }
     } catch (e) {
@@ -271,8 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('settings.title'.tr()),
-        centerTitle: true,
+        title: Text('settings.title'.tr())
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -410,20 +405,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, size: 40, color: colorScheme.primary),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'app_name'.tr(),
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
                       Text(
                         'about.description'.tr(),
                         style: textTheme.bodyMedium,
