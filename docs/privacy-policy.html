@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy – EDA Readings / Política de Privacidade – EDA Leituras</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #1a1a2e;
+      --accent: #0d6efd;
+      --muted: #6c757d;
+      --border: #dee2e6;
+      --section-bg: #f8f9fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212;
+        --text: #e8e8f0;
+        --accent: #4da3ff;
+        --muted: #adb5bd;
+        --border: #2c2c3e;
+        --section-bg: #1e1e2e;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    header { text-align: center; margin-bottom: 2.5rem; }
+    header h1 { font-size: 1.8rem; font-weight: 700; }
+    header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+    .lang-toggle {
+      display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 2rem;
+    }
+    .lang-toggle button {
+      padding: 0.4rem 1.2rem;
+      border: 2px solid var(--accent);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--accent);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .lang-toggle button.active { background: var(--accent); color: #fff; }
+    section { margin-bottom: 2rem; }
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 2px solid var(--border);
+    }
+    p { margin-bottom: 0.8rem; }
+    ul { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.3rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .highlight {
+      background: var(--section-bg);
+      border-left: 4px solid var(--accent);
+      padding: 0.8rem 1rem;
+      border-radius: 4px;
+      margin-bottom: 0.8rem;
+    }
+    footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 3rem; }
+    .lang-block { display: none; }
+    .lang-block.active { display: block; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>EDA Readings – Privacy Policy</h1>
+    <p>EDA Leituras – Política de Privacidade</p>
+  </header>
+
+  <div class="lang-toggle">
+    <button id="btn-en" class="active" onclick="setLang('en')">English</button>
+    <button id="btn-pt" onclick="setLang('pt')">Português</button>
+  </div>
+
+  <!-- ========== ENGLISH ========== -->
+  <div id="lang-en" class="lang-block active">
+
+    <section>
+      <h2>1. Introduction</h2>
+      <p>
+        <strong>EDA Readings</strong> ("the App") is a mobile application developed by
+        <strong>Décio Fernandes</strong> to help customers of
+        <em>Electricidade dos Açores (EDA)</em> track, manage, and submit their
+        electricity meter readings.
+      </p>
+      <p>
+        This Privacy Policy explains what information the App collects, how it is used,
+        where it is stored, and what rights you have. By using the App you agree to the
+        practices described here.
+      </p>
+      <p><strong>Last updated:</strong> 6 April 2026</p>
+    </section>
+
+    <section>
+      <h2>2. Information We Collect</h2>
+      <p>The App collects only the information you provide directly and what is strictly
+         necessary to submit your meter readings to EDA.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Information you provide</h3>
+      <ul>
+        <li><strong>CIL (Client Identification Number)</strong> – your EDA customer ID.</li>
+        <li><strong>Contract Number</strong> – the contract associated with your electricity supply point.</li>
+        <li><strong>Property name &amp; icon</strong> – a label and icon you choose to identify your property inside the App.</li>
+        <li><strong>Meter counter values</strong> – the readings you enter manually.</li>
+        <li><strong>Profile picture</strong> (optional) – an image you choose from your device gallery.</li>
+      </ul>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Information received from EDA servers</h3>
+      <ul>
+        <li>Current meter serial numbers and counter values returned by the EDA API.</li>
+        <li>A temporary CIL session token used to authenticate reading submissions.</li>
+        <li>Recommended submission dates and tariff information.</li>
+      </ul>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Information we do NOT collect</h3>
+      <div class="highlight">
+        The App does <strong>not</strong> collect device identifiers, location data, contact lists,
+        call logs, browsing history, advertising IDs, or any other personal information beyond
+        what is listed above.
+      </div>
+    </section>
+
+    <section>
+      <h2>3. How We Use Your Information</h2>
+      <ul>
+        <li>To validate your CIL and contract number with the EDA API.</li>
+        <li>To retrieve current meter reading data from EDA servers.</li>
+        <li>To submit your meter readings to EDA on your behalf.</li>
+        <li>To display your reading history and consumption charts inside the App.</li>
+        <li>To send local reminder notifications when it is time to submit a reading
+            (only if you grant notification permission).</li>
+        <li>To allow you to export and import your data via CSV files for backup purposes.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>4. Data Storage &amp; Security</h2>
+      <p>All data is stored <strong>locally on your device</strong>. The App does not operate
+         any cloud database or user account system.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Encrypted storage</h3>
+      <p>Sensitive data (CIL, contract number, CIL token, tutorial state, profile data) is
+         stored using <code>flutter_secure_storage</code>, which uses the Android Keystore /
+         iOS Keychain to encrypt values at rest.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Local preferences</h3>
+      <p>Non-sensitive data (meter reading history, theme preference) is stored in device
+         shared preferences (<code>SharedPreferences</code>). This data never leaves your device
+         unless you explicitly export it.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Network transmission</h3>
+      <p>Your CIL and contract number are transmitted over HTTPS to
+         <code>https://smile.eda.pt/</code> solely for the purpose of retrieving and submitting
+         meter readings. No data is sent to the App developer or any third party.</p>
+    </section>
+
+    <section>
+      <h2>5. Data Sharing &amp; Third Parties</h2>
+      <div class="highlight">
+        Your personal information is <strong>never sold, rented, or shared</strong> with
+        advertisers, analytics providers, or any other third parties.
+      </div>
+      <p>The only external party that receives your data is <strong>EDA (Electricidade dos
+         Açores)</strong> through their official API (<code>smile.eda.pt</code>), and this is
+         solely to fulfil the App's core purpose of submitting meter readings.</p>
+      <p>The App does not integrate Google Analytics, Firebase Analytics, Crashlytics,
+         Facebook SDK, or any similar tracking or advertising SDK.</p>
+    </section>
+
+    <section>
+      <h2>6. Permissions</h2>
+      <ul>
+        <li><strong>INTERNET</strong> – Required to communicate with the EDA API.</li>
+        <li><strong>POST_NOTIFICATIONS</strong> (Android 13+, optional) – Used only to send
+            local reminder notifications. You can decline this permission without affecting
+            core functionality.</li>
+        <li><strong>File access</strong> (runtime, optional) – Requested only when you
+            explicitly import or export data via CSV files.</li>
+      </ul>
+      <p>No other permissions are requested.</p>
+    </section>
+
+    <section>
+      <h2>7. Data Retention &amp; Deletion</h2>
+      <p>All data is stored exclusively on your device and under your control. You can
+         delete all App data at any time by:</p>
+      <ul>
+        <li>Removing individual properties from inside the App.</li>
+        <li>Clearing App data via Android Settings → Apps → EDA Readings → Storage → Clear Data.</li>
+        <li>Uninstalling the App.</li>
+      </ul>
+      <p>The developer does not retain any copy of your data.</p>
+    </section>
+
+    <section>
+      <h2>8. Children's Privacy</h2>
+      <p>This App is not directed at children under the age of 13. We do not knowingly
+         collect personal information from children.</p>
+    </section>
+
+    <section>
+      <h2>9. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. When we do, we will update
+         the "Last updated" date above. Continued use of the App after changes constitutes
+         acceptance of the updated policy.</p>
+    </section>
+
+    <section>
+      <h2>10. Contact</h2>
+      <p>If you have any questions or concerns about this Privacy Policy, please open an
+         issue on the project repository:</p>
+      <p>
+        <a href="https://github.com/deciosfernandes/eda-readings-app/issues"
+           target="_blank" rel="noopener">
+          https://github.com/deciosfernandes/eda-readings-app/issues
+        </a>
+      </p>
+    </section>
+
+  </div><!-- /lang-en -->
+
+  <!-- ========== PORTUGUESE ========== -->
+  <div id="lang-pt" class="lang-block">
+
+    <section>
+      <h2>1. Introdução</h2>
+      <p>
+        <strong>EDA Leituras</strong> ("a Aplicação") é uma aplicação móvel desenvolvida por
+        <strong>Décio Fernandes</strong> para ajudar os clientes da
+        <em>Electricidade dos Açores (EDA)</em> a registar, gerir e enviar as leituras dos
+        seus contadores de electricidade.
+      </p>
+      <p>
+        Esta Política de Privacidade explica que informações a Aplicação recolhe, como são
+        utilizadas, onde são armazenadas e quais os seus direitos. Ao utilizar a Aplicação,
+        aceita as práticas aqui descritas.
+      </p>
+      <p><strong>Última actualização:</strong> 6 de Abril de 2026</p>
+    </section>
+
+    <section>
+      <h2>2. Informação que Recolhemos</h2>
+      <p>A Aplicação recolhe apenas a informação que fornece directamente e que é
+         estritamente necessária para enviar as suas leituras à EDA.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Informação fornecida por si</h3>
+      <ul>
+        <li><strong>CIL (Código de Identificação de Local)</strong> – o seu número de cliente EDA.</li>
+        <li><strong>Número de contrato</strong> – o contrato associado ao seu ponto de fornecimento.</li>
+        <li><strong>Nome e ícone da propriedade</strong> – uma designação e ícone que escolhe para identificar a propriedade na Aplicação.</li>
+        <li><strong>Valores dos contadores</strong> – as leituras que introduz manualmente.</li>
+        <li><strong>Fotografia de perfil</strong> (opcional) – uma imagem que escolhe da galeria do dispositivo.</li>
+      </ul>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Informação recebida dos servidores EDA</h3>
+      <ul>
+        <li>Números de série e valores actuais dos contadores, devolvidos pela API EDA.</li>
+        <li>Um token de sessão CIL temporário utilizado para autenticar o envio das leituras.</li>
+        <li>Datas aconselháveis de envio e informação tarifária.</li>
+      </ul>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Informação que NÃO recolhemos</h3>
+      <div class="highlight">
+        A Aplicação <strong>não</strong> recolhe identificadores do dispositivo, dados de
+        localização, listas de contactos, registos de chamadas, histórico de navegação,
+        identificadores publicitários, nem qualquer outra informação pessoal além da acima
+        indicada.
+      </div>
+    </section>
+
+    <section>
+      <h2>3. Como Utilizamos a Informação</h2>
+      <ul>
+        <li>Para validar o seu CIL e número de contrato junto da API EDA.</li>
+        <li>Para obter os dados actuais das leituras a partir dos servidores EDA.</li>
+        <li>Para enviar as suas leituras à EDA em seu nome.</li>
+        <li>Para apresentar o histórico de leituras e gráficos de consumo na Aplicação.</li>
+        <li>Para enviar notificações locais de lembrete quando estiver na altura de submeter
+            uma leitura (apenas se conceder permissão de notificações).</li>
+        <li>Para permitir a exportação e importação dos seus dados em ficheiros CSV para
+            fins de cópia de segurança.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>4. Armazenamento e Segurança dos Dados</h2>
+      <p>Todos os dados são armazenados <strong>localmente no seu dispositivo</strong>. A
+         Aplicação não dispõe de qualquer base de dados na nuvem nem de sistema de contas
+         de utilizador.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Armazenamento encriptado</h3>
+      <p>Dados sensíveis (CIL, número de contrato, token CIL, estado dos tutoriais, dados
+         de perfil) são armazenados com <code>flutter_secure_storage</code>, que utiliza o
+         Android Keystore / iOS Keychain para encriptar os valores em repouso.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Preferências locais</h3>
+      <p>Dados não sensíveis (histórico de leituras, preferência de tema) são guardados nas
+         preferências partilhadas do dispositivo (<code>SharedPreferences</code>). Estes dados
+         nunca saem do dispositivo, a menos que os exporte explicitamente.</p>
+
+      <h3 style="margin:0.8rem 0 0.4rem; font-size:1rem;">Transmissão em rede</h3>
+      <p>O seu CIL e número de contrato são transmitidos por HTTPS para
+         <code>https://smile.eda.pt/</code> exclusivamente para obter e enviar leituras. Nenhum
+         dado é enviado ao programador da Aplicação nem a terceiros.</p>
+    </section>
+
+    <section>
+      <h2>5. Partilha de Dados com Terceiros</h2>
+      <div class="highlight">
+        A sua informação pessoal <strong>nunca é vendida, alugada ou partilhada</strong> com
+        anunciantes, fornecedores de análise ou quaisquer outros terceiros.
+      </div>
+      <p>A única entidade externa que recebe os seus dados é a <strong>EDA (Electricidade dos
+         Açores)</strong>, através da sua API oficial (<code>smile.eda.pt</code>), e apenas para
+         cumprir o propósito central da Aplicação — o envio de leituras.</p>
+      <p>A Aplicação não integra Google Analytics, Firebase Analytics, Crashlytics, Facebook
+         SDK, nem qualquer SDK de rastreamento ou publicidade semelhante.</p>
+    </section>
+
+    <section>
+      <h2>6. Permissões</h2>
+      <ul>
+        <li><strong>INTERNET</strong> – Necessária para comunicar com a API EDA.</li>
+        <li><strong>POST_NOTIFICATIONS</strong> (Android 13+, opcional) – Utilizada apenas para
+            enviar notificações locais de lembrete. Pode recusar esta permissão sem afectar
+            a funcionalidade principal.</li>
+        <li><strong>Acesso a ficheiros</strong> (em tempo de execução, opcional) – Solicitada
+            apenas quando importa ou exporta dados através de ficheiros CSV.</li>
+      </ul>
+      <p>Não são solicitadas outras permissões.</p>
+    </section>
+
+    <section>
+      <h2>7. Retenção e Eliminação de Dados</h2>
+      <p>Todos os dados estão armazenados exclusivamente no seu dispositivo e sob o seu
+         controlo. Pode eliminar todos os dados da Aplicação a qualquer momento:</p>
+      <ul>
+        <li>Removendo propriedades individuais dentro da Aplicação.</li>
+        <li>Em Definições do Android → Aplicações → EDA Leituras → Armazenamento → Limpar dados.</li>
+        <li>Desinstalando a Aplicação.</li>
+      </ul>
+      <p>O programador não retém qualquer cópia dos seus dados.</p>
+    </section>
+
+    <section>
+      <h2>8. Privacidade das Crianças</h2>
+      <p>Esta Aplicação não se destina a crianças com menos de 13 anos. Não recolhemos
+         conscientemente informações pessoais de crianças.</p>
+    </section>
+
+    <section>
+      <h2>9. Alterações a Esta Política</h2>
+      <p>Podemos actualizar esta Política de Privacidade periodicamente. Quando o fizermos,
+         actualizaremos a data "Última actualização" acima. A utilização continuada da
+         Aplicação após as alterações constitui aceitação da política actualizada.</p>
+    </section>
+
+    <section>
+      <h2>10. Contacto</h2>
+      <p>Se tiver questões ou preocupações sobre esta Política de Privacidade, abra um
+         issue no repositório do projecto:</p>
+      <p>
+        <a href="https://github.com/deciosfernandes/eda-readings-app/issues"
+           target="_blank" rel="noopener">
+          https://github.com/deciosfernandes/eda-readings-app/issues
+        </a>
+      </p>
+    </section>
+
+  </div><!-- /lang-pt -->
+
+  <footer>
+    <p>© 2026 Décio Fernandes · EDA Readings ·
+      <a href="https://github.com/deciosfernandes/eda-readings-app" target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </footer>
+
+</div><!-- /container -->
+
+<script>
+  function setLang(lang) {
+    document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+    document.getElementById('lang-pt').classList.toggle('active', lang === 'pt');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-pt').classList.toggle('active', lang === 'pt');
+    document.documentElement.lang = lang;
+  }
+  // Auto-detect browser language
+  (function () {
+    const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    if (lang.startsWith('pt')) setLang('pt');
+  })();
+</script>
+</body>
+</html>

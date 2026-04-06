@@ -64,6 +64,14 @@ To update translations, simply edit these files and the app will reflect changes
 
 This project is open-source. For feature requests or bug reports, please open an issue in the repository.
 
+## 🔒 Privacy Policy
+
+The Privacy Policy for this app (available in English and Portuguese) is hosted here:
+
+**[https://deciosfernandes.github.io/eda-readings-app/privacy-policy.html](https://deciosfernandes.github.io/eda-readings-app/privacy-policy.html)**
+
+The source file is located at [`docs/privacy-policy.html`](docs/privacy-policy.html).
+
 ---
 
 *Made for the Azores with ⚡ by Decio Fernandes.*
