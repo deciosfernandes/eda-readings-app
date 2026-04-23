@@ -28,6 +28,9 @@ class _DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<_DashboardScreen> {
   List<LocalReadingHistory> _history = [];
+  // BOLT: Pre-calculated data to avoid expensive transformations in build()
+  List<LocalReadingHistory> _chronologicalHistory = [];
+  List<FlSpot> _chartSpots = [];
   bool _isLoading = true;
   AppStateData? _appState;
 
@@ -46,11 +49,33 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     setState(() => _isLoading = true);
 
     final state = await SecureStorageService().getAppState();
-    final history = await HistoryService().getHistory();
+
+    // BOLT: Only fetch history for the active profile to improve performance and ensure data isolation.
+    String? activeProfileId;
+    if (state.profiles.isNotEmpty &&
+        state.activeProfileIndex >= 0 &&
+        state.activeProfileIndex < state.profiles.length) {
+      activeProfileId = state.profiles[state.activeProfileIndex].id;
+    }
+
+    final history =
+        await HistoryService().getHistory(profileId: activeProfileId);
+
+    // BOLT: Pre-calculate expensive data transformations outside the build method.
+    // This improves UI responsiveness, especially as history grows.
+    final chronological = history.reversed.toList();
+    final spots = <FlSpot>[];
+    for (int i = 0; i < chronological.length; i++) {
+      final valStr = chronological[i].valorContador1;
+      final val = double.tryParse(valStr) ?? 0.0;
+      spots.add(FlSpot(i.toDouble(), val));
+    }
 
     setState(() {
       _appState = state;
       _history = history;
+      _chronologicalHistory = chronological;
+      _chartSpots = spots;
       _isLoading = false;
     });
 
@@ -227,16 +252,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   }
 
   Widget _buildChartTab() {
-    final chronological = _history.reversed.toList();
-
-    final spots = <FlSpot>[];
-    for (int i = 0; i < chronological.length; i++) {
-      final valStr = chronological[i].valorContador1;
-      final val = double.tryParse(valStr) ?? 0.0;
-      spots.add(FlSpot(i.toDouble(), val));
-    }
-
-    if (spots.isEmpty) return const SizedBox();
+    if (_chartSpots.isEmpty) return const SizedBox();
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -255,13 +271,13 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
                       int idx = value.toInt();
-                      if (idx < 0 || idx >= chronological.length) {
+                      if (idx < 0 || idx >= _chronologicalHistory.length) {
                         return const SizedBox();
                       }
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
-                          '${chronological[idx].date.day}/${chronological[idx].date.month}',
+                          '${_chronologicalHistory[idx].date.day}/${_chronologicalHistory[idx].date.month}',
                         ),
                       );
                     },
@@ -278,7 +294,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               borderData: FlBorderData(show: true),
               lineBarsData: [
                 LineChartBarData(
-                  spots: spots,
+                  spots: _chartSpots,
                   isCurved: true,
                   color: Theme.of(context).colorScheme.primary,
                   barWidth: 4,

@@ -16,14 +16,15 @@ class HistoryService {
 
   Future<List<LocalReadingHistory>> getHistory({String? profileId}) async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
-    
-    final all = historyStrings.map((item) {
-      return LocalReadingHistory.fromJson(json.decode(item));
-    }).toList();
+    final historyStrings = prefs.getStringList(keyHistory) ?? [];
 
-    if (profileId == null) return all;
-    return all.where((r) => r.profileId == profileId).toList();
+    // BOLT: Use a lazy map/filter approach.
+    // We decode only as much as needed to filter by profileId.
+    return historyStrings
+        .map((item) => json.decode(item) as Map<String, dynamic>)
+        .where((map) => profileId == null || map['profileId'] == profileId)
+        .map((map) => LocalReadingHistory.fromJson(map))
+        .toList();
   }
 
   Future<void> addReadings(List<LocalReadingHistory> readings) async {
@@ -39,13 +40,15 @@ class HistoryService {
 
   Future<List<LocalReadingHistory>> getHistoryForProfiles(List<String> profileIds) async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
+    final historyStrings = prefs.getStringList(keyHistory) ?? [];
 
-    final all = historyStrings.map((item) {
-      return LocalReadingHistory.fromJson(json.decode(item));
-    }).toList();
-
-    if (profileIds.isEmpty) return all;
-    return all.where((r) => r.profileId != null && profileIds.contains(r.profileId)).toList();
+    // BOLT: Use a lazy map/filter approach.
+    return historyStrings
+        .map((item) => json.decode(item) as Map<String, dynamic>)
+        .where((map) =>
+            profileIds.isEmpty ||
+            (map['profileId'] != null && profileIds.contains(map['profileId'])))
+        .map((map) => LocalReadingHistory.fromJson(map))
+        .toList();
   }
 }
