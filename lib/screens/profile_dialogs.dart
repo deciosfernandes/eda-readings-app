@@ -137,6 +137,7 @@ class ProfileDialogs {
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
+                        tooltip: 'common.cancel'.tr(),
                         onPressed: isLoading
                             ? null
                             : () => Navigator.pop(context),
@@ -209,8 +210,11 @@ class ProfileDialogs {
                     child: TextField(
                       controller: nameCtrl,
                       enabled: !isLoading,
+                      autofocus: true,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: 'drawer.profile_name'.tr(),
+                        hintText: 'login.profile_name_hint'.tr(),
                         prefixIcon: const Icon(Icons.label_outline),
                         errorText: nameError,
                       ),
@@ -237,6 +241,7 @@ class ProfileDialogs {
                       controller: cilCtrl,
                       enabled: !isLoading,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         labelText: 'drawer.cil'.tr(),
@@ -266,6 +271,8 @@ class ProfileDialogs {
                       controller: contractCtrl,
                       enabled: !isLoading,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => handleAdd(),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         labelText: 'drawer.contract'.tr(),
