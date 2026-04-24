@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_profile.dart';
 
@@ -13,27 +14,40 @@ class SecureStorageService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   static const String keyAppState = 'app_state_data';
 
+  // BOLT: In-memory cache for AppStateData to avoid redundant asynchronous storage reads.
+  @visibleForTesting
+  AppStateData? cachedState;
+
   Future<AppStateData> getAppState() async {
+    // BOLT: Return cached state if available to improve performance.
+    if (cachedState != null) return cachedState!;
+
     final stateStr = await _storage.read(key: keyAppState);
     if (stateStr != null) {
       try {
-        return AppStateData.fromJsonString(stateStr);
+        cachedState = AppStateData.fromJsonString(stateStr);
+        return cachedState!;
       } catch (e) {
         // Fallback to default
       }
     }
-    return AppStateData(
+    cachedState = AppStateData(
       userProfile: UserProfile(name: 'User', picturePath: ''),
       profiles: [],
       activeProfileIndex: 0,
     );
+    return cachedState!;
   }
 
   Future<void> saveAppState(AppStateData data) async {
+    // BOLT: Update cache when saving to storage.
+    cachedState = data;
     await _storage.write(key: keyAppState, value: data.toJsonString());
   }
 
   Future<void> clearAppState() async {
+    // BOLT: Invalidate cache when clearing storage.
+    cachedState = null;
     await _storage.delete(key: keyAppState);
   }
 

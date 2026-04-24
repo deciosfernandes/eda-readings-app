@@ -49,6 +49,8 @@ void main() {
   setUp(() {
     mockStorage = {};
     _setupSecureStorageMock(mockStorage);
+    // BOLT: Clear cache between tests as SecureStorageService is a singleton.
+    service.cachedState = null;
   });
 
   tearDown(() {
