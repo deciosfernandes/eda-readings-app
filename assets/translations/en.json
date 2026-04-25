@@ -22,6 +22,7 @@
         "chart_tab": "Consumption",
         "menu_tooltip": "Open main menu",
         "add_reading_tooltip": "Record new meter reading",
+        "reading_history_item": "Reading: {} kWh on {}",
         "no_properties": "No properties",
         "no_properties_desc": "No properties. Add a property to send readings"
     },
@@ -45,6 +46,7 @@
     "common": {
         "ok": "OK",
         "cancel": "Cancel",
+        "close": "Close",
         "loading": "Loading...",
         "save": "Save"
     },
@@ -61,7 +63,8 @@
         "remove": "Remove",
         "change_picture": "Change profile picture",
         "edit_name_tooltip": "Edit name",
-        "remove_profile_tooltip": "Remove property"
+        "remove_profile_tooltip": "Remove property",
+        "icon_option": "Property icon option"
     },
     "tutorial": {
         "menu_title": "Profile Menu",
