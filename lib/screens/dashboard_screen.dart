@@ -231,7 +231,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               },
               child: TabBar(
                 indicatorColor: Theme.of(context).colorScheme.primary,
-                labelColor: Theme.of(context).colorScheme.primary,
+                labelColor: Theme.of(context).colorScheme.onSurface,
                 unselectedLabelColor: Colors.grey,
                 tabs: [
                   Tab(
@@ -330,44 +330,50 @@ class _DashboardScreenState extends State<_DashboardScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Icon(
-                Icons.flash_on,
-                color: Theme.of(context).colorScheme.primary,
+          child: Semantics(
+            label: 'dashboard.reading_history_item'.tr(args: [
+              item.valorContador1,
+              _historyDateFormat.format(item.date)
+            ]),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
               ),
-            ),
-            title: Text(
-              '${item.valorContador1} kWh',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(_historyDateFormat.format(item.date)),
-            trailing: item.valorContador2 != null
-                ? Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      'C2: ${item.valorContador2}',
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSecondaryContainer,
-                        fontWeight: FontWeight.w600,
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.flash_on,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              title: Text(
+                '${item.valorContador1} kWh',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(_historyDateFormat.format(item.date)),
+              trailing: item.valorContador2 != null
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                    ),
-                  )
-                : null,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        'C2: ${item.valorContador2}',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
           ),
         );
       },

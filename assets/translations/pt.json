@@ -22,6 +22,7 @@
         "chart_tab": "Consumo",
         "menu_tooltip": "Abrir menu principal",
         "add_reading_tooltip": "Registar nova leitura do contador",
+        "reading_history_item": "Leitura: {} kWh em {}",
         "no_properties": "Não existem propriedades",
         "no_properties_desc": "Não existem propriedades. Adicione uma para poder enviar leituras"
     },
@@ -45,6 +46,7 @@
     "common": {
         "ok": "OK",
         "cancel": "Cancelar",
+        "close": "Fechar",
         "loading": "A carregar...",
         "save": "Guardar"
     },
@@ -62,7 +64,8 @@
         "change_picture": "Alterar foto de perfil",
         "edit_name_tooltip": "Editar nome",
         "remove_profile_tooltip": "Remover propriedade",
-        "select_icon": "Selecionar Ícone"
+        "select_icon": "Selecionar Ícone",
+        "icon_option": "Opção de ícone de propriedade"
     },
     "tutorial": {
         "menu_title": "Menu de Propriedades",

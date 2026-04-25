@@ -91,6 +91,8 @@ class ProfileDialogs {
               appState.activeProfileIndex = appState.profiles.length - 1;
               await SecureStorageService().saveAppState(appState);
 
+              HapticFeedback.lightImpact();
+
               if (context.mounted) Navigator.pop(context);
               onSuccess();
 
@@ -189,6 +191,7 @@ class ProfileDialogs {
                                         .colorScheme
                                         .onErrorContainer,
                                   ),
+                                  tooltip: 'common.close'.tr(),
                                   onPressed: () =>
                                       setModalState(() => apiError = null),
                                   padding: EdgeInsets.zero,
@@ -310,35 +313,43 @@ class ProfileDialogs {
                           final isSelected = selectedIconCode == icon.codePoint;
                           return Padding(
                             padding: const EdgeInsets.only(right: 12),
-                            child: InkWell(
-                              onTap: isLoading
-                                  ? null
-                                  : () => setModalState(
-                                      () => selectedIconCode = icon.codePoint,
+                            child: Semantics(
+                              label: 'drawer.icon_option'.tr(),
+                              selected: isSelected,
+                              button: true,
+                              child: InkWell(
+                                onTap: isLoading
+                                    ? null
+                                    : () {
+                                        HapticFeedback.selectionClick();
+                                        setModalState(
+                                          () => selectedIconCode = icon.codePoint,
+                                        );
+                                      },
+                                mouseCursor: SystemMouseCursors.click,
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  width: 60,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Theme.of(
+                                            context,
+                                          ).colorScheme.primaryContainer
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).dividerColor,
+                                      width: 2,
                                     ),
-                              mouseCursor: SystemMouseCursors.click,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                width: 60,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.primaryContainer
-                                      : Colors.transparent,
-                                  border: Border.all(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    icon,
                                     color: isSelected
                                         ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).dividerColor,
-                                    width: 2,
+                                        : null,
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  icon,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
                                 ),
                               ),
                             ),

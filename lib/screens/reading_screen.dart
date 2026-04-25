@@ -252,6 +252,17 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       child: TextFormField(
                         controller: _c1Controller,
                         focusNode: _f1FocusNode,
+                        autofocus: true,
+                        textInputAction: (_currentData!.descContador2 != null && _currentData!.descContador2!.isNotEmpty)
+                          ? TextInputAction.next
+                          : TextInputAction.done,
+                        onFieldSubmitted: (_) {
+                          if (_currentData!.descContador2 != null && _currentData!.descContador2!.isNotEmpty) {
+                            FocusScope.of(context).requestFocus(_f2FocusNode);
+                          } else {
+                            _submitReading();
+                          }
+                        },
                         decoration: InputDecoration(
                           labelText: _currentData!.descContador1 ?? 'reading.counter_1'.tr(),
                           helperText: 'reading.last_reading'.tr(args: [
@@ -271,6 +282,16 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       TextFormField(
                         controller: _c2Controller,
                         focusNode: _f2FocusNode,
+                        textInputAction: (_currentData!.descContador3 != null && _currentData!.descContador3!.isNotEmpty)
+                          ? TextInputAction.next
+                          : TextInputAction.done,
+                        onFieldSubmitted: (_) {
+                          if (_currentData!.descContador3 != null && _currentData!.descContador3!.isNotEmpty) {
+                            FocusScope.of(context).requestFocus(_f3FocusNode);
+                          } else {
+                            _submitReading();
+                          }
+                        },
                         decoration: InputDecoration(
                           labelText: _currentData!.descContador2 ?? 'reading.counter_2'.tr(),
                           helperText: 'reading.last_reading'.tr(args: [
@@ -293,6 +314,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       TextFormField(
                         controller: _c3Controller,
                         focusNode: _f3FocusNode,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => _submitReading(),
                         decoration: InputDecoration(
                           labelText: _currentData!.descContador3 ?? 'reading.counter_3'.tr(),
                           helperText: 'reading.last_reading'.tr(args: [
