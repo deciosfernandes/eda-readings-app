@@ -1,3 +1,7 @@
 ## 2026-02-09 - Trade-off between Brittle Performance and Robustness in JSON Filtering
 **Learning:** Using `String.contains` to filter JSON strings before decoding can significantly reduce memory pressure and CPU cycles, but it is brittle. It assumes specific formatting (no spaces, specific quoting) and can cause false positives if the target string appears in unrelated fields.
 **Action:** Prefer a middle-ground approach using lazy `Iterable.map(json.decode)` followed by `where` on the decoded Map. This avoids full object creation (the most expensive part in Dart) while maintaining robustness against JSON formatting variations.
+
+## 2026-02-10 - Performance Gains from In-Memory Caching and Formatter Reuse
+**Learning:** Redundant disk access (SharedPreferences) and repeated JSON decoding of the same data create significant overhead, especially in UI-heavy areas like history lists. Additionally, instantiating `DateFormat` inside a `ListView.builder`'s `itemBuilder` causes unnecessary object churn during scrolling. When caching, it's critical to maintain efficient write paths (e.g., O(1) prepending to local storage) to avoid main-thread blocking that would negate the benefits of caching.
+**Action:** Use singleton services with in-memory caches to store decoded model objects. Ensure write methods update the cache synchronously but only persist the delta to storage when possible. For UI formatting, cache formatter instances (like `DateFormat`) as member variables in the `State` class.
