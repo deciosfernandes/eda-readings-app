@@ -7,6 +7,7 @@ import 'package:eda_app/services/history_service.dart';
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    HistoryService().clearCache();
   });
 
   LocalReadingHistory makeReading({
