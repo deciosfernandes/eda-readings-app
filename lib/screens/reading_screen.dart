@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:showcaseview/showcaseview.dart';
 import '../api/eda_client.dart';
@@ -33,6 +34,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   final GlobalKey _input1Key = GlobalKey();
   final GlobalKey _submitButtonKey = GlobalKey();
   bool _isLoading = true;
+  bool _isSubmitting = false;
   String? _error;
   ReadingResponse? _currentData;
   EDAClient? _client;
@@ -114,7 +116,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     final confirmed = await _showConfirmDialog();
     if (!confirmed) return;
 
-    setState(() => _isLoading = true);
+    HapticFeedback.mediumImpact();
+    setState(() => _isSubmitting = true);
 
     try {
       final payload = SendReadingPayload(
@@ -144,23 +147,30 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       ));
 
       if (!mounted) return;
+      HapticFeedback.lightImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('reading.success'.tr()),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text('reading.success'.tr())),
+            ],
+          ),
           backgroundColor: Colors.green,
         ),
       );
       Navigator.of(context).pop(true); // Return true to indicate success to Dashboard
-      
     } catch (e) {
       if (!mounted) return;
+      HapticFeedback.vibrate();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('reading.error_send'.tr()),
           backgroundColor: Colors.red,
         ),
       );
-      setState(() => _isLoading = false);
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -252,6 +262,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       child: TextFormField(
                         controller: _c1Controller,
                         focusNode: _f1FocusNode,
+                        enabled: !_isSubmitting,
                         autofocus: true,
                         textInputAction: (_currentData!.descContador2 != null && _currentData!.descContador2!.isNotEmpty)
                           ? TextInputAction.next
@@ -269,7 +280,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                             _currentData!.valorContador1 ?? '0'
                           ]),
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) => _validateReading(
                           value, 
                           _currentData!.valorMinContador1, 
@@ -282,6 +293,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       TextFormField(
                         controller: _c2Controller,
                         focusNode: _f2FocusNode,
+                        enabled: !_isSubmitting,
                         textInputAction: (_currentData!.descContador3 != null && _currentData!.descContador3!.isNotEmpty)
                           ? TextInputAction.next
                           : TextInputAction.done,
@@ -298,7 +310,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                             _currentData!.valorContador2 ?? '0'
                           ]),
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
                           if (value == null || value.isEmpty) return null; // Optional
                           return _validateReading(
@@ -314,6 +326,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       TextFormField(
                         controller: _c3Controller,
                         focusNode: _f3FocusNode,
+                        enabled: !_isSubmitting,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _submitReading(),
                         decoration: InputDecoration(
@@ -322,7 +335,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                             _currentData!.valorContador3 ?? '0'
                           ]),
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
                           if (value == null || value.isEmpty) return null; // Optional
                           return _validateReading(
@@ -337,15 +350,24 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
-                      child: Showcase(
-                        key: _submitButtonKey,
-                        title: 'tutorial.reading_submit_title'.tr(),
-                        description: 'tutorial.reading_submit_desc'.tr(),
-                        child: ElevatedButton(
-                          onPressed: _submitReading,
-                          child: Tooltip(
-                            message: 'reading.submit_tooltip'.tr(),
-                            child: Text('reading.submit'.tr()),
+                      child: Tooltip(
+                        message: 'reading.submit_tooltip'.tr(),
+                        child: Showcase(
+                          key: _submitButtonKey,
+                          title: 'tutorial.reading_submit_title'.tr(),
+                          description: 'tutorial.reading_submit_desc'.tr(),
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting ? null : _submitReading,
+                            child: _isSubmitting
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                    ),
+                                  )
+                                : Text('reading.submit'.tr()),
                           ),
                         ),
                       ),
