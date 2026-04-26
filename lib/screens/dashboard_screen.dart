@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   bool _isLoading = true;
   AppStateData? _appState;
+  // BOLT: Cache DateFormat instance to avoid repeated creation in ListView.builder
+  late final DateFormat _historyDateFormat;
 
   final GlobalKey _drawerKey = GlobalKey();
   final GlobalKey _tabsKey = GlobalKey();
@@ -41,6 +43,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _historyDateFormat = DateFormat.yMMMd().add_jm();
     ShowcaseView.register();
     _loadData();
   }
@@ -330,7 +333,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
           child: Semantics(
             label: 'dashboard.reading_history_item'.tr(args: [
               item.valorContador1,
-              DateFormat.yMMMd().add_jm().format(item.date)
+              _historyDateFormat.format(item.date)
             ]),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(
@@ -348,7 +351,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 '${item.valorContador1} kWh',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text(DateFormat.yMMMd().add_jm().format(item.date)),
+              subtitle: Text(_historyDateFormat.format(item.date)),
               trailing: item.valorContador2 != null
                   ? Container(
                       padding: const EdgeInsets.symmetric(
