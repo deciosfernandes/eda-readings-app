@@ -14,7 +14,7 @@ class HistoryService {
 
   static const String keyHistory = 'readings_history';
 
-  // BOLT: In-memory cache to avoid redundant SharedPreferences access and JSON decoding.
+  // BOLT: In-memory cache for decoded history to avoid redundant disk I/O and JSON decoding.
   List<LocalReadingHistory>? _cachedHistory;
 
   @visibleForTesting
@@ -70,10 +70,9 @@ class HistoryService {
     if (readings.isEmpty) return;
     await _ensureLoaded();
 
-    // Update cache
+    // BOLT: Maintain efficient write path for batch additions.
     _cachedHistory!.insertAll(0, readings);
 
-    // BOLT: Restoring efficient write path for batch additions.
     final prefs = await SharedPreferences.getInstance();
     List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
     final newStrings = readings.map((r) => json.encode(r.toJson())).toList();
