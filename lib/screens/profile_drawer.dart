@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
@@ -34,29 +35,56 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
   }
 
   Future<void> _editUserName() async {
-    final controller = TextEditingController(text: widget.appState.userProfile.name);
+    final controller =
+        TextEditingController(text: widget.appState.userProfile.name);
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('drawer.edit_user_name'.tr()),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: 'drawer.name_label'.tr()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('common.cancel'.tr()),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: Text('common.save'.tr()),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text('drawer.edit_user_name'.tr()),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              onChanged: (value) => setDialogState(() {}),
+              onSubmitted: (value) {
+                if (value.isNotEmpty) {
+                  Navigator.pop(context, value);
+                }
+              },
+              decoration: InputDecoration(
+                labelText: 'drawer.name_label'.tr(),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          controller.clear();
+                          setDialogState(() {});
+                        },
+                      )
+                    : null,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('common.cancel'.tr()),
+              ),
+              FilledButton(
+                onPressed: controller.text.isEmpty
+                    ? null
+                    : () => Navigator.pop(context, controller.text),
+                child: Text('common.save'.tr()),
+              ),
+            ],
+          );
+        },
       ),
     );
 
     if (result != null && result.isNotEmpty) {
+      HapticFeedback.lightImpact();
       widget.appState.userProfile.name = result;
       await SecureStorageService().saveAppState(widget.appState);
       widget.onProfileChanged(); // trigger rebuild
@@ -172,6 +200,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                     title: Text('drawer.add_profile'.tr()),
                     mouseCursor: SystemMouseCursors.click,
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       Navigator.pop(context); // Close drawer
                       _addProfile();
                     },
@@ -196,6 +225,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                     },
                   ),
                   onTap: () async {
+                    HapticFeedback.selectionClick();
                     widget.appState.activeProfileIndex = index;
                     await SecureStorageService().saveAppState(widget.appState);
                     widget.onProfileChanged();
