@@ -81,21 +81,35 @@ class SecureStorageService {
   static const String keyTutorial = 'has_seen_tutorial';
   static const String keyReadingTutorial = 'has_seen_reading_tutorial';
 
+  // BOLT: In-memory cache for tutorial flags to avoid redundant platform channel reads.
+  bool? _cachedHasSeenTutorial;
+  bool? _cachedHasSeenReadingTutorial;
+
   Future<bool> hasSeenTutorial() async {
+    if (_cachedHasSeenTutorial != null) return _cachedHasSeenTutorial!;
     final seenStr = await _storage.read(key: keyTutorial);
-    return seenStr == 'true';
+    _cachedHasSeenTutorial = seenStr == 'true';
+    return _cachedHasSeenTutorial!;
   }
 
   Future<void> setSeenTutorial(bool flag) async {
+    if (_cachedHasSeenTutorial == flag) return;
     await _storage.write(key: keyTutorial, value: flag.toString());
+    _cachedHasSeenTutorial = flag;
   }
 
   Future<bool> hasSeenReadingTutorial() async {
+    if (_cachedHasSeenReadingTutorial != null) {
+      return _cachedHasSeenReadingTutorial!;
+    }
     final seenStr = await _storage.read(key: keyReadingTutorial);
-    return seenStr == 'true';
+    _cachedHasSeenReadingTutorial = seenStr == 'true';
+    return _cachedHasSeenReadingTutorial!;
   }
 
   Future<void> setSeenReadingTutorial(bool flag) async {
+    if (_cachedHasSeenReadingTutorial == flag) return;
     await _storage.write(key: keyReadingTutorial, value: flag.toString());
+    _cachedHasSeenReadingTutorial = flag;
   }
 }
