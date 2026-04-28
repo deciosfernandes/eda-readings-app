@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import '../models/reading_models.dart';
@@ -173,10 +174,24 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
-                    child: Text(
-                      'dashboard.no_history'.tr(),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleLarge,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.history,
+                          size: 64,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'dashboard.no_history'.tr(),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
                     ),
                   ),
                 )
@@ -232,7 +247,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               child: TabBar(
                 indicatorColor: Theme.of(context).colorScheme.primary,
                 labelColor: Theme.of(context).colorScheme.onSurface,
-                unselectedLabelColor: Colors.grey,
+                unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                onTap: (_) => HapticFeedback.selectionClick(),
                 tabs: [
                   Tab(
                     text: 'dashboard.chart_tab'.tr(),

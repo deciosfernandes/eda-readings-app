@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -295,6 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               underline: const SizedBox(),
               onChanged: (ThemeMode? newMode) {
                 if (newMode != null) {
+                  HapticFeedback.selectionClick();
                   _themeService.setThemeMode(newMode);
                 }
               },
@@ -333,6 +335,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               return CheckboxListTile(
                 value: isSelected,
                 onChanged: (checked) {
+                  HapticFeedback.selectionClick();
                   setState(() {
                     if (checked == true) {
                       _selectedProfileIds.add(profile.id);
@@ -354,10 +357,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed:
-                          (_isExporting || _selectedProfileIds.isEmpty)
-                              ? null
-                              : _exportReadings,
+                      onPressed: (_isExporting || _selectedProfileIds.isEmpty)
+                          ? null
+                          : () {
+                              HapticFeedback.lightImpact();
+                              _exportReadings();
+                            },
                       icon: _isExporting
                           ? const SizedBox(
                               width: 18,
@@ -376,7 +381,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _isImporting ? null : _importReadings,
+                      onPressed: _isImporting
+                          ? null
+                          : () {
+                              HapticFeedback.lightImpact();
+                              _importReadings();
+                            },
                       icon: _isImporting
                           ? const SizedBox(
                               width: 18,
