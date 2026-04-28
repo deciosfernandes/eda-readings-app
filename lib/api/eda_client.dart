@@ -12,8 +12,14 @@ class EDAClient {
   final String contractNumber;
   final http.Client _client;
 
-  EDAClient({required this.clientNumber, required this.contractNumber, http.Client? client})
-      : _client = client ?? http.Client();
+  // BOLT: Shared client to enable connection pooling and reduce SSL handshake overhead.
+  static final http.Client _sharedClient = http.Client();
+
+  EDAClient({
+    required this.clientNumber,
+    required this.contractNumber,
+    http.Client? client,
+  }) : _client = client ?? _sharedClient;
 
   Future<ReadingResponse> getReading() async {
     final uri = Uri.parse('$baseUrl?cil=${Uri.encodeComponent(clientNumber)}&contrato=${Uri.encodeComponent(contractNumber)}');
