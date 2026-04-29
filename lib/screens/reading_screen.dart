@@ -241,6 +241,24 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     );
   }
 
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required String? lastValue,
+    required String? minValue,
+    required String? maxValue,
+  }) {
+    final lastReadingText = 'reading.last_reading'.tr(args: [lastValue ?? '0']);
+    final rangeText = (minValue != null && maxValue != null)
+        ? ' • ${'reading.min_max_helper'.tr(args: [minValue, maxValue])}'
+        : '';
+
+    return InputDecoration(
+      labelText: label,
+      suffixText: 'reading.unit_kwh'.tr(),
+      helperText: '$lastReadingText$rangeText',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -274,11 +292,12 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                             _submitReading();
                           }
                         },
-                        decoration: InputDecoration(
-                          labelText: _currentData!.descContador1 ?? 'reading.counter_1'.tr(),
-                          helperText: 'reading.last_reading'.tr(args: [
-                            _currentData!.valorContador1 ?? '0'
-                          ]),
+                        decoration: _buildInputDecoration(
+                          label: _currentData!.descContador1 ??
+                              'reading.counter_1'.tr(),
+                          lastValue: _currentData!.valorContador1,
+                          minValue: _currentData!.valorMinContador1,
+                          maxValue: _currentData!.valorMaxContador1,
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) => _validateReading(
@@ -304,11 +323,12 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                             _submitReading();
                           }
                         },
-                        decoration: InputDecoration(
-                          labelText: _currentData!.descContador2 ?? 'reading.counter_2'.tr(),
-                          helperText: 'reading.last_reading'.tr(args: [
-                            _currentData!.valorContador2 ?? '0'
-                          ]),
+                        decoration: _buildInputDecoration(
+                          label: _currentData!.descContador2 ??
+                              'reading.counter_2'.tr(),
+                          lastValue: _currentData!.valorContador2,
+                          minValue: _currentData!.valorMinContador2,
+                          maxValue: _currentData!.valorMaxContador2,
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
@@ -329,11 +349,12 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                         enabled: !_isSubmitting,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _submitReading(),
-                        decoration: InputDecoration(
-                          labelText: _currentData!.descContador3 ?? 'reading.counter_3'.tr(),
-                          helperText: 'reading.last_reading'.tr(args: [
-                            _currentData!.valorContador3 ?? '0'
-                          ]),
+                        decoration: _buildInputDecoration(
+                          label: _currentData!.descContador3 ??
+                              'reading.counter_3'.tr(),
+                          lastValue: _currentData!.valorContador3,
+                          minValue: _currentData!.valorMinContador3,
+                          maxValue: _currentData!.valorMaxContador3,
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
