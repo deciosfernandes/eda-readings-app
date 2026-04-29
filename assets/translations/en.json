@@ -41,7 +41,8 @@
         "confirm_send": "Send",
         "error_out_of_bounds": "Value must be between {} and {}",
         "error_not_number": "Enter a valid number",
-        "submit_tooltip": "Submit reading to EDA"
+        "submit_tooltip": "Submit reading to EDA",
+        "unit_kwh": "kWh"
     },
     "common": {
         "ok": "OK",
