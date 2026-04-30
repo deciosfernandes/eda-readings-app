@@ -30,7 +30,6 @@ class _DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<_DashboardScreen> {
   List<LocalReadingHistory> _history = [];
   // BOLT: Pre-calculated data to avoid expensive transformations in build()
-  List<LocalReadingHistory> _chronologicalHistory = [];
   List<FlSpot> _chartSpots = [];
   bool _isLoading = true;
   AppStateData? _appState;
@@ -67,18 +66,19 @@ class _DashboardScreenState extends State<_DashboardScreen> {
 
     // BOLT: Pre-calculate expensive data transformations outside the build method.
     // This improves UI responsiveness, especially as history grows.
-    final chronological = history.reversed.toList();
-    final spots = <FlSpot>[];
-    for (int i = 0; i < chronological.length; i++) {
-      final valStr = chronological[i].valorContador1;
+    // We use index-based access on the original history (newest-first) to build
+    // chronological spots without an intermediate reversed list allocation.
+    final historyLength = history.length;
+    final spots = List<FlSpot>.generate(historyLength, (i) {
+      final reverseIdx = historyLength - 1 - i;
+      final valStr = history[reverseIdx].valorContador1;
       final val = double.tryParse(valStr) ?? 0.0;
-      spots.add(FlSpot(i.toDouble(), val));
-    }
+      return FlSpot(i.toDouble(), val);
+    }, growable: false);
 
     setState(() {
       _appState = state;
       _history = history;
-      _chronologicalHistory = chronological;
       _chartSpots = spots;
       _isLoading = false;
     });
@@ -280,24 +280,26 @@ class _DashboardScreenState extends State<_DashboardScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: LineChart(
-            LineChartData(
-              gridData: const FlGridData(show: true),
-              titlesData: FlTitlesData(
+          child: RepaintBoundary(
+            child: LineChart(
+              LineChartData(
+                gridData: const FlGridData(show: true),
+                titlesData: FlTitlesData(
                 show: true,
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
                       int idx = value.toInt();
-                      if (idx < 0 || idx >= _chronologicalHistory.length) {
+                      if (idx < 0 || idx >= _history.length) {
                         return const SizedBox();
                       }
+                      // BOLT: Access history in reverse order to get chronological dates
+                      // without maintaining a separate chronological list in memory.
+                      final item = _history[_history.length - 1 - idx];
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          '${_chronologicalHistory[idx].date.day}/${_chronologicalHistory[idx].date.month}',
-                        ),
+                        child: Text('${item.date.day}/${item.date.month}'),
                       );
                     },
                     reservedSize: 32,
@@ -311,22 +313,23 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 ),
               ),
               borderData: FlBorderData(show: true),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: _chartSpots,
-                  isCurved: true,
-                  color: Theme.of(context).colorScheme.primary,
-                  barWidth: 4,
-                  isStrokeCapRound: true,
-                  dotData: const FlDotData(show: true),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.2),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _chartSpots,
+                    isCurved: true,
+                    color: Theme.of(context).colorScheme.primary,
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: const FlDotData(show: true),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.2),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -340,6 +343,9 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       itemCount: _history.length,
       itemBuilder: (context, index) {
         final item = _history[index];
+        // BOLT: Compute formatted date once per item to avoid redundant processing.
+        final formattedDate = _historyDateFormat.format(item.date);
+
         return Card(
           elevation: 1,
           margin: const EdgeInsets.only(bottom: 12.0),
@@ -349,7 +355,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
           child: Semantics(
             label: 'dashboard.reading_history_item'.tr(args: [
               item.valorContador1,
-              _historyDateFormat.format(item.date)
+              formattedDate,
             ]),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(
@@ -358,16 +364,15 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               ),
               leading: CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: Icon(
+                child: const Icon(
                   Icons.flash_on,
-                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               title: Text(
                 '${item.valorContador1} kWh',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text(_historyDateFormat.format(item.date)),
+              subtitle: Text(formattedDate),
               trailing: item.valorContador2 != null
                   ? Container(
                       padding: const EdgeInsets.symmetric(
