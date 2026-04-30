@@ -142,7 +142,10 @@ class ProfileDialogs {
                         tooltip: 'common.cancel'.tr(),
                         onPressed: isLoading
                             ? null
-                            : () => Navigator.pop(context),
+                            : () {
+                                HapticFeedback.selectionClick();
+                                Navigator.pop(context);
+                              },
                       ),
                     ],
                   ),
@@ -192,8 +195,10 @@ class ProfileDialogs {
                                         .onErrorContainer,
                                   ),
                                   tooltip: 'common.close'.tr(),
-                                  onPressed: () =>
-                                      setModalState(() => apiError = null),
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    setModalState(() => apiError = null);
+                                  },
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                 ),
@@ -220,6 +225,17 @@ class ProfileDialogs {
                         hintText: 'login.profile_name_hint'.tr(),
                         prefixIcon: const Icon(Icons.label_outline),
                         errorText: nameError,
+                        suffixIcon: nameCtrl.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                tooltip: 'common.clear'.tr(),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  nameCtrl.clear();
+                                  setModalState(() {});
+                                },
+                              )
+                            : null,
                       ),
                       onChanged: (_) {
                         setModalState(() {
@@ -250,6 +266,17 @@ class ProfileDialogs {
                         labelText: 'drawer.cil'.tr(),
                         prefixIcon: const Icon(Icons.badge_outlined),
                         errorText: cilError,
+                        suffixIcon: cilCtrl.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                tooltip: 'common.clear'.tr(),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  cilCtrl.clear();
+                                  setModalState(() {});
+                                },
+                              )
+                            : null,
                       ),
                       onChanged: (_) {
                         setModalState(() {
@@ -281,6 +308,17 @@ class ProfileDialogs {
                         labelText: 'drawer.contract'.tr(),
                         prefixIcon: const Icon(Icons.description_outlined),
                         errorText: contractError,
+                        suffixIcon: contractCtrl.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                tooltip: 'common.clear'.tr(),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  contractCtrl.clear();
+                                  setModalState(() {});
+                                },
+                              )
+                            : null,
                       ),
                       onChanged: (_) {
                         setModalState(() {
