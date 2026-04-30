@@ -49,7 +49,8 @@
         "cancel": "Cancelar",
         "close": "Fechar",
         "loading": "A carregar...",
-        "save": "Guardar"
+        "save": "Guardar",
+        "clear": "Limpar"
     },
     "drawer": {
         "edit_user_name": "Editar Nome de Utilizador",

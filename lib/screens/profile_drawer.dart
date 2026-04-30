@@ -58,7 +58,9 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                 suffixIcon: controller.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
+                        tooltip: 'common.clear'.tr(),
                         onPressed: () {
+                          HapticFeedback.selectionClick();
                           controller.clear();
                           setDialogState(() {});
                         },
