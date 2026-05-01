@@ -9,3 +9,7 @@
 ## 2026-02-11 - Performance Trade-offs: In-memory Cache Structure
 **Learning:** Caching raw JSON maps instead of model objects reduces memory pressure and allows for lazy filtering (avoiding instantiation of filtered-out items), but increases CPU cost on repeated access as objects must be re-created. In Flutter, this is a beneficial trade-off when data is large and filtering is frequent, provided the re-instantiation happens outside of build() loops.
 **Action:** Use Map-based caches for large datasets where filtering is common; prefer object-based caches for small, frequently accessed configuration state.
+
+## 2026-02-12 - UI Thread Optimization: Pre-calculation and Tab State Persistence
+**Learning:** Performing string formatting (e.g., `DateFormat.format`) and complex string interpolations inside `ListView.builder` or chart title generators leads to redundant work on every frame during scrolling or animations. Additionally, `TabBarView` disposes of tabs by default, causing expensive rebuilds and loss of UI state (scroll position).
+**Action:** Pre-calculate all display strings (dates, labels) into state-managed lists during data fetching and use `AutomaticKeepAliveClientMixin` to persist tab state, ensuring the UI thread remains responsive during interactions.
