@@ -108,8 +108,20 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
         title: Text('drawer.remove_profile_title'.tr()),
         content: Text('drawer.remove_profile_content'.tr()),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('common.cancel'.tr())),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('drawer.remove'.tr())),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('common.cancel'.tr()),
+          ),
+          TextButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context, true);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text('drawer.remove'.tr()),
+          ),
         ],
       ),
     );
@@ -212,28 +224,34 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                 final profile = widget.appState.profiles[index];
                 final isActive = index == widget.appState.activeProfileIndex;
 
-                return ListTile(
-                  leading: Icon(IconData(profile.iconCodePoint, fontFamily: 'MaterialIcons')),
-                  title: Text(profile.name),
-                  subtitle: Text('CIL: ${profile.cil}'),
+                return Semantics(
+                  label: '${profile.name}, CIL: ${profile.cil}${isActive ? ' (${'common.ok'.tr()})' : ''}',
                   selected: isActive,
-                  mouseCursor: SystemMouseCursors.click,
-                  trailing: IconButton(
-                    tooltip: 'drawer.remove_profile_tooltip'.tr(),
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
+                  button: true,
+                  child: ListTile(
+                    leading: Icon(IconData(profile.iconCodePoint, fontFamily: 'MaterialIcons')),
+                    title: Text(profile.name),
+                    subtitle: Text('CIL: ${profile.cil}'),
+                    selected: isActive,
+                    mouseCursor: SystemMouseCursors.click,
+                    trailing: IconButton(
+                      tooltip: 'drawer.remove_profile_tooltip'.tr(),
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.pop(context);
+                        _removeProfile(index);
+                      },
+                    ),
+                    onTap: () async {
+                      HapticFeedback.selectionClick();
+                      widget.appState.activeProfileIndex = index;
+                      await SecureStorageService().saveAppState(widget.appState);
+                      widget.onProfileChanged();
+                      if (!context.mounted) return;
                       Navigator.pop(context);
-                      _removeProfile(index);
                     },
                   ),
-                  onTap: () async {
-                    HapticFeedback.selectionClick();
-                    widget.appState.activeProfileIndex = index;
-                    await SecureStorageService().saveAppState(widget.appState);
-                    widget.onProfileChanged();
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                  },
                 );
               },
             ),
