@@ -31,6 +31,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<LocalReadingHistory> _history = [];
   // BOLT: Pre-calculated data to avoid expensive transformations in build()
   List<FlSpot> _chartSpots = [];
+  List<String> _chartLabels = [];
+  List<String> _historyFormattedDates = [];
   bool _isLoading = true;
   AppStateData? _appState;
   // BOLT: Cache DateFormat instance to avoid repeated creation in ListView.builder
@@ -76,10 +78,22 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       return FlSpot(i.toDouble(), val);
     }, growable: false);
 
+    final labels = List<String>.generate(historyLength, (i) {
+      final reverseIdx = historyLength - 1 - i;
+      final date = history[reverseIdx].date;
+      return '${date.day}/${date.month}';
+    }, growable: false);
+
+    final formattedDates = List<String>.generate(historyLength, (i) {
+      return _historyDateFormat.format(history[i].date);
+    }, growable: false);
+
     setState(() {
       _appState = state;
       _history = history;
       _chartSpots = spots;
+      _chartLabels = labels;
+      _historyFormattedDates = formattedDates;
       _isLoading = false;
     });
 
@@ -263,7 +277,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             ),
           ),
           Expanded(
-            child: TabBarView(children: [_buildChartTab(), _buildHistoryTab()]),
+            child: TabBarView(children: [
+              _KeepAliveWrapper(child: _buildChartTab()),
+              _KeepAliveWrapper(child: _buildHistoryTab()),
+            ]),
           ),
         ],
       ),
@@ -291,15 +308,13 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
                       int idx = value.toInt();
-                      if (idx < 0 || idx >= _history.length) {
+                      if (idx < 0 || idx >= _chartLabels.length) {
                         return const SizedBox();
                       }
-                      // BOLT: Access history in reverse order to get chronological dates
-                      // without maintaining a separate chronological list in memory.
-                      final item = _history[_history.length - 1 - idx];
+                      // BOLT: Use pre-calculated labels to avoid repeated string formatting.
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
-                        child: Text('${item.date.day}/${item.date.month}'),
+                        child: Text(_chartLabels[idx]),
                       );
                     },
                     reservedSize: 32,
@@ -343,8 +358,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       itemCount: _history.length,
       itemBuilder: (context, index) {
         final item = _history[index];
-        // BOLT: Compute formatted date once per item to avoid redundant processing.
-        final formattedDate = _historyDateFormat.format(item.date);
+        // BOLT: Use pre-calculated formatted date to avoid redundant processing.
+        final formattedDate = _historyFormattedDates[index];
 
         return Card(
           elevation: 1,
@@ -400,4 +415,25 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       },
     );
   }
+}
+
+// BOLT: Wrapper to preserve tab state (scroll position, etc.) using AutomaticKeepAliveClientMixin.
+class _KeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+  const _KeepAliveWrapper({required this.child});
+
+  @override
+  State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
+}
+
+class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }
