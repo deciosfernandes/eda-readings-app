@@ -14,68 +14,71 @@ class HistoryService {
 
   static const String keyHistory = 'readings_history';
 
-  // BOLT: In-memory cache for decoded JSON maps to avoid redundant disk I/O.
-  // We cache Maps instead of model objects to reduce memory pressure and allow
-  // for lazy filtering before expensive object instantiation.
+  // BOLT: Cache SharedPreferences instance to avoid repeated async lookups.
+  SharedPreferences? _prefs;
+
+  // BOLT: Cache raw strings and decoded maps to avoid redundant disk I/O and O(N) list copies.
+  List<String>? _cachedStrings;
   List<Map<String, dynamic>>? _cachedMaps;
+
+  // BOLT: Profile-based index to achieve O(1) lookup for the most common queries.
+  Map<String?, List<Map<String, dynamic>>>? _indexedMaps;
 
   @visibleForTesting
   void clearCache() {
+    _prefs = null;
+    _cachedStrings = null;
     _cachedMaps = null;
+    _indexedMaps = null;
   }
 
-  Future<List<Map<String, dynamic>>> _ensureMapsLoaded() async {
-    if (_cachedMaps != null) return _cachedMaps!;
+  Future<void> _ensureMapsLoaded() async {
+    if (_cachedMaps != null) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final historyStrings = prefs.getStringList(keyHistory) ?? [];
+    _prefs ??= await SharedPreferences.getInstance();
+    _cachedStrings = _prefs!.getStringList(keyHistory) ?? [];
 
-    // BOLT: Decode once into Maps and cache them.
-    _cachedMaps = historyStrings
-        .map((item) {
-          try {
-            return json.decode(item) as Map<String, dynamic>;
-          } catch (e) {
-            return null;
-          }
-        })
-        .whereType<Map<String, dynamic>>()
-        .toList();
+    _cachedMaps = [];
+    _indexedMaps = {};
 
-    return _cachedMaps!;
+    for (final item in _cachedStrings!) {
+      try {
+        final map = json.decode(item) as Map<String, dynamic>;
+        _cachedMaps!.add(map);
+        final pId = map['profileId'] as String?;
+        _indexedMaps!.putIfAbsent(pId, () => []).add(map);
+      } catch (e) {
+        // Skip malformed entries
+      }
+    }
   }
 
   Future<void> addReading(LocalReadingHistory reading) async {
     await _ensureMapsLoaded();
 
     final readingJson = reading.toJson();
+    final pId = reading.profileId;
 
-    // BOLT: Maintain O(1) write performance by only encoding the new reading
-    // and prepending it to the persistent list, while keeping the cache in sync.
+    // BOLT: Maintain O(1) write performance and keep all in-memory caches in sync.
     _cachedMaps!.insert(0, readingJson);
+    _indexedMaps!.putIfAbsent(pId, () => []).insert(0, readingJson);
 
-    final prefs = await SharedPreferences.getInstance();
-    List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
-    historyStrings.insert(0, json.encode(readingJson));
-    await prefs.setStringList(keyHistory, historyStrings);
+    final encoded = json.encode(readingJson);
+    _cachedStrings!.insert(0, encoded);
+    await _prefs!.setStringList(keyHistory, _cachedStrings!);
   }
 
   Future<List<LocalReadingHistory>> getHistory({String? profileId}) async {
-    final maps = await _ensureMapsLoaded();
+    await _ensureMapsLoaded();
 
-    // BOLT: Filter by profileId on the Map level first to avoid expensive object
-    // instantiation for non-matching items, as per the 2026-02-09 journal entry.
-    // While this re-instantiates matching objects on every call, the overhead
-    // is negligible compared to the memory pressure of caching thousands of
-    // full model objects, especially since this is called outside of build loops.
-    if (profileId == null) {
-      return maps.map((m) => LocalReadingHistory.fromJson(m)).toList();
+    // BOLT: Use the profile index for O(1) lookup when a profileId is specified.
+    if (profileId != null) {
+      final matches = _indexedMaps![profileId];
+      if (matches == null) return [];
+      return matches.map((m) => LocalReadingHistory.fromJson(m)).toList();
     }
 
-    return maps
-        .where((m) => m['profileId'] == profileId)
-        .map((m) => LocalReadingHistory.fromJson(m))
-        .toList();
+    return _cachedMaps!.map((m) => LocalReadingHistory.fromJson(m)).toList();
   }
 
   Future<void> addReadings(List<LocalReadingHistory> readings) async {
@@ -83,32 +86,53 @@ class HistoryService {
     await _ensureMapsLoaded();
 
     final newJsons = readings.map((r) => r.toJson()).toList();
+    final newEncoded = newJsons.map((j) => json.encode(j)).toList();
 
-    // BOLT: Maintain efficient write path for batch additions.
+    // BOLT: Batch update all caches and persistent storage.
     _cachedMaps!.insertAll(0, newJsons);
+    _cachedStrings!.insertAll(0, newEncoded);
 
-    final prefs = await SharedPreferences.getInstance();
-    List<String> historyStrings = prefs.getStringList(keyHistory) ?? [];
-    final newStrings = newJsons.map((j) => json.encode(j)).toList();
-    historyStrings.insertAll(0, newStrings);
-    await prefs.setStringList(keyHistory, historyStrings);
+    // Group new items by profile to maintain relative order during prepending.
+    final groupedByProfile = <String?, List<Map<String, dynamic>>>{};
+    for (final map in newJsons) {
+      final pId = map['profileId'] as String?;
+      groupedByProfile.putIfAbsent(pId, () => []).add(map);
+    }
+
+    groupedByProfile.forEach((pId, items) {
+      _indexedMaps!.putIfAbsent(pId, () => []).insertAll(0, items);
+    });
+
+    await _prefs!.setStringList(keyHistory, _cachedStrings!);
   }
 
   Future<List<LocalReadingHistory>> getHistoryForProfiles(
     List<String> profileIds,
   ) async {
-    final maps = await _ensureMapsLoaded();
+    await _ensureMapsLoaded();
 
     if (profileIds.isEmpty) {
-      return maps.map((m) => LocalReadingHistory.fromJson(m)).toList();
+      return _cachedMaps!.map((m) => LocalReadingHistory.fromJson(m)).toList();
     }
 
-    // BOLT: Use a Set for O(1) lookup during filtering, reducing complexity from O(N*M) to O(N).
-    final idSet = profileIds.toSet();
+    // BOLT: Collect from indexed buckets. This is O(M) where M is the number of requested profiles,
+    // which is significantly faster than O(N) scanning when history is large.
+    final result = <Map<String, dynamic>>[];
+    for (final id in profileIds) {
+      final matches = _indexedMaps![id];
+      if (matches != null) {
+        result.addAll(matches);
+      }
+    }
 
-    return maps
-        .where((m) => m['profileId'] != null && idSet.contains(m['profileId']))
-        .map((m) => LocalReadingHistory.fromJson(m))
-        .toList();
+    // BOLT: Maintain chronological order (newest first) by sorting on the ISO date strings.
+    // We add a safety check for the 'date' key to prevent potential crashes.
+    result.sort((a, b) {
+      final dateA = a['date'] as String? ?? '';
+      final dateB = b['date'] as String? ?? '';
+      return dateB.compareTo(dateA);
+    });
+
+    return result.map((m) => LocalReadingHistory.fromJson(m)).toList();
   }
 }
