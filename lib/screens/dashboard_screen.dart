@@ -66,27 +66,30 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final history =
         await HistoryService().getHistory(profileId: activeProfileId);
 
-    // BOLT: Pre-calculate expensive data transformations outside the build method.
-    // This improves UI responsiveness, especially as history grows.
-    // We use index-based access on the original history (newest-first) to build
-    // chronological spots without an intermediate reversed list allocation.
+    // BOLT: Consolidate data transformations into a single pass to reduce iteration
+    // overhead and object allocations. We pre-calculate all display strings and
+    // chart spots here to keep the build() method lean and responsive.
     final historyLength = history.length;
-    final spots = List<FlSpot>.generate(historyLength, (i) {
+    final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
+    final labels = List<String>.filled(historyLength, '');
+    final formattedDates = List<String>.filled(historyLength, '');
+
+    for (int i = 0; i < historyLength; i++) {
       final reverseIdx = historyLength - 1 - i;
-      final valStr = history[reverseIdx].valorContador1;
+      final item = history[i];
+      final reverseItem = history[reverseIdx];
+
+      // Charts use chronological order (oldest to newest)
+      final valStr = reverseItem.valorContador1;
       final val = double.tryParse(valStr) ?? 0.0;
-      return FlSpot(i.toDouble(), val);
-    }, growable: false);
+      spots[i] = FlSpot(i.toDouble(), val);
 
-    final labels = List<String>.generate(historyLength, (i) {
-      final reverseIdx = historyLength - 1 - i;
-      final date = history[reverseIdx].date;
-      return '${date.day}/${date.month}';
-    }, growable: false);
+      final date = reverseItem.date;
+      labels[i] = '${date.day}/${date.month}';
 
-    final formattedDates = List<String>.generate(historyLength, (i) {
-      return _historyDateFormat.format(history[i].date);
-    }, growable: false);
+      // History list uses newest-first order
+      formattedDates[i] = _historyDateFormat.format(item.date);
+    }
 
     setState(() {
       _appState = state;

@@ -13,3 +13,7 @@
 ## 2026-02-12 - UI Thread Optimization: Pre-calculation and Tab State Persistence
 **Learning:** Performing string formatting (e.g., `DateFormat.format`) and complex string interpolations inside `ListView.builder` or chart title generators leads to redundant work on every frame during scrolling or animations. Additionally, `TabBarView` disposes of tabs by default, causing expensive rebuilds and loss of UI state (scroll position).
 **Action:** Pre-calculate all display strings (dates, labels) into state-managed lists during data fetching and use `AutomaticKeepAliveClientMixin` to persist tab state, ensuring the UI thread remains responsive during interactions.
+
+## 2026-02-13 - O(1) Profile-Based Indexing for History
+**Learning:** For features that frequently filter a large flat list by a key (e.g., Dashboard filtering history by `profileId`), a simple list scan becomes O(N). Implementing a Map-based index (`Map<String, List>`) during the initial load achieves O(1) lookups for the common case.
+**Action:** Maintain a profile-indexed cache in `HistoryService`. When performing batch updates, group items by profile before prepending to the index to maintain chronological order without O(N) re-sorts.
