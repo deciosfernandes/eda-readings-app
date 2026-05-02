@@ -26,6 +26,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage() async {
+    HapticFeedback.selectionClick();
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       widget.appState.userProfile.picturePath = image.path;
@@ -164,17 +165,41 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                       child: Semantics(
                         label: 'drawer.change_picture'.tr(),
                         button: true,
-                        child: CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white24,
-                          backgroundImage: widget.appState.userProfile.picturePath.isNotEmpty
-                              ? (kIsWeb
-                                  ? NetworkImage(widget.appState.userProfile.picturePath)
-                                  : FileImage(File(widget.appState.userProfile.picturePath)) as ImageProvider)
-                              : null,
-                          child: widget.appState.userProfile.picturePath.isEmpty
-                              ? Icon(Icons.person, size: 40, color: Theme.of(context).colorScheme.onSecondary)
-                              : null,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.white24,
+                              backgroundImage: widget.appState.userProfile.picturePath.isNotEmpty
+                                  ? (kIsWeb
+                                      ? NetworkImage(widget.appState.userProfile.picturePath)
+                                      : FileImage(File(widget.appState.userProfile.picturePath)) as ImageProvider)
+                                  : null,
+                              child: widget.appState.userProfile.picturePath.isEmpty
+                                  ? Icon(Icons.person, size: 40, color: Theme.of(context).colorScheme.onSecondary)
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.surface,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  size: 14,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -262,6 +287,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
             title: Text('settings.title'.tr()),
             mouseCursor: SystemMouseCursors.click,
             onTap: () {
+              HapticFeedback.selectionClick();
               Navigator.pop(context); // Close drawer
               Navigator.pushNamed(context, '/settings');
             },

@@ -217,6 +217,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               description: 'tutorial.add_desc'.tr(),
               disposeOnTap: true,
               onTargetClick: () {
+                HapticFeedback.lightImpact();
                 ShowcaseView.get().dismiss();
                 Navigator.pushNamed(context, '/reading').then((result) {
                   if (result == true) {
@@ -228,6 +229,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 message: 'dashboard.add_reading_tooltip'.tr(),
                 child: FloatingActionButton.extended(
                   onPressed: () async {
+                    HapticFeedback.lightImpact();
                     final result =
                         await Navigator.pushNamed(context, '/reading');
                     if (result == true) {

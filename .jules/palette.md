@@ -9,3 +9,7 @@
 ## 2026-05-01 - [Destructive Action Visuals and Semantic List State]
 **Learning:** For destructive actions in mobile apps, combining visual cues (error color) with tactile feedback (medium impact haptics) creates a safer and more intentional user experience. When using Semantics for list items, including the selection state in the label (e.g., "Property Name (OK)") ensures screen readers convey the full context of which item is currently active.
 **Action:** Always pair destructive UI elements with appropriate color tokens and physical feedback, and ensure list item Semantics reflect active/inactive state.
+
+## 2026-05-20 - [Visual Affordance for Editable Profile Media]
+**Learning:** Interactive elements that look like static media (e.g., a profile picture) require explicit visual cues like badges or icons to signal editability. Combining this visual affordance with immediate tactile feedback on interaction creates a more discoverable and satisfying user experience.
+**Action:** Wrap 'CircleAvatar' or similar media in a 'Stack' with a 'Positioned' icon badge (e.g., camera icon) and provide haptic feedback on tap.
