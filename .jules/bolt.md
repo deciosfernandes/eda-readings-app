@@ -17,3 +17,7 @@
 ## 2026-02-13 - O(1) Profile-Based Indexing for History
 **Learning:** For features that frequently filter a large flat list by a key (e.g., Dashboard filtering history by `profileId`), a simple list scan becomes O(N). Implementing a Map-based index (`Map<String, List>`) during the initial load achieves O(1) lookups for the common case.
 **Action:** Maintain a profile-indexed cache in `HistoryService`. When performing batch updates, group items by profile before prepending to the index to maintain chronological order without O(N) re-sorts.
+
+## 2026-02-14 - Pre-instantiation of Model Objects in Cache
+**Learning:** Caching raw JSON maps still incurs O(N) overhead for object instantiation on every read. Pre-instantiating model objects in the cache during the initial load (or upon write) moves this cost to the background/initialization phase, making UI builds O(1) relative to object creation.
+**Action:** In singleton services, prefer caching fully instantiated model objects. When returning lists from the cache, use `List.from()` to prevent external mutation of the internal cache list while keeping the O(1) benefit for the objects themselves.
