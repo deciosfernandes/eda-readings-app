@@ -17,36 +17,37 @@ class HistoryService {
   // BOLT: Cache SharedPreferences instance to avoid repeated async lookups.
   SharedPreferences? _prefs;
 
-  // BOLT: Cache raw strings and decoded maps to avoid redundant disk I/O and O(N) list copies.
+  // BOLT: Cache raw strings and fully instantiated objects to avoid redundant disk I/O,
+  // JSON decoding, and O(N) object creation on every UI rebuild.
   List<String>? _cachedStrings;
-  List<Map<String, dynamic>>? _cachedMaps;
+  List<LocalReadingHistory>? _cachedObjects;
 
-  // BOLT: Profile-based index to achieve O(1) lookup for the most common queries.
-  Map<String?, List<Map<String, dynamic>>>? _indexedMaps;
+  // BOLT: Profile-based index using instantiated objects to achieve O(1) lookup.
+  Map<String?, List<LocalReadingHistory>>? _indexedObjects;
 
   @visibleForTesting
   void clearCache() {
     _prefs = null;
     _cachedStrings = null;
-    _cachedMaps = null;
-    _indexedMaps = null;
+    _cachedObjects = null;
+    _indexedObjects = null;
   }
 
-  Future<void> _ensureMapsLoaded() async {
-    if (_cachedMaps != null) return;
+  Future<void> _ensureHistoryLoaded() async {
+    if (_cachedObjects != null) return;
 
     _prefs ??= await SharedPreferences.getInstance();
     _cachedStrings = _prefs!.getStringList(keyHistory) ?? [];
 
-    _cachedMaps = [];
-    _indexedMaps = {};
+    _cachedObjects = [];
+    _indexedObjects = {};
 
     for (final item in _cachedStrings!) {
       try {
         final map = json.decode(item) as Map<String, dynamic>;
-        _cachedMaps!.add(map);
-        final pId = map['profileId'] as String?;
-        _indexedMaps!.putIfAbsent(pId, () => []).add(map);
+        final reading = LocalReadingHistory.fromJson(map);
+        _cachedObjects!.add(reading);
+        _indexedObjects!.putIfAbsent(reading.profileId, () => []).add(reading);
       } catch (e) {
         // Skip malformed entries
       }
@@ -54,53 +55,52 @@ class HistoryService {
   }
 
   Future<void> addReading(LocalReadingHistory reading) async {
-    await _ensureMapsLoaded();
-
-    final readingJson = reading.toJson();
-    final pId = reading.profileId;
+    await _ensureHistoryLoaded();
 
     // BOLT: Maintain O(1) write performance and keep all in-memory caches in sync.
-    _cachedMaps!.insert(0, readingJson);
-    _indexedMaps!.putIfAbsent(pId, () => []).insert(0, readingJson);
+    _cachedObjects!.insert(0, reading);
+    _indexedObjects!
+        .putIfAbsent(reading.profileId, () => [])
+        .insert(0, reading);
 
-    final encoded = json.encode(readingJson);
+    final encoded = json.encode(reading.toJson());
     _cachedStrings!.insert(0, encoded);
     await _prefs!.setStringList(keyHistory, _cachedStrings!);
   }
 
   Future<List<LocalReadingHistory>> getHistory({String? profileId}) async {
-    await _ensureMapsLoaded();
+    await _ensureHistoryLoaded();
 
     // BOLT: Use the profile index for O(1) lookup when a profileId is specified.
+    // Returning a new List to prevent external modification of the internal cache.
     if (profileId != null) {
-      final matches = _indexedMaps![profileId];
-      if (matches == null) return [];
-      return matches.map((m) => LocalReadingHistory.fromJson(m)).toList();
+      final matches = _indexedObjects![profileId];
+      return matches != null ? List.from(matches) : [];
     }
 
-    return _cachedMaps!.map((m) => LocalReadingHistory.fromJson(m)).toList();
+    return List.from(_cachedObjects!);
   }
 
   Future<void> addReadings(List<LocalReadingHistory> readings) async {
     if (readings.isEmpty) return;
-    await _ensureMapsLoaded();
+    await _ensureHistoryLoaded();
 
-    final newJsons = readings.map((r) => r.toJson()).toList();
-    final newEncoded = newJsons.map((j) => json.encode(j)).toList();
+    final newEncoded = readings.map((r) => json.encode(r.toJson())).toList();
 
     // BOLT: Batch update all caches and persistent storage.
-    _cachedMaps!.insertAll(0, newJsons);
+    _cachedObjects!.insertAll(0, readings);
     _cachedStrings!.insertAll(0, newEncoded);
 
     // Group new items by profile to maintain relative order during prepending.
-    final groupedByProfile = <String?, List<Map<String, dynamic>>>{};
-    for (final map in newJsons) {
-      final pId = map['profileId'] as String?;
-      groupedByProfile.putIfAbsent(pId, () => []).add(map);
+    final groupedByProfile = <String?, List<LocalReadingHistory>>{};
+    for (final reading in readings) {
+      groupedByProfile
+          .putIfAbsent(reading.profileId, () => [])
+          .add(reading);
     }
 
     groupedByProfile.forEach((pId, items) {
-      _indexedMaps!.putIfAbsent(pId, () => []).insertAll(0, items);
+      _indexedObjects!.putIfAbsent(pId, () => []).insertAll(0, items);
     });
 
     await _prefs!.setStringList(keyHistory, _cachedStrings!);
@@ -109,30 +109,31 @@ class HistoryService {
   Future<List<LocalReadingHistory>> getHistoryForProfiles(
     List<String> profileIds,
   ) async {
-    await _ensureMapsLoaded();
+    await _ensureHistoryLoaded();
 
     if (profileIds.isEmpty) {
-      return _cachedMaps!.map((m) => LocalReadingHistory.fromJson(m)).toList();
+      return List.from(_cachedObjects!);
     }
 
-    // BOLT: Collect from indexed buckets. This is O(M) where M is the number of requested profiles,
-    // which is significantly faster than O(N) scanning when history is large.
-    final result = <Map<String, dynamic>>[];
+    // BOLT: Optimize common case where only one profile is requested.
+    // Since individual profile buckets are already chronological, we skip sorting.
+    if (profileIds.length == 1) {
+      final matches = _indexedObjects![profileIds[0]];
+      return matches != null ? List.from(matches) : [];
+    }
+
+    // BOLT: Collect from indexed buckets. This is O(M) where M is the number of requested profiles.
+    final result = <LocalReadingHistory>[];
     for (final id in profileIds) {
-      final matches = _indexedMaps![id];
+      final matches = _indexedObjects![id];
       if (matches != null) {
         result.addAll(matches);
       }
     }
 
-    // BOLT: Maintain chronological order (newest first) by sorting on the ISO date strings.
-    // We add a safety check for the 'date' key to prevent potential crashes.
-    result.sort((a, b) {
-      final dateA = a['date'] as String? ?? '';
-      final dateB = b['date'] as String? ?? '';
-      return dateB.compareTo(dateA);
-    });
+    // BOLT: Maintain chronological order (newest first) by sorting.
+    result.sort((a, b) => b.date.compareTo(a.date));
 
-    return result.map((m) => LocalReadingHistory.fromJson(m)).toList();
+    return result;
   }
 }
