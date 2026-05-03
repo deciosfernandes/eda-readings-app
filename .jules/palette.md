@@ -13,3 +13,7 @@
 ## 2026-05-20 - [Visual Affordance for Editable Profile Media]
 **Learning:** Interactive elements that look like static media (e.g., a profile picture) require explicit visual cues like badges or icons to signal editability. Combining this visual affordance with immediate tactile feedback on interaction creates a more discoverable and satisfying user experience.
 **Action:** Wrap 'CircleAvatar' or similar media in a 'Stack' with a 'Positioned' icon badge (e.g., camera icon) and provide haptic feedback on tap.
+
+## 2026-05-03 - [Reactive "Clear" Buttons in Forms]
+**Learning:** Conditional decorations like a "Clear" suffix icon in a 'TextFormField' do not automatically update as the user types unless the widget is rebuilt. Adding an 'onChanged' callback that triggers 'setState' is necessary to provide immediate visual feedback on the button's visibility.
+**Action:** Always pair conditional 'InputDecoration' elements with an 'onChanged' trigger to ensure the UI remains in sync with the field's state.

@@ -246,6 +246,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     required String? lastValue,
     required String? minValue,
     required String? maxValue,
+    required TextEditingController controller,
   }) {
     final lastReadingText = 'reading.last_reading'.tr(args: [lastValue ?? '0']);
     final rangeText = (minValue != null && maxValue != null)
@@ -254,6 +255,17 @@ class _ReadingScreenState extends State<_ReadingScreen> {
 
     return InputDecoration(
       labelText: label,
+      suffixIcon: controller.text.isNotEmpty
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              tooltip: 'common.clear'.tr(),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                controller.clear();
+                setState(() {});
+              },
+            )
+          : null,
       suffixText: 'reading.unit_kwh'.tr(),
       helperText: '$lastReadingText$rangeText',
     );
@@ -292,12 +304,14 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                             _submitReading();
                           }
                         },
+                        onChanged: (_) => setState(() {}),
                         decoration: _buildInputDecoration(
                           label: _currentData!.descContador1 ??
                               'reading.counter_1'.tr(),
                           lastValue: _currentData!.valorContador1,
                           minValue: _currentData!.valorMinContador1,
                           maxValue: _currentData!.valorMaxContador1,
+                          controller: _c1Controller,
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) => _validateReading(
@@ -323,12 +337,14 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                             _submitReading();
                           }
                         },
+                        onChanged: (_) => setState(() {}),
                         decoration: _buildInputDecoration(
                           label: _currentData!.descContador2 ??
                               'reading.counter_2'.tr(),
                           lastValue: _currentData!.valorContador2,
                           minValue: _currentData!.valorMinContador2,
                           maxValue: _currentData!.valorMaxContador2,
+                          controller: _c2Controller,
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
@@ -349,12 +365,14 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                         enabled: !_isSubmitting,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _submitReading(),
+                        onChanged: (_) => setState(() {}),
                         decoration: _buildInputDecoration(
                           label: _currentData!.descContador3 ??
                               'reading.counter_3'.tr(),
                           lastValue: _currentData!.valorContador3,
                           minValue: _currentData!.valorMinContador3,
                           maxValue: _currentData!.valorMaxContador3,
+                          controller: _c3Controller,
                         ),
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
