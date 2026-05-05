@@ -90,9 +90,11 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       });
       
       _startTutorial();
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('Error loading reading data: $e');
+      debugPrint('Stack trace: $stack');
       setState(() {
-        _error = e.toString();
+        _error = 'reading.error_load'.tr();
         _isLoading = false;
       });
     }
@@ -303,6 +305,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                         controller: _c1Controller,
                         focusNode: _f1FocusNode,
                         enabled: !_isSubmitting,
+                        maxLength: 15,
                         autofocus: true,
                         textInputAction: (_currentData!.descContador2 != null && _currentData!.descContador2!.isNotEmpty)
                           ? TextInputAction.next
@@ -337,6 +340,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                         controller: _c2Controller,
                         focusNode: _f2FocusNode,
                         enabled: !_isSubmitting,
+                        maxLength: 15,
                         textInputAction: (_currentData!.descContador3 != null && _currentData!.descContador3!.isNotEmpty)
                           ? TextInputAction.next
                           : TextInputAction.done,
@@ -373,6 +377,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                         controller: _c3Controller,
                         focusNode: _f3FocusNode,
                         enabled: !_isSubmitting,
+                        maxLength: 15,
                         textInputAction: TextInputAction.done,
                         onFieldSubmitted: (_) => _submitReading(),
                         onChanged: (_) => setState(() {}),

@@ -46,6 +46,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
             title: Text('drawer.edit_user_name'.tr()),
             content: TextField(
               controller: controller,
+              maxLength: 50,
               autofocus: true,
               textInputAction: TextInputAction.done,
               onChanged: (value) => setDialogState(() {}),

@@ -218,6 +218,7 @@ class ProfileDialogs {
                     child: TextField(
                       controller: nameCtrl,
                       enabled: !isLoading,
+                      maxLength: 50,
                       autofocus: true,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
@@ -259,6 +260,7 @@ class ProfileDialogs {
                     child: TextField(
                       controller: cilCtrl,
                       enabled: !isLoading,
+                      maxLength: 20,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -300,6 +302,7 @@ class ProfileDialogs {
                     child: TextField(
                       controller: contractCtrl,
                       enabled: !isLoading,
+                      maxLength: 20,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => handleAdd(),

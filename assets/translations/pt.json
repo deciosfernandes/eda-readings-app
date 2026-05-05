@@ -34,6 +34,7 @@
         "submit": "Enviar",
         "success": "Leitura enviada com sucesso!",
         "error_send": "Falha ao enviar a leitura.",
+        "error_load": "Não foi possível carregar os detalhes da leitura. Por favor, tente mais tarde.",
         "min_max_helper": "Mín: {} / Máx: {}",
         "last_reading": "Última Leitura: {}",
         "confirm_title": "Confirmar Leitura",
