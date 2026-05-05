@@ -34,6 +34,7 @@
         "submit": "Send",
         "success": "Reading sent successfully!",
         "error_send": "Failed to send reading.",
+        "error_load": "Failed to load reading details. Please try again later.",
         "min_max_helper": "Min: {} / Max: {}",
         "last_reading": "Last Reading: {}",
         "confirm_title": "Confirm Reading",
