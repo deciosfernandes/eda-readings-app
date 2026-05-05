@@ -72,10 +72,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     final buffer = StringBuffer();
     buffer.writeln('import_export.csv_header'.tr());
+    // BOLT: Instantiate DateFormat once outside the loop to avoid redundant allocations.
+    final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
     for (final r in readings) {
       final profileName =
           r.profileId != null ? (profileNames[r.profileId] ?? '') : '';
-      final date = DateFormat('yyyy-MM-dd HH:mm:ss').format(r.date);
+      final date = dateFormat.format(r.date);
       final c1 = r.valorContador1;
       final c2 = r.valorContador2 ?? '';
       final c3 = r.valorContador3 ?? '';
