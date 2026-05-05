@@ -253,6 +253,16 @@ class _ReadingScreenState extends State<_ReadingScreen> {
         ? ' • ${'reading.min_max_helper'.tr(args: [minValue, maxValue])}'
         : '';
 
+    String consumptionText = '';
+    if (lastValue != null && controller.text.isNotEmpty) {
+      final current = double.tryParse(controller.text.replaceAll(',', '.'));
+      final last = double.tryParse(lastValue.replaceAll(',', '.'));
+      if (current != null && last != null && current > last) {
+        final diff = current - last;
+        consumptionText = ' (+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)})';
+      }
+    }
+
     return InputDecoration(
       labelText: label,
       suffixIcon: controller.text.isNotEmpty
@@ -267,7 +277,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
             )
           : null,
       suffixText: 'reading.unit_kwh'.tr(),
-      helperText: '$lastReadingText$rangeText',
+      helperText: '$lastReadingText$rangeText$consumptionText',
     );
   }
 

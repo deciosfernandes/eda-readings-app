@@ -373,47 +373,16 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Semantics(
-            label: 'dashboard.reading_history_item'.tr(args: [
-              item.valorContador1,
-              formattedDate,
-            ]),
+            label: _buildHistorySemantics(item, formattedDate),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               leading: CircleAvatar(
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: const Icon(
-                  Icons.flash_on,
-                ),
+                child: const Icon(Icons.flash_on),
               ),
-              title: Text(
-                '${item.valorContador1} kWh',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              title: Text('${item.valorContador1} kWh', style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(formattedDate),
-              trailing: item.valorContador2 != null
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'C2: ${item.valorContador2}',
-                        style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSecondaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    )
-                  : null,
+              trailing: _buildHistoryTrailing(context, item),
             ),
           ),
         );
@@ -441,4 +410,30 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 
   @override
   bool get wantKeepAlive => true;
+}
+
+String _buildHistorySemantics(LocalReadingHistory item, String formattedDate) {
+  final buffer = StringBuffer();
+  buffer.write('dashboard.reading_history_item'.tr(args: [item.valorContador1, formattedDate]));
+  if (item.valorContador2?.isNotEmpty == true) buffer.write(', C2: ${item.valorContador2}');
+  if (item.valorContador3?.isNotEmpty == true) buffer.write(', C3: ${item.valorContador3}');
+  return buffer.toString();
+}
+
+Widget? _buildHistoryTrailing(BuildContext context, LocalReadingHistory item) {
+  final badges = <Widget>[];
+  if (item.valorContador2?.isNotEmpty == true) badges.add(_buildBadge(context, 'C2', item.valorContador2!));
+  if (item.valorContador3?.isNotEmpty == true) {
+    if (badges.isNotEmpty) badges.add(const SizedBox(height: 4));
+    badges.add(_buildBadge(context, 'C3', item.valorContador3!));
+  }
+  return badges.isEmpty ? null : Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: badges);
+}
+
+Widget _buildBadge(BuildContext context, String label, String value) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(16)),
+    child: Text('$label: $value', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer, fontWeight: FontWeight.w600, fontSize: 12)),
+  );
 }

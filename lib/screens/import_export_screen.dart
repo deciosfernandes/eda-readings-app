@@ -45,7 +45,8 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
   String _buildCsv(List<LocalReadingHistory> readings, Map<String, String> profileNames) {
     final buffer = StringBuffer();
     buffer.writeln('import_export.csv_header'.tr());
-    // BOLT: Instantiate DateFormat once outside the loop to avoid redundant allocations.
+    // BOLT: Reuse DateFormat instance to avoid redundant object creation in the loop.
+    // This avoids O(N) object allocations, improving performance for large exports.
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
     for (final r in readings) {
       final profileName = r.profileId != null ? (profileNames[r.profileId] ?? '') : '';
