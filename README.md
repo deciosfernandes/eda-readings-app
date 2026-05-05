@@ -52,6 +52,24 @@ A modern, cross-platform Flutter application designed for customers of **Electri
     flutter run -d windows
     ```
 
+### 🌐 Developing for Web
+
+When developing for the Web, you must run a local CORS proxy to interact with the EDA API:
+
+```bash
+# In a separate terminal
+dart bin/proxy.dart
+
+# Run the app in Chrome
+flutter run -d chrome
+```
+
+## 🏗️ Core Architecture
+
+This project follows a service-oriented architecture with aggressive in-memory caching for performance.
+
+For a detailed breakdown of the folder structure, data flow, and development patterns, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
 ## 🌍 Localization
 
 Translations are managed via JSON files in `assets/translations/`.
