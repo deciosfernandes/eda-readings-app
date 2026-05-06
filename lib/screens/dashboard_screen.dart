@@ -125,6 +125,11 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // BOLT: Hoist Theme and ColorScheme lookups to avoid redundant InheritedWidget traversals.
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     final hasProfiles = _appState?.profiles.isNotEmpty ?? false;
     final activeProfileName = hasProfiles
         ? _appState!.profiles[_appState!.activeProfileIndex].name
@@ -166,13 +171,13 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                     Icon(
                       Icons.home_work_outlined,
                       size: 64,
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                      color: colorScheme.primary.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'dashboard.no_properties_desc'.tr(),
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: textTheme.titleLarge,
                     ),
                     const SizedBox(height: 24),
                     FilledButton.icon(
@@ -197,16 +202,13 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                         Icon(
                           Icons.history,
                           size: 64,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withValues(alpha: 0.5),
+                          color: colorScheme.primary.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'dashboard.no_history'.tr(),
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleLarge,
+                          style: textTheme.titleLarge,
                         ),
                       ],
                     ),
@@ -249,12 +251,17 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   }
 
   Widget _buildContent() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    // BOLT: Pre-calculate semi-transparent color once to avoid repeated calculations.
+    final primaryWithAlpha01 = colorScheme.primary.withValues(alpha: 0.1);
+
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
           Container(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            color: primaryWithAlpha01,
             child: Showcase(
               key: _tabsKey,
               title: 'tutorial.views_title'.tr(),
@@ -264,9 +271,9 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 ShowcaseView.get().completed(_tabsKey); // or next()
               },
               child: TabBar(
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                labelColor: Theme.of(context).colorScheme.onSurface,
-                unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                indicatorColor: colorScheme.primary,
+                labelColor: colorScheme.onSurface,
+                unselectedLabelColor: colorScheme.onSurfaceVariant,
                 onTap: (_) => HapticFeedback.selectionClick(),
                 tabs: [
                   Tab(
@@ -295,11 +302,17 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   Widget _buildChartTab() {
     if (_chartSpots.isEmpty) return const SizedBox();
 
+    final colorScheme = Theme.of(context).colorScheme;
+    // BOLT: Pre-calculate semi-transparent color once to avoid repeated calculations.
+    final primaryWithAlpha02 = colorScheme.primary.withValues(alpha: 0.2);
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: RepaintBoundary(
@@ -307,45 +320,43 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               LineChartData(
                 gridData: const FlGridData(show: true),
                 titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      int idx = value.toInt();
-                      if (idx < 0 || idx >= _chartLabels.length) {
-                        return const SizedBox();
-                      }
-                      // BOLT: Use pre-calculated labels to avoid repeated string formatting.
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(_chartLabels[idx]),
-                      );
-                    },
-                    reservedSize: 32,
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        int idx = value.toInt();
+                        if (idx < 0 || idx >= _chartLabels.length) {
+                          return const SizedBox();
+                        }
+                        // BOLT: Use pre-calculated labels to avoid repeated string formatting.
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(_chartLabels[idx]),
+                        );
+                      },
+                      reservedSize: 32,
+                    ),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              borderData: FlBorderData(show: true),
+                borderData: FlBorderData(show: true),
                 lineBarsData: [
                   LineChartBarData(
                     spots: _chartSpots,
                     isCurved: true,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: colorScheme.primary,
                     barWidth: 4,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.2),
+                      color: primaryWithAlpha02,
                     ),
                   ),
                 ],
@@ -358,6 +369,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   }
 
   Widget _buildHistoryTab() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       itemCount: _history.length,
@@ -369,20 +382,20 @@ class _DashboardScreenState extends State<_DashboardScreen> {
         return Card(
           elevation: 1,
           margin: const EdgeInsets.only(bottom: 12.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
           child: Semantics(
             label: _buildHistorySemantics(item, formattedDate),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                backgroundColor: colorScheme.primaryContainer,
                 child: const Icon(Icons.flash_on),
               ),
               title: Text('${item.valorContador1} kWh', style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(formattedDate),
-              trailing: _buildHistoryTrailing(context, item),
+              trailing: _buildHistoryTrailing(colorScheme, item),
             ),
           ),
         );
@@ -420,20 +433,30 @@ String _buildHistorySemantics(LocalReadingHistory item, String formattedDate) {
   return buffer.toString();
 }
 
-Widget? _buildHistoryTrailing(BuildContext context, LocalReadingHistory item) {
+Widget? _buildHistoryTrailing(ColorScheme colorScheme, LocalReadingHistory item) {
   final badges = <Widget>[];
-  if (item.valorContador2?.isNotEmpty == true) badges.add(_buildBadge(context, 'C2', item.valorContador2!));
+  if (item.valorContador2?.isNotEmpty == true) badges.add(_buildBadge(colorScheme, 'C2', item.valorContador2!));
   if (item.valorContador3?.isNotEmpty == true) {
     if (badges.isNotEmpty) badges.add(const SizedBox(height: 4));
-    badges.add(_buildBadge(context, 'C3', item.valorContador3!));
+    badges.add(_buildBadge(colorScheme, 'C3', item.valorContador3!));
   }
   return badges.isEmpty ? null : Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: badges);
 }
 
-Widget _buildBadge(BuildContext context, String label, String value) {
+Widget _buildBadge(ColorScheme colorScheme, String label, String value) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(16)),
-    child: Text('$label: $value', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer, fontWeight: FontWeight.w600, fontSize: 12)),
+    decoration: BoxDecoration(
+      color: colorScheme.secondaryContainer,
+      borderRadius: const BorderRadius.all(Radius.circular(16)),
+    ),
+    child: Text(
+      '$label: $value',
+      style: TextStyle(
+        color: colorScheme.onSecondaryContainer,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+    ),
   );
 }
