@@ -11,5 +11,9 @@ dart bin/proxy.dart
 ```
 The app is configured to use `http://localhost:8080/api/leitura` as the base URL when `kIsWeb` is true.
 
+### 🏛️ Architecture Documentation
+**Style Improvement**: Consolidating Persona-specific development patterns (BOLT, PALETTE, SENTINEL) into the central `ARCHITECTURE.md` file.
+**Impact**: Significantly improves developer onboarding and code consistency by providing a single source of truth for both structural overview and actionable best practices. This bridges the gap between high-level architecture and day-to-day coding standards.
+
 ---
 *Last Updated: 2025-05-14*
