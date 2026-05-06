@@ -173,11 +173,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final fields = _parseCsvLine(line);
         if (fields.length < 5) continue;
 
-        final profileName = fields[0];
+        // Sentinel: Security hardening for CSV import.
+        // Enforce length limits and validate numeric formats to prevent malformed data injection.
+        final profileName = fields[0].length > 50 ? fields[0].substring(0, 50) : fields[0];
         final dateStr = fields[1];
-        final c1 = fields[2];
-        final c2 = fields[3].isEmpty ? null : fields[3];
-        final c3 = fields[4].isEmpty ? null : fields[4];
+        final c1 = fields[2].length > 15 ? fields[2].substring(0, 15) : fields[2];
+        final c2Raw = fields[3].length > 15 ? fields[3].substring(0, 15) : fields[3];
+        final c2 = c2Raw.isEmpty ? null : c2Raw;
+        final c3Raw = fields[4].length > 15 ? fields[4].substring(0, 15) : fields[4];
+        final c3 = c3Raw.isEmpty ? null : c3Raw;
+
+        // Validate that readings are finite numbers if present
+        if (double.tryParse(c1.replaceAll(',', '.'))?.isFinite != true) continue;
+        if (c2 != null && double.tryParse(c2.replaceAll(',', '.'))?.isFinite != true) continue;
+        if (c3 != null && double.tryParse(c3.replaceAll(',', '.'))?.isFinite != true) continue;
 
         DateTime date;
         try {
