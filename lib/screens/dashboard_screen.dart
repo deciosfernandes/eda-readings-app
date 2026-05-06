@@ -208,6 +208,22 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
+                        const SizedBox(height: 24),
+                        FilledButton.icon(
+                          onPressed: () async {
+                            HapticFeedback.lightImpact();
+                            final result =
+                                await Navigator.pushNamed(context, '/reading');
+                            if (result == true) {
+                              _loadData();
+                            }
+                          },
+                          icon: const Icon(Icons.add),
+                          label: Text('dashboard.add_reading'.tr()),
+                          style: FilledButton.styleFrom(
+                            enabledMouseCursor: SystemMouseCursors.click,
+                          ),
+                        ),
                       ],
                     ),
                   ),
