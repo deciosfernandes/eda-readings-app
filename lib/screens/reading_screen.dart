@@ -181,10 +181,13 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       return 'login.error_empty'.tr();
     }
     final number = double.tryParse(value.replaceAll(',', '.'));
-    if (number == null) {
+
+    // Sentinel: Security check for finite numbers and non-negative values.
+    // double.tryParse accepts "NaN" and "Infinity" literals which could bypass logic.
+    if (number == null || !number.isFinite || number < 0) {
       return 'reading.error_not_number'.tr();
     }
-    
+
     if (min != null && max != null) {
       final minVal = double.tryParse(min.replaceAll(',', '.'));
       final maxVal = double.tryParse(max.replaceAll(',', '.'));
