@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -248,9 +249,12 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              'import_export.select_properties'.tr(),
-              style: Theme.of(context).textTheme.titleMedium,
+            child: Semantics(
+              header: true,
+              child: Text(
+                'import_export.select_properties'.tr(),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
           ),
           if (profiles.isEmpty)
@@ -277,6 +281,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                   return CheckboxListTile(
                     value: isSelected,
                     onChanged: (checked) {
+                      HapticFeedback.selectionClick();
                       setState(() {
                         if (checked == true) {
                           _selectedProfileIds.add(profile.id);

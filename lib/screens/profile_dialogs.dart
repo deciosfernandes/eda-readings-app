@@ -133,13 +133,20 @@ class ProfileDialogs {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'drawer.add_profile'.tr(),
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          'drawer.add_profile'.tr(),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: Icon(
+                          Icons.close,
+                          semanticLabel: 'common.cancel'.tr(),
+                        ),
                         tooltip: 'common.cancel'.tr(),
+                        isSelected: false,
                         onPressed: isLoading
                             ? null
                             : () {
@@ -193,8 +200,10 @@ class ProfileDialogs {
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onErrorContainer,
+                                    semanticLabel: 'common.close'.tr(),
                                   ),
                                   tooltip: 'common.close'.tr(),
+                                  isSelected: false,
                                   onPressed: () {
                                     HapticFeedback.selectionClick();
                                     setModalState(() => apiError = null);
@@ -228,8 +237,12 @@ class ProfileDialogs {
                         errorText: nameError,
                         suffixIcon: nameCtrl.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear),
+                                icon: Icon(
+                                  Icons.clear,
+                                  semanticLabel: 'common.clear'.tr(),
+                                ),
                                 tooltip: 'common.clear'.tr(),
+                                isSelected: false,
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
                                   nameCtrl.clear();
@@ -270,8 +283,12 @@ class ProfileDialogs {
                         errorText: cilError,
                         suffixIcon: cilCtrl.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear),
+                                icon: Icon(
+                                  Icons.clear,
+                                  semanticLabel: 'common.clear'.tr(),
+                                ),
                                 tooltip: 'common.clear'.tr(),
+                                isSelected: false,
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
                                   cilCtrl.clear();
@@ -313,8 +330,12 @@ class ProfileDialogs {
                         errorText: contractError,
                         suffixIcon: contractCtrl.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear),
+                                icon: Icon(
+                                  Icons.clear,
+                                  semanticLabel: 'common.clear'.tr(),
+                                ),
                                 tooltip: 'common.clear'.tr(),
+                                isSelected: false,
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
                                   contractCtrl.clear();
@@ -334,9 +355,12 @@ class ProfileDialogs {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    'drawer.select_icon'.tr(),
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      'drawer.select_icon'.tr(),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Scrollbar(
