@@ -17,3 +17,7 @@
 ## 2026-05-03 - [Reactive "Clear" Buttons in Forms]
 **Learning:** Conditional decorations like a "Clear" suffix icon in a 'TextFormField' do not automatically update as the user types unless the widget is rebuilt. Adding an 'onChanged' callback that triggers 'setState' is necessary to provide immediate visual feedback on the button's visibility.
 **Action:** Always pair conditional 'InputDecoration' elements with an 'onChanged' trigger to ensure the UI remains in sync with the field's state.
+
+## 2026-05-22 - [Semantic Headers for Navigation]
+**Learning:** Section headers in complex screens or dialogs are critical for screen reader users to navigate the content efficiently. Wrapping text-based headers in `Semantics(header: true)` allows assistive technologies to jump directly to logical sections.
+**Action:** Always identify logical section starts and wrap their titles in `Semantics(header: true)`.

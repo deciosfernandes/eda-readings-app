@@ -30,11 +30,14 @@ class AboutScreen extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(height: 24),
-            Text(
-              'app_name'.tr(),
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+            Semantics(
+              header: true,
+              child: Text(
+                'app_name'.tr(),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -52,11 +55,14 @@ class AboutScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Text(
-                    'about.open_source'.tr(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      'about.open_source'.tr(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

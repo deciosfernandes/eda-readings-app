@@ -183,6 +183,7 @@ void main() {
     testWidgets('renders app bar title', (WidgetTester tester) async {
       await EasyLocalization.ensureInitialized();
       await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
       expect(find.text('Settings'), findsOneWidget);
@@ -191,6 +192,7 @@ void main() {
     testWidgets('renders Appearance section header', (WidgetTester tester) async {
       await EasyLocalization.ensureInitialized();
       await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
       expect(find.text('Appearance'), findsOneWidget);
@@ -199,6 +201,7 @@ void main() {
     testWidgets('renders theme label', (WidgetTester tester) async {
       await EasyLocalization.ensureInitialized();
       await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
       expect(find.text('App Theme'), findsOneWidget);
@@ -207,6 +210,7 @@ void main() {
     testWidgets('renders About section header', (WidgetTester tester) async {
       await EasyLocalization.ensureInitialized();
       await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
       expect(find.text('About'), findsOneWidget);
@@ -215,6 +219,7 @@ void main() {
     testWidgets('renders copyright notice', (WidgetTester tester) async {
       await EasyLocalization.ensureInitialized();
       await tester.pumpWidget(_buildLocalizedApp(const SettingsScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Décio Fernandes'), findsOneWidget);
