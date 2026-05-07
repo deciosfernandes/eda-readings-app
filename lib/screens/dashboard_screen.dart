@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
+  // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
+  List<String> _historySemantics = [];
   bool _isLoading = true;
   AppStateData? _appState;
   // BOLT: Cache DateFormat instance to avoid repeated creation in ListView.builder
@@ -73,6 +75,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
       final reverseIdx = historyLength - 1 - i;
@@ -89,6 +92,13 @@ class _DashboardScreenState extends State<_DashboardScreen> {
 
       // History list uses newest-first order
       formattedDates[i] = _historyDateFormat.format(item.date);
+
+      // BOLT: Move accessibility label generation out of the build loop.
+      final buffer = StringBuffer();
+      buffer.write('dashboard.reading_history_item'.tr(args: [item.valorContador1, formattedDates[i]]));
+      if (item.valorContador2?.isNotEmpty == true) buffer.write(', C2: ${item.valorContador2}');
+      if (item.valorContador3?.isNotEmpty == true) buffer.write(', C3: ${item.valorContador3}');
+      semantics[i] = buffer.toString();
     }
 
     setState(() {
@@ -97,6 +107,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historySemantics = semantics;
       _isLoading = false;
     });
 
@@ -129,6 +140,11 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    // BOLT: Hoist alpha-blended color calculations to avoid repeated math in builders.
+    final primaryWithAlpha01 = colorScheme.primary.withValues(alpha: 0.1);
+    final primaryWithAlpha02 = colorScheme.primary.withValues(alpha: 0.2);
+    final primaryWithAlpha05 = colorScheme.primary.withValues(alpha: 0.5);
 
     final hasProfiles = _appState?.profiles.isNotEmpty ?? false;
     final activeProfileName = hasProfiles
@@ -171,7 +187,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                     Icon(
                       Icons.home_work_outlined,
                       size: 64,
-                      color: colorScheme.primary.withValues(alpha: 0.5),
+                      color: primaryWithAlpha05,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -202,7 +218,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                         Icon(
                           Icons.history,
                           size: 64,
-                          color: colorScheme.primary.withValues(alpha: 0.5),
+                          color: primaryWithAlpha05,
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -230,7 +246,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                     ),
                   ),
                 )
-              : _buildContent(),
+              : _buildContent(primaryWithAlpha01, primaryWithAlpha02),
       floatingActionButton: hasProfiles
           ? Showcase(
               key: _addReadingKey,
@@ -266,11 +282,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     );
   }
 
-  Widget _buildContent() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    // BOLT: Pre-calculate semi-transparent color once to avoid repeated calculations.
-    final primaryWithAlpha01 = colorScheme.primary.withValues(alpha: 0.1);
+  Widget _buildContent(Color primaryWithAlpha01, Color primaryWithAlpha02) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return DefaultTabController(
       length: 2,
@@ -306,7 +319,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
           ),
           Expanded(
             child: TabBarView(children: [
-              _KeepAliveWrapper(child: _buildChartTab()),
+              _KeepAliveWrapper(child: _buildChartTab(primaryWithAlpha02)),
               _KeepAliveWrapper(child: _buildHistoryTab()),
             ]),
           ),
@@ -315,12 +328,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     );
   }
 
-  Widget _buildChartTab() {
+  Widget _buildChartTab(Color primaryWithAlpha02) {
     if (_chartSpots.isEmpty) return const SizedBox();
 
     final colorScheme = Theme.of(context).colorScheme;
-    // BOLT: Pre-calculate semi-transparent color once to avoid repeated calculations.
-    final primaryWithAlpha02 = colorScheme.primary.withValues(alpha: 0.2);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -402,16 +413,20 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
           child: Semantics(
-            label: _buildHistorySemantics(item, formattedDate),
+            // BOLT: Use pre-calculated semantics label for O(1) build performance.
+            label: _historySemantics[index],
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               leading: CircleAvatar(
                 backgroundColor: colorScheme.primaryContainer,
                 child: const Icon(Icons.flash_on),
               ),
-              title: Text('${item.valorContador1} kWh', style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(
+                '${item.valorContador1} kWh',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               subtitle: Text(formattedDate),
-              trailing: _buildHistoryTrailing(colorScheme, item),
+              trailing: _HistoryTrailing(item: item),
             ),
           ),
         );
@@ -441,38 +456,60 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
   bool get wantKeepAlive => true;
 }
 
-String _buildHistorySemantics(LocalReadingHistory item, String formattedDate) {
-  final buffer = StringBuffer();
-  buffer.write('dashboard.reading_history_item'.tr(args: [item.valorContador1, formattedDate]));
-  if (item.valorContador2?.isNotEmpty == true) buffer.write(', C2: ${item.valorContador2}');
-  if (item.valorContador3?.isNotEmpty == true) buffer.write(', C3: ${item.valorContador3}');
-  return buffer.toString();
-}
+// BOLT: Refactor trailing badges into a StatelessWidget to optimize widget reconstruction and reconciliation.
+class _HistoryTrailing extends StatelessWidget {
+  final LocalReadingHistory item;
 
-Widget? _buildHistoryTrailing(ColorScheme colorScheme, LocalReadingHistory item) {
-  final badges = <Widget>[];
-  if (item.valorContador2?.isNotEmpty == true) badges.add(_buildBadge(colorScheme, 'C2', item.valorContador2!));
-  if (item.valorContador3?.isNotEmpty == true) {
-    if (badges.isNotEmpty) badges.add(const SizedBox(height: 4));
-    badges.add(_buildBadge(colorScheme, 'C3', item.valorContador3!));
+  const _HistoryTrailing({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final badges = <Widget>[];
+
+    if (item.valorContador2?.isNotEmpty == true) {
+      badges.add(_HistoryBadge(label: 'C2', value: item.valorContador2!));
+    }
+    if (item.valorContador3?.isNotEmpty == true) {
+      if (badges.isNotEmpty) {
+        badges.add(const SizedBox(height: 4));
+      }
+      badges.add(_HistoryBadge(label: 'C3', value: item.valorContador3!));
+    }
+
+    if (badges.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: badges,
+    );
   }
-  return badges.isEmpty ? null : Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: badges);
 }
 
-Widget _buildBadge(ColorScheme colorScheme, String label, String value) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: colorScheme.secondaryContainer,
-      borderRadius: const BorderRadius.all(Radius.circular(16)),
-    ),
-    child: Text(
-      '$label: $value',
-      style: TextStyle(
-        color: colorScheme.onSecondaryContainer,
-        fontWeight: FontWeight.w600,
-        fontSize: 12,
+class _HistoryBadge extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _HistoryBadge({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
-    ),
-  );
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          color: colorScheme.onSecondaryContainer,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
 }
