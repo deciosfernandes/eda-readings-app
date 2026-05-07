@@ -69,6 +69,29 @@ The **Ink** pattern prioritizes codebase readability and developer experience.
 - **Self-Documenting Code**: Professional tone and clear naming conventions.
 - **Architecture Mapping**: Maintaining documents like this one to reduce onboarding friction.
 
+### 🛡️ SENTINEL (Security)
+The **Sentinel** pattern focuses on application security, data protection, and robust input validation.
+- **Input Validation**: Strict enforcement of length limits and numeric format validation on all user-facing inputs.
+- **Secure Storage**: Using `flutter_secure_storage` for credentials and ensuring sensitive data is never exposed in logs or UI.
+- **PR Standards**: Security-focused PRs must follow the format `🛡️ Sentinel: [CRITICAL/HIGH/MEDIUM] Fix [vulnerability type]` and include detailed sections for Severity, Vulnerability, Impact, Fix, and Verification.
+
+## 🚀 Development Best Practices
+
+### ⚡ Performance (BOLT)
+- **Aggressive Caching**: Always check in-memory caches before performing disk I/O or platform channel calls.
+- **Loop Optimization**: Hoist expensive object instantiations (like `DateFormat`) out of loops.
+- **UI Responsiveness**: Pre-calculate derived data (like chart spots or formatted strings) during data loading rather than in the `build()` method.
+
+### 🎨 UX & Accessibility (PALETTE)
+- **Tactile Feedback**: Use `HapticFeedback.selectionClick()` or `lightImpact()` for interactive elements.
+- **Rich Semantics**: Provide descriptive `Semantics` labels that concatenate multiple fields to provide full context for screen readers.
+- **Consistent States**: Use themed empty states with icons and clear Calls to Action (CTAs).
+
+### 🛡️ Security (SENTINEL)
+- **Safe Parsing**: When parsing numeric input, always use `double.tryParse` and verify `number.isFinite` and `number >= 0`.
+- **Length Limits**: Enforce `maxLength` on all `TextField` and `TextFormField` components (e.g., 50 for names, 15 for readings).
+- **Error Privacy**: Never expose raw exception messages in the UI; use localized, generic error messages.
+
 ## 🌐 Development Environment
 
 ### Web Development (CORS Proxy)
