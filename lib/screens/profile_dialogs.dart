@@ -93,7 +93,21 @@ class ProfileDialogs {
 
               HapticFeedback.lightImpact();
 
-              if (context.mounted) Navigator.pop(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.white),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text('drawer.add_success'.tr())),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
               onSuccess();
 
               if (readingData.dataAconselhavelEnvio != null &&
@@ -231,7 +245,7 @@ class ProfileDialogs {
                       autofocus: true,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'drawer.profile_name'.tr(),
+                        labelText: '${'drawer.profile_name'.tr()} *',
                         hintText: 'login.profile_name_hint'.tr(),
                         prefixIcon: const Icon(Icons.label_outline),
                         errorText: nameError,
@@ -278,7 +292,7 @@ class ProfileDialogs {
                       textInputAction: TextInputAction.next,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
-                        labelText: 'drawer.cil'.tr(),
+                        labelText: '${'drawer.cil'.tr()} *',
                         prefixIcon: const Icon(Icons.badge_outlined),
                         errorText: cilError,
                         suffixIcon: cilCtrl.text.isNotEmpty
@@ -325,7 +339,7 @@ class ProfileDialogs {
                       onSubmitted: (_) => handleAdd(),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
-                        labelText: 'drawer.contract'.tr(),
+                        labelText: '${'drawer.contract'.tr()} *',
                         prefixIcon: const Icon(Icons.description_outlined),
                         errorText: contractError,
                         suffixIcon: contractCtrl.text.isNotEmpty

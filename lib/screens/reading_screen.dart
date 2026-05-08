@@ -240,7 +240,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(value),
+          Text('$value kWh'),
         ],
       ),
     );
@@ -322,8 +322,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                         },
                         onChanged: (_) => setState(() {}),
                         decoration: _buildInputDecoration(
-                          label: _currentData!.descContador1 ??
-                              'reading.counter_1'.tr(),
+                          label: '${_currentData!.descContador1 ?? 'reading.counter_1'.tr()} *',
                           lastValue: _currentData!.valorContador1,
                           minValue: _currentData!.valorMinContador1,
                           maxValue: _currentData!.valorMaxContador1,

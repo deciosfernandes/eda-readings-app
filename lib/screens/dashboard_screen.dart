@@ -197,7 +197,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                     ),
                     const SizedBox(height: 24),
                     FilledButton.icon(
-                      onPressed: _addProfile,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _addProfile();
+                      },
                       icon: const Icon(Icons.add),
                       label: Text('drawer.add_profile'.tr()),
                       style: FilledButton.styleFrom(

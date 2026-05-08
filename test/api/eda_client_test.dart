@@ -146,7 +146,7 @@ void main() {
     });
 
     test('sends PUT request with JSON body containing payload fields', () async {
-      http.BaseRequest? capturedRequest;
+      http.Request? capturedRequest;
       final mockClient = MockClient((request) async {
         capturedRequest = request;
         return http.Response('', 204);
