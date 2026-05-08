@@ -11,7 +11,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
-    // Initialize timezone data
+    // PALETTE: Initialize timezone data to ensure reading reminders are scheduled
+    // correctly according to the user's local time, providing a consistent UX.
     tz.initializeTimeZones();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -37,7 +38,8 @@ class NotificationService {
       },
     );
 
-    // Request permissions for Android 13+
+    // SENTINEL: Handle platform-specific permission requests (e.g., Android 13+)
+    // to ensure compliance with OS security models and respect user privacy preferences.
     if (Platform.isAndroid) {
       await _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()

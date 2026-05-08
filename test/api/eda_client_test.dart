@@ -146,7 +146,7 @@ void main() {
     });
 
     test('sends PUT request with JSON body containing payload fields', () async {
-      http.Request? capturedRequest;
+      http.BaseRequest? capturedRequest;
       final mockClient = MockClient((request) async {
         capturedRequest = request;
         return http.Response('', 204);
@@ -172,6 +172,7 @@ void main() {
 
       expect(capturedRequest, isNotNull);
       expect(capturedRequest!.method, 'PUT');
+      expect(capturedRequest, isA<http.Request>());
 
       final body = jsonDecode(capturedRequest!.body);
       expect(body['cil'], testCil);

@@ -15,6 +15,8 @@ class ThemeService extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
 
   Future<void> loadTheme() async {
+    // BOLT: Persistently load the user's theme preference from SharedPreferences
+    // to ensure the UI matches their previous choice immediately upon startup.
     final prefs = await SharedPreferences.getInstance();
     final index = prefs.getInt(_key);
     if (index != null && index >= 0 && index < ThemeMode.values.length) {
@@ -28,6 +30,8 @@ class ThemeService extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode == mode) return;
     _themeMode = mode;
+    // BOLT: Asynchronously persist the theme mode change to disk while
+    // notifying listeners to provide an immediate UI update.
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_key, mode.index);
     notifyListeners();
