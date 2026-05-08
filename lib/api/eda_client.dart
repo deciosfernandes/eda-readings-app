@@ -4,10 +4,12 @@ import 'package:http/http.dart' as http;
 import '../models/reading_models.dart';
 
 class EDAClient {
-  // Use local proxy on Web due to CORS. Otherwise use the real API directly.
-  static const String baseUrl = kIsWeb
-      ? 'http://localhost:8080/api/leitura'
-      : 'https://smile.eda.pt/api/leitura';
+  // BOLT: Pre-parse base URL into a static Uri to avoid redundant string parsing on every request.
+  static final Uri _baseUri = Uri.parse(
+    kIsWeb
+        ? 'http://localhost:8080/api/leitura'
+        : 'https://smile.eda.pt/api/leitura',
+  );
 
   // Sentinel: Enforce request timeouts to prevent resource exhaustion and hanging.
   static const Duration _timeout = Duration(seconds: 15);
@@ -27,7 +29,7 @@ class EDAClient {
 
   Future<ReadingResponse> getReading() async {
     // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
-    final uri = Uri.parse(baseUrl).replace(queryParameters: {
+    final uri = _baseUri.replace(queryParameters: {
       'cil': clientNumber,
       'contrato': contractNumber,
     });
@@ -46,7 +48,7 @@ class EDAClient {
 
   Future<void> sendReading(SendReadingPayload payload) async {
     // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
-    final uri = Uri.parse(baseUrl).replace(queryParameters: {
+    final uri = _baseUri.replace(queryParameters: {
       'cil': clientNumber,
     });
 
