@@ -12,3 +12,8 @@
 **Vulnerability:** API requests lacked timeouts, potentially leading to resource exhaustion, and URI construction used manual string interpolation.
 **Learning:** Default network clients may wait indefinitely for a response, which can be exploited to hang the application. Manual URI construction is error-prone and can lead to injection if not properly encoded.
 **Prevention:** Always apply a reasonable timeout (e.g., 15s) to all network requests and use built-in URI builders like `Uri.replace(queryParameters: ...)` to ensure safe encoding of parameters.
+
+## 2026-06-01 - Mitigating CSV Injection and Structural Corruption
+**Vulnerability:** CSV exports lacked double-quote escaping and protection against Formula Injection (DDE).
+**Learning:** Exporting user-controlled strings (like profile names) directly into a CSV without sanitization can lead to structural corruption if the string contains quotes. Furthermore, spreadsheet applications may execute malicious formulas if fields start with `=`, `+`, `-`, or `@`.
+**Prevention:** Centralize CSV field sanitization in a utility that handles both RFC 4180 quote escaping and formula injection protection (by prepending a single quote `'` to suspicious fields).

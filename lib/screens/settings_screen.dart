@@ -15,6 +15,7 @@ import '../models/user_profile.dart';
 import '../services/history_service.dart';
 import '../services/secure_storage_service.dart';
 import '../services/theme_service.dart';
+import '../utils/csv_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -74,13 +75,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     buffer.writeln('import_export.csv_header'.tr());
     // BOLT: Instantiate DateFormat once outside the loop to avoid redundant allocations.
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
+
     for (final r in readings) {
-      final profileName =
-          r.profileId != null ? (profileNames[r.profileId] ?? '') : '';
-      final date = dateFormat.format(r.date);
-      final c1 = r.valorContador1;
-      final c2 = r.valorContador2 ?? '';
-      final c3 = r.valorContador3 ?? '';
+      final profileName = CsvHelper.escapeField(
+        r.profileId != null ? (profileNames[r.profileId] ?? '') : '',
+      );
+      final date = CsvHelper.escapeField(dateFormat.format(r.date));
+      final c1 = CsvHelper.escapeField(r.valorContador1);
+      final c2 = CsvHelper.escapeField(r.valorContador2 ?? '');
+      final c3 = CsvHelper.escapeField(r.valorContador3 ?? '');
       buffer.writeln('"$profileName","$date","$c1","$c2","$c3"');
     }
     return buffer.toString();
