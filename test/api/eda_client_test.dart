@@ -174,7 +174,7 @@ void main() {
       expect(capturedRequest!.method, 'PUT');
       expect(capturedRequest, isA<http.Request>());
 
-      final body = jsonDecode(capturedRequest!.body);
+      final body = jsonDecode((capturedRequest as http.Request).body);
       expect(body['cil'], testCil);
       expect(body['cilToken'], 'tokXYZ');
       expect(body['valorContador1'], '999.00');

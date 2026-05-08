@@ -21,3 +21,7 @@
 ## 2026-02-14 - Pre-instantiation of Model Objects in Cache
 **Learning:** Caching raw JSON maps still incurs O(N) overhead for object instantiation on every read. Pre-instantiating model objects in the cache during the initial load (or upon write) moves this cost to the background/initialization phase, making UI builds O(1) relative to object creation.
 **Action:** In singleton services, prefer caching fully instantiated model objects. When returning lists from the cache, use `List.from()` to prevent external mutation of the internal cache list while keeping the O(1) benefit for the objects themselves.
+
+## 2026-02-15 - Static Uri Pre-parsing and Theme Hoisting
+**Learning:** Redundant `Uri.parse` calls in API clients and `Theme.of(context)` lookups in `ListView.builder` can cause measurable overhead on low-end devices and impact scroll smoothness. `Uri.parse` involves string parsing logic that is unnecessary for static base URLs.
+**Action:** Pre-parse static base URLs into `static final Uri` objects. Hoist `Theme.of(context)` and `ColorScheme` lookups to the top of build methods or pass them as parameters to sub-widgets to avoid repeated InheritedWidget traversals in high-frequency paths.

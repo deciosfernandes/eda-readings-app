@@ -246,7 +246,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                     ),
                   ),
                 )
-              : _buildContent(primaryWithAlpha01, primaryWithAlpha02),
+              : _buildContent(colorScheme, primaryWithAlpha01, primaryWithAlpha02),
       floatingActionButton: hasProfiles
           ? Showcase(
               key: _addReadingKey,
@@ -282,9 +282,11 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     );
   }
 
-  Widget _buildContent(Color primaryWithAlpha01, Color primaryWithAlpha02) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildContent(
+    ColorScheme colorScheme,
+    Color primaryWithAlpha01,
+    Color primaryWithAlpha02,
+  ) {
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -319,8 +321,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
           ),
           Expanded(
             child: TabBarView(children: [
-              _KeepAliveWrapper(child: _buildChartTab(primaryWithAlpha02)),
-              _KeepAliveWrapper(child: _buildHistoryTab()),
+              _KeepAliveWrapper(
+                child: _buildChartTab(colorScheme, primaryWithAlpha02),
+              ),
+              _KeepAliveWrapper(child: _buildHistoryTab(colorScheme)),
             ]),
           ),
         ],
@@ -328,10 +332,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     );
   }
 
-  Widget _buildChartTab(Color primaryWithAlpha02) {
+  Widget _buildChartTab(ColorScheme colorScheme, Color primaryWithAlpha02) {
     if (_chartSpots.isEmpty) return const SizedBox();
-
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -395,9 +397,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     );
   }
 
-  Widget _buildHistoryTab() {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildHistoryTab(ColorScheme colorScheme) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       itemCount: _history.length,
@@ -426,7 +426,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(formattedDate),
-              trailing: _HistoryTrailing(item: item),
+              trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
             ),
           ),
         );
@@ -459,21 +459,30 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 // BOLT: Refactor trailing badges into a StatelessWidget to optimize widget reconstruction and reconciliation.
 class _HistoryTrailing extends StatelessWidget {
   final LocalReadingHistory item;
+  final ColorScheme colorScheme;
 
-  const _HistoryTrailing({required this.item});
+  const _HistoryTrailing({required this.item, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
     final badges = <Widget>[];
 
     if (item.valorContador2?.isNotEmpty == true) {
-      badges.add(_HistoryBadge(label: 'C2', value: item.valorContador2!));
+      badges.add(_HistoryBadge(
+        label: 'C2',
+        value: item.valorContador2!,
+        colorScheme: colorScheme,
+      ));
     }
     if (item.valorContador3?.isNotEmpty == true) {
       if (badges.isNotEmpty) {
         badges.add(const SizedBox(height: 4));
       }
-      badges.add(_HistoryBadge(label: 'C3', value: item.valorContador3!));
+      badges.add(_HistoryBadge(
+        label: 'C3',
+        value: item.valorContador3!,
+        colorScheme: colorScheme,
+      ));
     }
 
     if (badges.isEmpty) return const SizedBox.shrink();
@@ -489,13 +498,16 @@ class _HistoryTrailing extends StatelessWidget {
 class _HistoryBadge extends StatelessWidget {
   final String label;
   final String value;
+  final ColorScheme colorScheme;
 
-  const _HistoryBadge({required this.label, required this.value});
+  const _HistoryBadge({
+    required this.label,
+    required this.value,
+    required this.colorScheme,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
