@@ -5,9 +5,13 @@ import '../models/reading_models.dart';
 
 class EDAClient {
   // Use local proxy on Web due to CORS. Otherwise use the real API directly.
-  static const String baseUrl = kIsWeb 
-      ? 'http://localhost:8080/api/leitura' 
+  static const String baseUrl = kIsWeb
+      ? 'http://localhost:8080/api/leitura'
       : 'https://smile.eda.pt/api/leitura';
+
+  // Sentinel: Enforce request timeouts to prevent resource exhaustion and hanging.
+  static const Duration _timeout = Duration(seconds: 15);
+
   final String clientNumber; // CIL
   final String contractNumber;
   final http.Client _client;
@@ -22,27 +26,42 @@ class EDAClient {
   }) : _client = client ?? _sharedClient;
 
   Future<ReadingResponse> getReading() async {
-    final uri = Uri.parse('$baseUrl?cil=${Uri.encodeComponent(clientNumber)}&contrato=${Uri.encodeComponent(contractNumber)}');
-    final response = await _client.get(uri);
+    // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
+    final uri = Uri.parse(baseUrl).replace(queryParameters: {
+      'cil': clientNumber,
+      'contrato': contractNumber,
+    });
+
+    final response = await _client.get(uri).timeout(_timeout);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return ReadingResponse.fromJson(data);
     } else {
-      throw Exception('Failed to get reading: ${response.statusCode} ${response.reasonPhrase}');
+      throw Exception(
+        'Failed to get reading: ${response.statusCode} ${response.reasonPhrase}',
+      );
     }
   }
 
   Future<void> sendReading(SendReadingPayload payload) async {
-    final uri = Uri.parse('$baseUrl?cil=${Uri.encodeComponent(clientNumber)}');
-    final response = await _client.put(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(payload.toJson()),
-    );
+    // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
+    final uri = Uri.parse(baseUrl).replace(queryParameters: {
+      'cil': clientNumber,
+    });
+
+    final response = await _client
+        .put(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(payload.toJson()),
+        )
+        .timeout(_timeout);
 
     if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Failed to send reading: ${response.statusCode} ${response.reasonPhrase}');
+      throw Exception(
+        'Failed to send reading: ${response.statusCode} ${response.reasonPhrase}',
+      );
     }
   }
 }
