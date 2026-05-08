@@ -61,6 +61,7 @@
         "cil": "CIL",
         "contract": "Nº Contrato",
         "add": "Adicionar",
+        "add_success": "Propriedade adicionada com sucesso!",
         "remove_profile_title": "Remover Propriedade?",
         "remove_profile_content": "Tem a certeza que deseja remover esta propriedade?",
         "remove": "Remover",
