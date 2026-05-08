@@ -11,8 +11,8 @@ The project follows a standard Flutter directory structure with a clear separati
 - **`lib/services/`**: Houses singleton services for shared logic:
   - `HistoryService`: Manages local reading history with in-memory caching.
   - `SecureStorageService`: Handles persistent storage of credentials and app state.
-  - `NotificationService`: Manages local reminders.
-  - `ThemeService`: Handles theme persistence and state.
+  - `NotificationService`: Manages local reminders with timezone-aware scheduling and platform-specific permission handling.
+  - `ThemeService`: Handles theme persistence and state, ensuring UI consistency across app sessions.
 - **`lib/screens/`**: UI components categorized by screen. Includes dialogs and drawer components.
 - **`lib/theme/`**: Centralized theme definitions (`AppTheme`).
 - **`assets/`**: Static resources like translations (JSON) and icons.
@@ -46,6 +46,12 @@ A singleton that manages the user's reading history. It implements a write-throu
 
 ### SecureStorageService
 Manages sensitive user information (CIL/Contract) and the overall `AppStateData` (profiles, active profile). It uses `flutter_secure_storage` for encryption-at-rest.
+
+### NotificationService
+Provides local notification scheduling for reading reminders. It uses `timezone` for accurate delivery and handles platform-specific permission requests (e.g., Android 13+) to respect user privacy and system security requirements.
+
+### ThemeService
+A `ChangeNotifier` that manages the application's `ThemeMode`. It persists user preferences to `SharedPreferences` to ensure visual consistency across application restarts.
 
 ## 🎭 Persona Patterns
 

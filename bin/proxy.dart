@@ -1,5 +1,17 @@
 import 'dart:io';
 
+/// INK: CORS Proxy Utility for Web Development
+///
+/// This utility is essential for bypassing Cross-Origin Resource Sharing (CORS)
+/// restrictions when running the application on a Web browser.
+///
+/// 🎯 Why: The EDA API does not include CORS headers, which causes browsers
+/// to block direct requests from `http://localhost`. This proxy acts as a
+/// bridge, adding the necessary headers.
+///
+/// 🛡️ SENTINEL: Security Note: This proxy is intended for LOCAL DEVELOPMENT ONLY.
+/// It binds to `loopbackIPv4` (127.0.0.1) and should never be exposed to the
+/// public internet or used in production environments.
 void main() async {
   var server = await HttpServer.bind(InternetAddress.loopbackIPv4, 8080);
   stdout.writeln('CORS Proxy Server running on http://${server.address.host}:${server.port}');
