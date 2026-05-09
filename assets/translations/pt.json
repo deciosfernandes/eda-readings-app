@@ -51,7 +51,8 @@
         "close": "Fechar",
         "loading": "A carregar...",
         "save": "Guardar",
-        "clear": "Limpar"
+        "clear": "Limpar",
+        "retry": "Tentar novamente"
     },
     "drawer": {
         "edit_user_name": "Editar Nome de Utilizador",

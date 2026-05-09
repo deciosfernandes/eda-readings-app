@@ -240,7 +240,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text('$value kWh'),
+          Text('$value ${'reading.unit_kwh'.tr()}'),
         ],
       ),
     );
@@ -290,10 +290,43 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('reading.title'.tr())),
-      body: _isLoading 
+      body: _isLoading
         ? const Center(child: CircularProgressIndicator())
-        : _error != null 
-          ? Center(child: Text(_error!))
+        : _error != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          _error = null;
+                          _isLoading = true;
+                        });
+                        _loadInitialData();
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: Text('common.retry'.tr()),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Form(
