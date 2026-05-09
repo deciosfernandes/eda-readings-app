@@ -1,13 +1,53 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:eda_app/models/reading_models.dart';
 import 'package:eda_app/services/history_service.dart';
 
+void _setupSecureStorageMock(Map<String, String?> storage) {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+    (MethodCall call) async {
+      switch (call.method) {
+        case 'write':
+          storage[call.arguments['key'] as String] =
+              call.arguments['value'] as String?;
+          return null;
+        case 'read':
+          return storage[call.arguments['key'] as String];
+        case 'delete':
+          storage.remove(call.arguments['key'] as String);
+          return null;
+        case 'deleteAll':
+          storage.clear();
+          return null;
+        default:
+          return null;
+      }
+    },
+  );
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  late Map<String, String?> mockSecureStorage;
+
   setUp(() {
+    mockSecureStorage = {};
+    _setupSecureStorageMock(mockSecureStorage);
     SharedPreferences.setMockInitialValues({});
     HistoryService().clearCache();
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+      null,
+    );
   });
 
   LocalReadingHistory makeReading({
@@ -53,6 +93,28 @@ void main() {
       final history = await HistoryService().getHistory();
       expect(history.length, 1);
       expect(history.first.valorContador1, '999.00');
+    });
+
+    test('migrates data from SharedPreferences to FlutterSecureStorage', () async {
+      final reading = makeReading(valor1: 'migration-test');
+      final encoded = json.encode(reading.toJson());
+
+      SharedPreferences.setMockInitialValues({
+        HistoryService.keyHistory: [encoded],
+      });
+
+      final service = HistoryService();
+      final history = await service.getHistory();
+
+      expect(history.length, 1);
+      expect(history.first.valorContador1, 'migration-test');
+
+      // Verify it was moved to secure storage
+      expect(mockSecureStorage.containsKey(HistoryService.keyHistory), isTrue);
+
+      // Verify it was removed from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(HistoryService.keyHistory), isFalse);
     });
   });
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reading_models.dart';
 
@@ -13,6 +14,7 @@ class HistoryService {
   HistoryService._internal();
 
   static const String keyHistory = 'readings_history';
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   // BOLT: Cache SharedPreferences instance to avoid repeated async lookups.
   SharedPreferences? _prefs;
@@ -36,11 +38,34 @@ class HistoryService {
   Future<void> _ensureHistoryLoaded() async {
     if (_cachedObjects != null) return;
 
-    _prefs ??= await SharedPreferences.getInstance();
-    _cachedStrings = _prefs!.getStringList(keyHistory) ?? [];
-
     _cachedObjects = [];
     _indexedObjects = {};
+
+    // SENTINEL: Use encrypted storage for reading history to prevent data leakage.
+    final secureData = await _secureStorage.read(key: keyHistory);
+
+    if (secureData != null) {
+      try {
+        final List<dynamic> decoded = json.decode(secureData);
+        _cachedStrings = decoded.cast<String>();
+      } catch (e) {
+        _cachedStrings = [];
+      }
+    } else {
+      // One-time migration from SharedPreferences to FlutterSecureStorage
+      _prefs ??= await SharedPreferences.getInstance();
+      _cachedStrings = _prefs!.getStringList(keyHistory);
+
+      if (_cachedStrings != null) {
+        await _secureStorage.write(
+          key: keyHistory,
+          value: json.encode(_cachedStrings),
+        );
+        await _prefs!.remove(keyHistory);
+      } else {
+        _cachedStrings = [];
+      }
+    }
 
     for (final item in _cachedStrings!) {
       try {
@@ -65,7 +90,10 @@ class HistoryService {
 
     final encoded = json.encode(reading.toJson());
     _cachedStrings!.insert(0, encoded);
-    await _prefs!.setStringList(keyHistory, _cachedStrings!);
+    await _secureStorage.write(
+      key: keyHistory,
+      value: json.encode(_cachedStrings),
+    );
   }
 
   Future<List<LocalReadingHistory>> getHistory({String? profileId}) async {
@@ -103,7 +131,10 @@ class HistoryService {
       _indexedObjects!.putIfAbsent(pId, () => []).insertAll(0, items);
     });
 
-    await _prefs!.setStringList(keyHistory, _cachedStrings!);
+    await _secureStorage.write(
+      key: keyHistory,
+      value: json.encode(_cachedStrings),
+    );
   }
 
   Future<List<LocalReadingHistory>> getHistoryForProfiles(
