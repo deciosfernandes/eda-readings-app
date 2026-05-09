@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -73,7 +74,10 @@ class AboutScreen extends StatelessWidget {
                         vertical: 12,
                       ),
                     ),
-                    onPressed: _launchURL,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _launchURL();
+                    },
                     icon: const Icon(Icons.bug_report_outlined),
                     label: Text('about.github_issue'.tr()),
                   ),

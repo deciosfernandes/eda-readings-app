@@ -51,7 +51,8 @@
         "close": "Close",
         "loading": "Loading...",
         "save": "Save",
-        "clear": "Clear"
+        "clear": "Clear",
+        "retry": "Retry"
     },
     "drawer": {
         "edit_user_name": "Edit User Name",
