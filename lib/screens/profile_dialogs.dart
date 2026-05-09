@@ -27,6 +27,7 @@ class ProfileDialogs {
     final nameCtrl = TextEditingController();
     final cilCtrl = TextEditingController();
     final contractCtrl = TextEditingController();
+    final scrollController = ScrollController();
     int selectedIconCode = Icons.home.codePoint;
 
     // Validation error state (null = no error)
@@ -36,15 +37,19 @@ class ProfileDialogs {
     String? apiError;
     bool isLoading = false;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final scrollController = ScrollController();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setModalState) {
+            // BOLT: Hoist Theme and ColorScheme lookups to avoid redundant InheritedWidget traversals.
+            final theme = Theme.of(context);
+            final colorScheme = theme.colorScheme;
+            final textTheme = theme.textTheme;
 
-          String? validateField(String value) {
+            String? validateField(String value) {
             return value.trim().isEmpty ? 'login.error_empty'.tr() : null;
           }
 
@@ -126,34 +131,34 @@ class ProfileDialogs {
             }
           }
 
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+            return Container(
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
-            ),
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              top: 24,
-              left: 24,
-              right: 24,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          'drawer.add_profile'.tr(),
-                          style: Theme.of(context).textTheme.titleLarge,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                top: 24,
+                left: 24,
+                right: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            'drawer.add_profile'.tr(),
+                            style: textTheme.titleLarge,
+                          ),
                         ),
-                      ),
                       IconButton(
                         icon: Icon(
                           Icons.close,
@@ -182,18 +187,14 @@ class ProfileDialogs {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .errorContainer,
+                              color: colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   Icons.error_outline,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onErrorContainer,
+                                  color: colorScheme.onErrorContainer,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 8),
@@ -201,9 +202,7 @@ class ProfileDialogs {
                                   child: Text(
                                     apiError!,
                                     style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onErrorContainer,
+                                      color: colorScheme.onErrorContainer,
                                     ),
                                   ),
                                 ),
@@ -211,9 +210,7 @@ class ProfileDialogs {
                                   icon: Icon(
                                     Icons.close,
                                     size: 16,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onErrorContainer,
+                                    color: colorScheme.onErrorContainer,
                                     semanticLabel: 'common.close'.tr(),
                                   ),
                                   tooltip: 'common.close'.tr(),
@@ -373,7 +370,7 @@ class ProfileDialogs {
                     header: true,
                     child: Text(
                       'drawer.select_icon'.tr(),
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: textTheme.titleMedium,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -411,14 +408,12 @@ class ProfileDialogs {
                                   width: 60,
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? Theme.of(
-                                            context,
-                                          ).colorScheme.primaryContainer
+                                        ? colorScheme.primaryContainer
                                         : Colors.transparent,
                                     border: Border.all(
                                       color: isSelected
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(context).dividerColor,
+                                          ? colorScheme.primary
+                                          : theme.dividerColor,
                                       width: 2,
                                     ),
                                     borderRadius: BorderRadius.circular(12),
@@ -426,7 +421,7 @@ class ProfileDialogs {
                                   child: Icon(
                                     icon,
                                     color: isSelected
-                                        ? Theme.of(context).colorScheme.primary
+                                        ? colorScheme.primary
                                         : null,
                                   ),
                                 ),
@@ -466,5 +461,12 @@ class ProfileDialogs {
         },
       ),
     );
+    } finally {
+      // BOLT: Ensure all controllers are disposed to prevent memory leaks.
+      nameCtrl.dispose();
+      cilCtrl.dispose();
+      contractCtrl.dispose();
+      scrollController.dispose();
+    }
   }
 }

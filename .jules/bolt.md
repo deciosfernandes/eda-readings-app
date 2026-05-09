@@ -25,3 +25,7 @@
 ## 2026-02-15 - Static Uri Pre-parsing and Theme Hoisting
 **Learning:** Redundant `Uri.parse` calls in API clients and `Theme.of(context)` lookups in `ListView.builder` can cause measurable overhead on low-end devices and impact scroll smoothness. `Uri.parse` involves string parsing logic that is unnecessary for static base URLs.
 **Action:** Pre-parse static base URLs into `static final Uri` objects. Hoist `Theme.of(context)` and `ColorScheme` lookups to the top of build methods or pass them as parameters to sub-widgets to avoid repeated InheritedWidget traversals in high-frequency paths.
+
+## 2026-02-16 - Resource Lifecycle Management in Async Builders
+**Learning:** Instantiating controllers (e.g., `ScrollController`) inside a `StatefulBuilder` or `builder` method of a modal causes redundant object creation on every rebuild (e.g., every keystroke) and prevents proper disposal, leading to memory leaks and erratic UI behavior (like scroll position loss).
+**Action:** Instantiate controllers outside the builder closure. Use a `try-finally` block around asynchronous UI calls like `showModalBottomSheet` to ensure `dispose()` is called on all local controllers regardless of how the modal is closed.
