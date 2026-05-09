@@ -78,9 +78,11 @@ Translations are managed via JSON files in `assets/translations/`.
 
 To update translations, simply edit these files and the app will reflect changes on next load.
 
-## 🤝 Contribution
+## 🤝 Contributing
 
-This project is open-source. For feature requests or bug reports, please open an issue in the repository.
+This project is open-source and follows a unique **Persona-based Development Workflow**.
+
+We welcome contributions! Please see our **[CONTRIBUTING.md](CONTRIBUTING.md)** for details on our development personas (BOLT, PALETTE, INK, SENTINEL), PR standards, and journaling requirements.
 
 ## 🔒 Privacy Policy
 
