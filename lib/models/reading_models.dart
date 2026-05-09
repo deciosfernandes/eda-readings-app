@@ -1,31 +1,66 @@
+/// Represents the response from the EDA API containing meter reading details.
 class ReadingResponse {
+  /// Local Identification Code (Código de Identificação Local).
   final String cil;
+
+  /// Security token associated with this CIL for submission.
   final String cilToken;
+
+  /// Expiration timestamp for the [cilToken].
   final int cilTokenExpires;
+
+  /// Meter serial number.
   final String serial;
+
+  /// Meter material/type code.
   final String material;
+
+  /// Electricity contract number.
   final String contrato;
+
+  /// Date of the most recent reading in the system.
   final String? data;
+
+  /// Recommended date for sending the next reading (data aconselhável de envio).
   final String? dataAconselhavelEnvio;
+
+  /// Origin of the last recorded reading (e.g., "Web", "App", "Estimativa").
   final String? origem;
+
+  /// The active electricity tariff (e.g., "Simples", "Bi-horária").
   final String? tarifa;
   
+  /// Description for Counter 1 (e.g., "Cheio" / Peak).
   final String? descContador1;
+  /// Current/Last value for Counter 1 in kWh.
   final String? valorContador1;
+  /// Minimum allowed value for the next Counter 1 reading.
   final String? valorMinContador1;
+  /// Maximum allowed value for the next Counter 1 reading.
   final String? valorMaxContador1;
+  /// Internal register code for Counter 1.
   final String? register1;
   
+  /// Description for Counter 2 (e.g., "Vazio" / Off-peak).
   final String? descContador2;
+  /// Current/Last value for Counter 2 in kWh.
   final String? valorContador2;
+  /// Minimum allowed value for the next Counter 2 reading.
   final String? valorMinContador2;
+  /// Maximum allowed value for the next Counter 2 reading.
   final String? valorMaxContador2;
+  /// Internal register code for Counter 2.
   final String? register2;
   
+  /// Description for Counter 3 (e.g., "Super Vazio").
   final String? descContador3;
+  /// Current/Last value for Counter 3 in kWh.
   final String? valorContador3;
+  /// Minimum allowed value for the next Counter 3 reading.
   final String? valorMinContador3;
+  /// Maximum allowed value for the next Counter 3 reading.
   final String? valorMaxContador3;
+  /// Internal register code for Counter 3.
   final String? register3;
 
   ReadingResponse({
@@ -87,17 +122,29 @@ class ReadingResponse {
   }
 }
 
+/// Data payload for submitting a new reading to the EDA API.
 class SendReadingPayload {
+  /// Local Identification Code (CIL).
   final String cil;
+  /// Security token obtained from [ReadingResponse].
   final String cilToken;
+  /// Expiration timestamp for the [cilToken].
   final int cilTokenExpires;
+  /// Meter serial number.
   final String serial;
+  /// Meter material code.
   final String material;
+  /// New value for Counter 1 in kWh.
   final String valorContador1;
+  /// Internal register code for Counter 1.
   final String register1;
+  /// Optional new value for Counter 2 in kWh.
   final String? valorContador2;
+  /// Optional internal register code for Counter 2.
   final String? register2;
+  /// Optional new value for Counter 3 in kWh.
   final String? valorContador3;
+  /// Optional internal register code for Counter 3.
   final String? register3;
 
   SendReadingPayload({
@@ -136,11 +183,17 @@ class SendReadingPayload {
   }
 }
 
+/// Represents a meter reading stored locally in the application's history.
 class LocalReadingHistory {
+  /// Date and time when the reading was recorded locally.
   final DateTime date;
+  /// Value for Counter 1 in kWh.
   final String valorContador1;
+  /// Optional value for Counter 2 in kWh.
   final String? valorContador2;
+  /// Optional value for Counter 3 in kWh.
   final String? valorContador3;
+  /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
   LocalReadingHistory({
