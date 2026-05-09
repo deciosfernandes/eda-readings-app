@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'theme/app_theme.dart';
+import 'services/history_service.dart';
 import 'services/notification_service.dart';
+import 'services/secure_storage_service.dart';
 import 'services/theme_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/reading_screen.dart';
@@ -18,6 +20,8 @@ void main() async {
     EasyLocalization.ensureInitialized(),
     NotificationService().initialize(),
     ThemeService().loadTheme(),
+    SecureStorageService().getAppState(),
+    HistoryService().getHistory(),
   ]);
 
   runApp(
