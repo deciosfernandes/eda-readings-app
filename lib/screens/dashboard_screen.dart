@@ -80,25 +80,29 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     for (int i = 0; i < historyLength; i++) {
       final reverseIdx = historyLength - 1 - i;
       final item = history[i];
-      final reverseItem = history[reverseIdx];
 
-      // Charts use chronological order (oldest to newest)
-      final valStr = reverseItem.valorContador1;
-      final val = double.tryParse(valStr) ?? 0.0;
-      spots[i] = FlSpot(i.toDouble(), val);
+      // BOLT: Extract properties once to minimize redundant property access and list lookups.
+      final date = item.date;
+      final c1 = item.valorContador1;
+      final c2 = item.valorContador2;
+      final c3 = item.valorContador3;
 
-      final date = reverseItem.date;
-      labels[i] = '${date.day}/${date.month}';
-
-      // History list uses newest-first order
-      formattedDates[i] = _historyDateFormat.format(item.date);
+      // History list uses newest-first order.
+      final formattedDate = _historyDateFormat.format(date);
+      formattedDates[i] = formattedDate;
 
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
-      buffer.write('dashboard.reading_history_item'.tr(args: [item.valorContador1, formattedDates[i]]));
-      if (item.valorContador2?.isNotEmpty == true) buffer.write(', C2: ${item.valorContador2}');
-      if (item.valorContador3?.isNotEmpty == true) buffer.write(', C3: ${item.valorContador3}');
+      buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
+      if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
+      if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
       semantics[i] = buffer.toString();
+
+      // Charts use chronological order (oldest to newest). We use the same 'item'
+      // but map it to 'reverseIdx' to eliminate the 'reverseItem' lookup and halving O(N) work.
+      final val = double.tryParse(c1) ?? 0.0;
+      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), val);
+      labels[reverseIdx] = '${date.day}/${date.month}';
     }
 
     setState(() {
