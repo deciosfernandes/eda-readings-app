@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/reading_models.dart';
 
+/// Client for interacting with the EDA (Electricidade dos Açores) API.
+///
+/// It handles retrieving the current meter state and submitting new readings.
 class EDAClient {
   // BOLT: Pre-parse base URL into a static Uri to avoid redundant string parsing on every request.
   static final Uri _baseUri = Uri.parse(
@@ -14,19 +17,31 @@ class EDAClient {
   // Sentinel: Enforce request timeouts to prevent resource exhaustion and hanging.
   static const Duration _timeout = Duration(seconds: 15);
 
-  final String clientNumber; // CIL
+  /// Local Identification Code (CIL) for the property.
+  final String clientNumber;
+
+  /// Electricity contract number.
   final String contractNumber;
+
   final http.Client _client;
 
   // BOLT: Shared client to enable connection pooling and reduce SSL handshake overhead.
   static final http.Client _sharedClient = http.Client();
 
+  /// Creates a new [EDAClient] instance.
+  ///
+  /// [clientNumber] (CIL) and [contractNumber] are required for most API operations.
   EDAClient({
     required this.clientNumber,
     required this.contractNumber,
     http.Client? client,
   }) : _client = client ?? _sharedClient;
 
+  /// Fetches the current meter status and reading metadata for the configured CIL/Contract.
+  ///
+  /// This must be called before [sendReading] to obtain a fresh [ReadingResponse.cilToken].
+  ///
+  /// Throws an [Exception] if the request fails or returns a non-200 status code.
   Future<ReadingResponse> getReading() async {
     // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
     final uri = _baseUri.replace(queryParameters: {
@@ -46,6 +61,11 @@ class EDAClient {
     }
   }
 
+  /// Submits a new meter reading to the EDA API.
+  ///
+  /// Requires a valid [payload] constructed with a token from [getReading].
+  ///
+  /// Throws an [Exception] if the submission fails.
   Future<void> sendReading(SendReadingPayload payload) async {
     // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
     final uri = _baseUri.replace(queryParameters: {
