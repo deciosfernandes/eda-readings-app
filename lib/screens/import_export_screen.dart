@@ -52,12 +52,15 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
 
     for (final r in readings) {
-      final profileName = CsvHelper.escapeField(r.profileId != null ? (profileNames[r.profileId] ?? '') : '');
-      final date = CsvHelper.escapeField(dateFormat.format(r.date));
-      final c1 = CsvHelper.escapeField(r.valorContador1);
-      final c2 = CsvHelper.escapeField(r.valorContador2 ?? '');
-      final c3 = CsvHelper.escapeField(r.valorContador3 ?? '');
-      buffer.writeln('"$profileName","$date","$c1","$c2","$c3"');
+      final profileName = r.profileId != null ? (profileNames[r.profileId] ?? '') : '';
+      final date = dateFormat.format(r.date);
+      buffer.writeln(CsvHelper.toCsvRow([
+        profileName,
+        date,
+        r.valorContador1,
+        r.valorContador2 ?? '',
+        r.valorContador3 ?? '',
+      ]));
     }
     return buffer.toString();
   }
@@ -145,18 +148,21 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         final line = lines[i].trim();
         if (line.isEmpty) continue;
 
-        final fields = _parseCsvLine(line);
+        final fields = CsvHelper.parseCsvLine(line);
         if (fields.length < 5) continue;
 
         // Sentinel: Security hardening for CSV import.
         // Enforce length limits and validate numeric formats to prevent malformed data injection.
         final rawName = CsvHelper.unescapeField(fields[0]);
         final profileName = rawName.length > 50 ? rawName.substring(0, 50) : rawName;
-        final dateStr = fields[1];
-        final c1 = fields[2].length > 15 ? fields[2].substring(0, 15) : fields[2];
-        final c2Raw = fields[3].length > 15 ? fields[3].substring(0, 15) : fields[3];
+        final dateStr = CsvHelper.unescapeField(fields[1]);
+        final rawC1 = CsvHelper.unescapeField(fields[2]);
+        final c1 = rawC1.length > 15 ? rawC1.substring(0, 15) : rawC1;
+        final rawC2 = CsvHelper.unescapeField(fields[3]);
+        final c2Raw = rawC2.length > 15 ? rawC2.substring(0, 15) : rawC2;
         final c2 = c2Raw.isEmpty ? null : c2Raw;
-        final c3Raw = fields[4].length > 15 ? fields[4].substring(0, 15) : fields[4];
+        final rawC3 = CsvHelper.unescapeField(fields[4]);
+        final c3Raw = rawC3.length > 15 ? rawC3.substring(0, 15) : rawC3;
         final c3 = c3Raw.isEmpty ? null : c3Raw;
 
         // Validate that readings are finite numbers if present
@@ -209,30 +215,6 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     }
   }
 
-  List<String> _parseCsvLine(String line) {
-    final result = <String>[];
-    final buffer = StringBuffer();
-    bool inQuotes = false;
-
-    for (int i = 0; i < line.length; i++) {
-      final char = line[i];
-      if (char == '"') {
-        if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
-          buffer.write('"');
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char == ',' && !inQuotes) {
-        result.add(buffer.toString());
-        buffer.clear();
-      } else {
-        buffer.write(char);
-      }
-    }
-    result.add(buffer.toString());
-    return result;
-  }
 
   @override
   Widget build(BuildContext context) {
