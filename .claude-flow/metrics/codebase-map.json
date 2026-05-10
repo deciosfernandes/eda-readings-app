@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-05-10T16:16:40.038Z",
+  "projectRoot": "C:\\Users\\Decio\\Documents\\Solvit\\eda-readings-app",
+  "structure": {
+    "hasPackageJson": false,
+    "hasTsConfig": false,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1778429800038
+}

@@ -7,7 +7,8 @@
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Decio\\\\Documents\\\\Solvit\\\\eda-readings-app\" -File | Where-Object { $_.Extension -in \".yaml\", \".yml\", \".sh\", \".ps1\" -or $_.Name -eq \"Makefile\" })",
       "Bash(flutter analyze *)",
       "Bash(git stash *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
