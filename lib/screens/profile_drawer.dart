@@ -132,6 +132,10 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
       widget.appState.profiles.removeAt(index);
       if (widget.appState.profiles.isEmpty) {
         widget.appState.activeProfileIndex = 0;
+      } else if (index <= widget.appState.activeProfileIndex) {
+        widget.appState.activeProfileIndex =
+            (widget.appState.activeProfileIndex - 1)
+                .clamp(0, widget.appState.profiles.length - 1);
       }
       await SecureStorageService().saveAppState(widget.appState);
       widget.onProfileChanged();

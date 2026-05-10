@@ -151,8 +151,11 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final primaryWithAlpha05 = colorScheme.primary.withValues(alpha: 0.5);
 
     final hasProfiles = _appState?.profiles.isNotEmpty ?? false;
+    final safeIndex = hasProfiles
+        ? _appState!.activeProfileIndex.clamp(0, _appState!.profiles.length - 1)
+        : 0;
     final activeProfileName = hasProfiles
-        ? _appState!.profiles[_appState!.activeProfileIndex].name
+        ? _appState!.profiles[safeIndex].name
         : 'dashboard.no_properties'.tr();
 
     return Scaffold(

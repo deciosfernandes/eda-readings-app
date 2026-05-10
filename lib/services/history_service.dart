@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -27,16 +28,23 @@ class HistoryService {
   // BOLT: Profile-based index using instantiated objects to achieve O(1) lookup.
   Map<String?, List<LocalReadingHistory>>? _indexedObjects;
 
+  // Guard: ensure concurrent callers await the same in-flight load future.
+  Completer<void>? _loadCompleter;
+
   @visibleForTesting
   void clearCache() {
     _prefs = null;
     _cachedStrings = null;
     _cachedObjects = null;
     _indexedObjects = null;
+    _loadCompleter = null;
   }
 
   Future<void> _ensureHistoryLoaded() async {
     if (_cachedObjects != null) return;
+    if (_loadCompleter != null) return _loadCompleter!.future;
+
+    _loadCompleter = Completer<void>();
 
     _cachedObjects = [];
     _indexedObjects = {};
@@ -77,6 +85,8 @@ class HistoryService {
         // Skip malformed entries
       }
     }
+
+    _loadCompleter!.complete();
   }
 
   Future<void> addReading(LocalReadingHistory reading) async {

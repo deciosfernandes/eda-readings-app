@@ -206,11 +206,11 @@ class LocalReadingHistory {
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
-      date: DateTime.parse(json['date']),
-      valorContador1: json['valorContador1'],
-      valorContador2: json['valorContador2'],
-      valorContador3: json['valorContador3'],
-      profileId: json['profileId'],
+      date: DateTime.parse(json['date'] as String),
+      valorContador1: json['valorContador1'] as String? ?? '0',
+      valorContador2: json['valorContador2'] as String?,
+      valorContador3: json['valorContador3'] as String?,
+      profileId: json['profileId'] as String?,
     );
   }
 

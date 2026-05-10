@@ -6,12 +6,16 @@ import 'package:url_launcher/url_launcher.dart';
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
-  Future<void> _launchURL() async {
+  Future<void> _launchURL(BuildContext context) async {
     final Uri url = Uri.parse(
       'https://github.com/deciosfernandes/eda-readings-app/issues',
     );
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('about.github_issue'.tr())),
+        );
+      }
     }
   }
 
@@ -74,9 +78,9 @@ class AboutScreen extends StatelessWidget {
                         vertical: 12,
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       HapticFeedback.lightImpact();
-                      _launchURL();
+                      await _launchURL(context);
                     },
                     icon: const Icon(Icons.bug_report_outlined),
                     label: Text('about.github_issue'.tr()),

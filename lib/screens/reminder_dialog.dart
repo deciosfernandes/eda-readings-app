@@ -5,19 +5,27 @@ import '../services/notification_service.dart';
 class ReminderDialog extends StatelessWidget {
   final String profileName;
   final String dateString; // YYYY-MM-DD
+  final int notificationId;
 
   const ReminderDialog({
     super.key,
     required this.profileName,
     required this.dateString,
+    required this.notificationId,
   });
 
-  static Future<void> show(BuildContext context, String profileName, String dateString) async {
+  static Future<void> show(
+    BuildContext context,
+    String profileName,
+    String dateString, {
+    required int notificationId,
+  }) async {
     return showDialog(
       context: context,
       builder: (context) => ReminderDialog(
         profileName: profileName,
         dateString: dateString,
+        notificationId: notificationId,
       ),
     );
   }
@@ -45,9 +53,12 @@ class ReminderDialog extends StatelessWidget {
             if (parsedDate != null) {
               try {
                 await NotificationService().scheduleReadingReminder(
-                  id: profileName.hashCode,
+                  id: notificationId,
                   profileName: profileName,
                   scheduledDate: parsedDate,
+                  title: 'notification.title'.tr(),
+                  body: 'notification.message'
+                      .tr(args: [profileName, displayDate]),
                 );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

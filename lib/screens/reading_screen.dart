@@ -46,16 +46,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     ShowcaseView.register();
     _loadInitialData();
     
-    // Add logic for validation on blur
-    _f1FocusNode.addListener(_onFocusChange);
-    _f2FocusNode.addListener(_onFocusChange);
-    _f3FocusNode.addListener(_onFocusChange);
-  }
-
-  void _onFocusChange() {
-    if (!_f1FocusNode.hasFocus || !_f2FocusNode.hasFocus || !_f3FocusNode.hasFocus) {
-       _formKey.currentState?.validate();
-    }
+    _f1FocusNode.addListener(() { if (!_f1FocusNode.hasFocus) _formKey.currentState?.validate(); });
+    _f2FocusNode.addListener(() { if (!_f2FocusNode.hasFocus) _formKey.currentState?.validate(); });
+    _f3FocusNode.addListener(() { if (!_f3FocusNode.hasFocus) _formKey.currentState?.validate(); });
   }
 
   @override
@@ -122,6 +115,14 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      // Re-fetch if token expired
+      if (DateTime.fromMillisecondsSinceEpoch(_currentData!.cilTokenExpires)
+          .isBefore(DateTime.now())) {
+        final refreshed = await _client!.getReading();
+        if (!mounted) return;
+        setState(() => _currentData = refreshed);
+      }
+
       final payload = SendReadingPayload(
         cil: _currentData!.cil,
         cilToken: _currentData!.cilToken,
@@ -143,8 +144,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       await HistoryService().addReading(LocalReadingHistory(
         date: DateTime.now(),
         valorContador1: _c1Controller.text.trim(),
-        valorContador2: _c2Controller.text.trim(),
-        valorContador3: _c3Controller.text.trim(),
+        valorContador2: _c2Controller.text.trim().isEmpty ? null : _c2Controller.text.trim(),
+        valorContador3: _c3Controller.text.trim().isEmpty ? null : _c3Controller.text.trim(),
         profileId: _activeProfileId,
       ));
 

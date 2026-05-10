@@ -42,10 +42,10 @@ class ContractProfile {
 
   factory ContractProfile.fromJson(Map<String, dynamic> json) =>
       ContractProfile(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        cil: json['cil'] as String,
-        contract: json['contract'] as String,
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        cil: json['cil'] as String? ?? '',
+        contract: json['contract'] as String? ?? '',
         iconCodePoint: json['iconCodePoint'] as int? ?? 0xe318,
       );
 }

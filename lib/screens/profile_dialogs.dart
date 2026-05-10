@@ -117,10 +117,13 @@ class ProfileDialogs {
 
               if (readingData.dataAconselhavelEnvio != null &&
                   context.mounted) {
+                final newProfile = appState.profiles.last;
+                final stableId = int.parse(newProfile.id) % 0x7FFFFFFF;
                 await ReminderDialog.show(
                   context,
                   name,
                   readingData.dataAconselhavelEnvio!,
+                  notificationId: stableId,
                 );
               }
             } catch (e) {

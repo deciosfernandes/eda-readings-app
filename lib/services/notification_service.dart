@@ -51,6 +51,8 @@ class NotificationService {
     required int id,
     required String profileName,
     required DateTime scheduledDate,
+    String? title,
+    String? body,
   }) async {
     // Set time to 9:00 AM on the target date
     final scheduledDateTime = DateTime(
@@ -69,8 +71,8 @@ class NotificationService {
 
     await _notificationsPlugin.zonedSchedule(
       id,
-      'Lembrete de Leitura - $profileName',
-      'Está na altura de enviar a leitura da sua eletricidade para a EDA.',
+      title ?? 'Lembrete de Leitura - $profileName',
+      body ?? 'Está na altura de enviar a leitura da sua eletricidade para a EDA.',
       tzDate,
       const NotificationDetails(
         android: AndroidNotificationDetails(

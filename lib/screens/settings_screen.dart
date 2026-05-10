@@ -63,7 +63,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'https://github.com/deciosfernandes/eda-readings-app/issues',
     );
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('about.github_issue'.tr())),
+        );
+      }
     }
   }
 
@@ -178,7 +182,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         // Sentinel: Security hardening for CSV import.
         // Enforce length limits and validate numeric formats to prevent malformed data injection.
-        final profileName = fields[0].length > 50 ? fields[0].substring(0, 50) : fields[0];
+        final rawName = CsvHelper.unescapeField(fields[0]);
+        final profileName = rawName.length > 50 ? rawName.substring(0, 50) : rawName;
         final dateStr = fields[1];
         final c1 = fields[2].length > 15 ? fields[2].substring(0, 15) : fields[2];
         final c2Raw = fields[3].length > 15 ? fields[3].substring(0, 15) : fields[3];
@@ -468,7 +473,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: Text('about.github_issue'.tr()),
             trailing: const Icon(Icons.open_in_new),
             mouseCursor: SystemMouseCursors.click,
-            onTap: _launchURL,
+            onTap: () async => _launchURL(),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
