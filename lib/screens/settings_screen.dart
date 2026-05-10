@@ -315,9 +315,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               },
               items: ThemeMode.values.map((mode) {
+                IconData icon;
+                switch (mode) {
+                  case ThemeMode.light:
+                    icon = Icons.light_mode_outlined;
+                    break;
+                  case ThemeMode.dark:
+                    icon = Icons.dark_mode_outlined;
+                    break;
+                  case ThemeMode.system:
+                    icon = Icons.settings_brightness_outlined;
+                    break;
+                }
                 return DropdownMenuItem<ThemeMode>(
                   value: mode,
-                  child: Text(_themeModeLabel(mode)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 20),
+                      const SizedBox(width: 12),
+                      Text(_themeModeLabel(mode)),
+                    ],
+                  ),
                 );
               }).toList(),
             ),

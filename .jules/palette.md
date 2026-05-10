@@ -21,3 +21,7 @@
 ## 2026-05-22 - [Semantic Headers for Navigation]
 **Learning:** Section headers in complex screens or dialogs are critical for screen reader users to navigate the content efficiently. Wrapping text-based headers in `Semantics(header: true)` allows assistive technologies to jump directly to logical sections.
 **Action:** Always identify logical section starts and wrap their titles in `Semantics(header: true)`.
+
+## 2026-05-24 - [Enhancing selection clarity with icons]
+**Learning:** Adding visual icons to choice-heavy widgets like 'DropdownButton' (e.g., for theme selection) significantly improves the speed at which users can identify and select their preferred option compared to text-only labels.
+**Action:** Always consider pairing text labels with semantic icons in selection components to provide immediate visual context.
