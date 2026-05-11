@@ -27,5 +27,9 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Style Improvement**: Adding a "Domain Glossary" to `ARCHITECTURE.md` to define foreign-language (Portuguese) business terms.
 **Impact**: Bridges the language gap for non-Portuguese speakers and ensures consistent terminology across the codebase. It significantly reduces the cognitive load when working with API-driven models that reflect regional business logic.
 
+### 📤 Data Portability Documentation
+**Style Improvement**: Documenting the CSV schema and the security rationale behind formula injection protection.
+**Impact**: Reduces confusion for developers implementing or debugging import/export logic. By explicitly stating the 5-column format and the SENTINEL security requirements (e.g., single-quote prepending), we ensure that future changes maintain data integrity and user safety.
+
 ---
-*Last Updated: 2025-05-15*
+*Last Updated: 2026-05-11*

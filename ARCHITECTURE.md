@@ -73,6 +73,18 @@ Provides local notification scheduling for reading reminders. It uses `timezone`
 ### ThemeService
 A `ChangeNotifier` that manages the application's `ThemeMode`. It persists user preferences to `SharedPreferences` to ensure visual consistency across application restarts.
 
+## 📤 Data Portability
+
+The application allows users to import and export their reading history via CSV files. This logic is centralized in the `ImportExportScreen` and `SettingsScreen`, utilizing the `CsvHelper` utility.
+
+### Security (SENTINEL)
+- **Formula Injection Protection**: All exported fields starting with trigger characters (`=`, `+`, `-`, `@`) are prepended with a single quote (`'`) to prevent execution in spreadsheet software.
+- **Input Validation**: During import, the application enforces length limits (e.g., 50 for names, 15 for readings) and validates numeric formats before insertion into local storage.
+
+### Performance (BOLT)
+- **Lookup Optimization**: During import, a lookup map of property names to IDs is pre-calculated to achieve O(1) matching, replacing O(N) list scans.
+- **Batch Processing**: Multiple readings are added to the `HistoryService` in a single atomic update to minimize secure storage I/O overhead.
+
 ## 🎭 Persona Patterns
 
 Development is guided by three core "Personas," each focusing on a specific dimension of software quality. You will find comments tagged with these personas throughout the codebase.
@@ -135,4 +147,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2025-05-15*
+*Last Updated: 2026-05-11*
