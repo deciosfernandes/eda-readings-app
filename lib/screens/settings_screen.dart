@@ -174,6 +174,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       int importCount = 0;
       final newReadings = <LocalReadingHistory>[];
+
+      // BOLT: Create a lookup map to avoid O(N) list scans inside the loop.
+      // This achieves O(1) profile lookup by name during import.
+      final profileNameToId = {
+        for (final p in _appState?.profiles ?? <ContractProfile>[]) p.name: p.id
+      };
+
       for (int i = 1; i < lines.length; i++) {
         final line = lines[i].trim();
         if (line.isEmpty) continue;
@@ -209,10 +216,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (c1.isEmpty) continue;
 
-        final matchingProfiles =
-            _appState?.profiles.where((p) => p.name == profileName) ?? [];
-        final matchingProfile =
-            matchingProfiles.isEmpty ? null : matchingProfiles.first;
+        // BOLT: Use O(1) map lookup instead of O(N) where() filter.
+        final matchingProfileId = profileNameToId[profileName];
 
         newReadings.add(
           LocalReadingHistory(
@@ -220,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             valorContador1: c1,
             valorContador2: c2,
             valorContador3: c3,
-            profileId: matchingProfile?.id,
+            profileId: matchingProfileId,
           ),
         );
         importCount++;
