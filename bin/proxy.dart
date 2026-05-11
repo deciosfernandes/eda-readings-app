@@ -31,11 +31,12 @@ void main() async {
     }
 
     try {
-      // Forward request to the actual EDA API
-      var url = Uri.parse('https://smile.eda.pt${request.uri.path}');
-      if (request.uri.hasQuery) {
-        url = Uri.parse('$url?${request.uri.query}');
-      }
+      // Sentinel: Use Uri.https for safer URI construction, mitigating injection risks.
+      final url = Uri.https(
+        'smile.eda.pt',
+        request.uri.path,
+        request.uri.queryParametersAll,
+      );
 
       var proxyRequest = await client.openUrl(request.method, url);
 

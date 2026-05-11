@@ -172,10 +172,19 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         final c3Raw = rawC3.length > 15 ? rawC3.substring(0, 15) : rawC3;
         final c3 = c3Raw.isEmpty ? null : c3Raw;
 
-        // Validate that readings are finite numbers if present
-        if (double.tryParse(c1.replaceAll(',', '.'))?.isFinite != true) continue;
-        if (c2 != null && double.tryParse(c2.replaceAll(',', '.'))?.isFinite != true) continue;
-        if (c3 != null && double.tryParse(c3.replaceAll(',', '.'))?.isFinite != true) continue;
+        // Sentinel: Validate that readings are finite non-negative numbers if present.
+        final n1 = double.tryParse(c1.replaceAll(',', '.'));
+        if (n1 == null || !n1.isFinite || n1 < 0) continue;
+
+        if (c2 != null) {
+          final n2 = double.tryParse(c2.replaceAll(',', '.'));
+          if (n2 == null || !n2.isFinite || n2 < 0) continue;
+        }
+
+        if (c3 != null) {
+          final n3 = double.tryParse(c3.replaceAll(',', '.'));
+          if (n3 == null || !n3.isFinite || n3 < 0) continue;
+        }
 
         DateTime date;
         try {
