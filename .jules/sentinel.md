@@ -17,3 +17,8 @@
 **Vulnerability:** CSV processing was decentralized, leading to inconsistent escaping and missing protection against whitespace-triggered formula injection.
 **Learning:** Formula injection can be triggered by characters like tabs or newlines if they are at the start of a field. Decentralized parsing logic (duplicated `_parseCsvLine` in multiple screens) increases the risk of security regressions when updates are needed.
 **Prevention:** Centralize all CSV formatting and parsing in a single utility (`CsvHelper`). Use the single quote (`'`) as a robust escape character for all spreadsheet-sensitive prefixes (`=`, `+`, `-`, `@`, `\t`, `\r`, `\n`, `'`) and ensure unescaping logic supports both new and legacy (tab) prefixes.
+
+## 2026-06-03 - Hardening Proxy URI Construction and CSV Numeric Validation
+**Vulnerability:** The development proxy used manual string interpolation for URI forwarding, and CSV imports lacked non-negative validation for numeric readings.
+**Learning:** Manual URI construction using string interpolation or `Uri.parse` with concatenated strings is fragile and can lead to injection if request components aren't properly encoded. Similarly, CSV validation must match UI validation (e.g., non-negative checks) to ensure data consistency and prevent logic bypasses.
+**Prevention:** Always use structured URI constructors like `Uri.https` with `queryParametersAll` to ensure robust encoding of all URI components. Synchronize validation logic between manual inputs and automated imports (e.g., CSV) to enforce uniform security and data integrity constraints.
