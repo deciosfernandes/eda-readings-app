@@ -163,10 +163,11 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
               children: [
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: _pickImage,
-                    child: Tooltip(
-                      message: 'drawer.change_picture'.tr(),
+                  child: Tooltip(
+                    message: 'drawer.change_picture'.tr(),
+                    child: InkWell(
+                      onTap: _pickImage,
+                      borderRadius: BorderRadius.circular(40),
                       child: Semantics(
                         label: 'drawer.change_picture'.tr(),
                         button: true,
@@ -211,25 +212,36 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      widget.appState.userProfile.name,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSecondary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                InkWell(
+                  onTap: _editUserName,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Tooltip(
+                    message: 'drawer.edit_name_tooltip'.tr(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.appState.userProfile.name,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSecondary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.edit,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSecondary.withValues(alpha: 0.7),
+                            semanticLabel: 'drawer.edit_name_tooltip'.tr(),
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'drawer.edit_name_tooltip'.tr(),
-                      icon: Icon(Icons.edit, size: 16, color: Theme.of(context).colorScheme.onSecondary.withValues(alpha: 0.7)),
-                      onPressed: _editUserName,
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.only(left: 8),
-                    )
-                  ],
+                  ),
                 ),
               ],
             ),
