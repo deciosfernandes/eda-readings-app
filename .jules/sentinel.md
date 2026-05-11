@@ -13,7 +13,7 @@
 **Learning:** Default network clients may wait indefinitely for a response, which can be exploited to hang the application. Manual URI construction is error-prone and can lead to injection if not properly encoded.
 **Prevention:** Always apply a reasonable timeout (e.g., 15s) to all network requests and use built-in URI builders like `Uri.replace(queryParameters: ...)` to ensure safe encoding of parameters.
 
-## 2026-06-01 - Mitigating CSV Injection and Structural Corruption
-**Vulnerability:** CSV exports lacked double-quote escaping and protection against Formula Injection (DDE).
-**Learning:** Exporting user-controlled strings (like profile names) directly into a CSV without sanitization can lead to structural corruption if the string contains quotes. Furthermore, spreadsheet applications may execute malicious formulas if fields start with `=`, `+`, `-`, or `@`.
-**Prevention:** Centralize CSV field sanitization in a utility that handles both RFC 4180 quote escaping and formula injection protection (by prepending a single quote `'` to suspicious fields).
+## 2026-06-01 - Hardening CSV Security and Centralizing Processing Logic
+**Vulnerability:** CSV processing was decentralized, leading to inconsistent escaping and missing protection against whitespace-triggered formula injection.
+**Learning:** Formula injection can be triggered by characters like tabs or newlines if they are at the start of a field. Decentralized parsing logic (duplicated `_parseCsvLine` in multiple screens) increases the risk of security regressions when updates are needed.
+**Prevention:** Centralize all CSV formatting and parsing in a single utility (`CsvHelper`). Use the single quote (`'`) as a robust escape character for all spreadsheet-sensitive prefixes (`=`, `+`, `-`, `@`, `\t`, `\r`, `\n`, `'`) and ensure unescaping logic supports both new and legacy (tab) prefixes.

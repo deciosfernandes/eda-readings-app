@@ -1,33 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:eda_app/utils/csv_helper.dart';
 
-List<String> parseCsvLine(String line) {
-  final result = <String>[];
-  final buffer = StringBuffer();
-  bool inQuotes = false;
-
-  for (int i = 0; i < line.length; i++) {
-    final char = line[i];
-    if (char == '"') {
-      if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
-        buffer.write('"');
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char == ',' && !inQuotes) {
-      result.add(buffer.toString());
-      buffer.clear();
-    } else {
-      buffer.write(char);
-    }
-  }
-  result.add(buffer.toString());
-  return result;
-}
-
 void main() {
-  group('CsvHelper.escapeField', () {
+  group('CsvHelper', () {
     test('escapeField should double-quote double-quotes', () {
       expect(CsvHelper.escapeField('Normal'), 'Normal');
       expect(CsvHelper.escapeField('With "quotes"'), 'With ""quotes""');
@@ -39,6 +14,10 @@ void main() {
       expect(CsvHelper.escapeField('+123'), "'+123");
       expect(CsvHelper.escapeField('-50'), "'-50");
       expect(CsvHelper.escapeField('@hint'), "'@hint");
+      expect(CsvHelper.escapeField('\tTab'), "'\tTab");
+      expect(CsvHelper.escapeField('\rCR'), "'\rCR");
+      expect(CsvHelper.escapeField('\nLF'), "'\nLF");
+      expect(CsvHelper.escapeField("'Quote"), "''Quote");
     });
 
     test('escapeField should handle combined quotes and formula injection', () {
@@ -47,7 +26,7 @@ void main() {
 
     test('parseCsvLine should handle escaped quotes correctly', () {
       final line = '"Profile with ""quotes""","2024-01-01","123","",""';
-      final fields = parseCsvLine(line);
+      final fields = CsvHelper.parseCsvLine(line);
 
       expect(fields[0], 'Profile with "quotes"');
       expect(fields[1], '2024-01-01');
@@ -56,20 +35,23 @@ void main() {
 
     test('CSV row generation and parsing roundtrip', () {
       final profileName = 'House "Main"';
-      final escaped = CsvHelper.escapeField(profileName);
-      final csvLine = '"$escaped","date","100","",""';
+      final csvLine = CsvHelper.toCsvRow([profileName, 'date', '100', '', '']);
 
-      final parsed = parseCsvLine(csvLine);
+      final parsed = CsvHelper.parseCsvLine(csvLine);
       expect(parsed[0], profileName);
     });
 
-    test('Formula injection roundtrip', () {
+    test('Formula injection roundtrip and unescaping', () {
       final malicious = '=1+1';
-      final escaped = CsvHelper.escapeField(malicious);
-      final csvLine = '"$escaped"';
+      final csvLine = CsvHelper.toCsvRow([malicious]);
 
-      final parsed = parseCsvLine(csvLine);
+      final parsed = CsvHelper.parseCsvLine(csvLine);
       expect(parsed[0], "'$malicious");
+      expect(CsvHelper.unescapeField(parsed[0]), malicious);
+    });
+
+    test('Legacy unescaping support (Tab)', () {
+      expect(CsvHelper.unescapeField('\t=1+1'), '=1+1');
     });
   });
 }
