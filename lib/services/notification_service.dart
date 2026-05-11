@@ -3,6 +3,13 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'dart:io' show Platform;
 
+/// Service for managing local notifications and reading reminders.
+///
+/// **PALETTE**: Enhances UX by providing timely reminders based on the
+/// recommended submission windows provided by the EDA API.
+///
+/// **SENTINEL**: Respects user privacy by handling platform-specific
+/// permission requests (e.g., Android 13+) during initialization.
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -10,6 +17,9 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  /// Initializes the notification plugin and configures platform-specific settings.
+  ///
+  /// **SENTINEL**: Requests necessary permissions on Android 13+ devices.
   Future<void> initialize() async {
     // PALETTE: Initialize timezone data to ensure reading reminders are scheduled
     // correctly according to the user's local time, providing a consistent UX.
@@ -47,6 +57,10 @@ class NotificationService {
     }
   }
 
+  /// Schedules a local notification reminder for a specific date.
+  ///
+  /// The reminder is automatically set to 9:00 AM on the [scheduledDate].
+  /// [id] should be a unique identifier for the notification to avoid collisions.
   Future<void> scheduleReadingReminder({
     required int id,
     required String profileName,

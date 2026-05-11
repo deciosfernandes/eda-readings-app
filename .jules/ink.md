@@ -19,5 +19,13 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Style Improvement**: Explicitly documenting API-driven models that use domain-specific or foreign language field names (e.g., Portuguese fields from the EDA API).
 **Impact**: Reduces "Time to First Hello World" by demystifying opaque terms like `CIL`, `Contrato`, and counter identifiers (`valorContador1`, `register1`). It ensures developers understand the data contract without needing to reverse-engineer the API or use external translation tools.
 
+### 🏷️ Persona-Tagged Documentation
+**Style Improvement**: Explicitly tagging DartDoc comments with development personas (**BOLT**, **PALETTE**, **SENTINEL**).
+**Impact**: Reinforces the project's quality standards directly in the code. It helps developers understand the *intent* behind specific implementation choices (e.g., why a certain cache is used or why a field is validated) without leaving the IDE.
+
+### 📖 Centralized Domain Glossary
+**Style Improvement**: Adding a "Domain Glossary" to `ARCHITECTURE.md` to define foreign-language (Portuguese) business terms.
+**Impact**: Bridges the language gap for non-Portuguese speakers and ensures consistent terminology across the codebase. It significantly reduces the cognitive load when working with API-driven models that reflect regional business logic.
+
 ---
 *Last Updated: 2025-05-15*

@@ -2,6 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_profile.dart';
 
+/// Service for managing sensitive application state and credentials.
+///
+/// **BOLT**: Caches the `AppStateData` and tutorial flags in-memory to prevent
+/// redundant asynchronous platform channel calls during the build cycle.
+///
+/// **SENTINEL**: Uses `FlutterSecureStorage` to ensure that all data, including
+/// profile credentials and local history pointers, are encrypted at rest.
 class SecureStorageService {
   static final SecureStorageService _instance = SecureStorageService._internal();
 
@@ -18,6 +25,9 @@ class SecureStorageService {
   @visibleForTesting
   AppStateData? cachedState;
 
+  /// Retrieves the full application state.
+  ///
+  /// **BOLT**: Returns the `cachedState` if already loaded, avoiding disk I/O.
   Future<AppStateData> getAppState() async {
     // BOLT: Return cached state if available to improve performance.
     if (cachedState != null) return cachedState!;
@@ -39,6 +49,7 @@ class SecureStorageService {
     return cachedState!;
   }
 
+  /// Persists the [data] to secure storage and updates the in-memory cache.
   Future<void> saveAppState(AppStateData data) async {
     // BOLT: Update cache when saving to storage.
     cachedState = data;

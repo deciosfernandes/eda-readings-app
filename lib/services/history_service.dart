@@ -5,6 +5,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reading_models.dart';
 
+/// Service responsible for managing the user's meter reading history.
+///
+/// **BOLT**: This service implements a write-through cache pattern. It maintains
+/// an in-memory list and a profile-based index for O(1) lookups during UI rendering.
+///
+/// **SENTINEL**: To prevent local data leakage, all history data is encrypted
+/// at rest using `FlutterSecureStorage`.
 class HistoryService {
   static final HistoryService _instance = HistoryService._internal();
 
@@ -89,6 +96,10 @@ class HistoryService {
     _loadCompleter!.complete();
   }
 
+  /// Adds a single [reading] to the history and persists it.
+  ///
+  /// **BOLT**: The reading is prepended to the in-memory cache to ensure it
+  /// appears immediately on the dashboard without a full reload.
   Future<void> addReading(LocalReadingHistory reading) async {
     await _ensureHistoryLoaded();
 
@@ -106,6 +117,10 @@ class HistoryService {
     );
   }
 
+  /// Retrieves the reading history, optionally filtered by [profileId].
+  ///
+  /// **BOLT**: Uses a profile-indexed map to achieve O(1) lookup when a
+  /// specific profile is requested.
   Future<List<LocalReadingHistory>> getHistory({String? profileId}) async {
     await _ensureHistoryLoaded();
 
@@ -119,6 +134,10 @@ class HistoryService {
     return List.from(_cachedObjects!);
   }
 
+  /// Batch adds multiple [readings] to the history.
+  ///
+  /// **BOLT**: Performs a single atomic update to the persistent storage after
+  /// updating all in-memory caches to minimize I/O overhead during large imports.
   Future<void> addReadings(List<LocalReadingHistory> readings) async {
     if (readings.isEmpty) return;
     await _ensureHistoryLoaded();
