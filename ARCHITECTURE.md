@@ -19,6 +19,26 @@ The project follows a standard Flutter directory structure with a clear separati
 - **`bin/`**: Server-side or utility scripts (e.g., `proxy.dart` for Web development).
 - **`test/`**: Comprehensive test suite for APIs, models, and services.
 
+## 📖 Domain Glossary (EDA)
+
+Understanding these terms is critical for working with the EDA API and the application's data models.
+
+| Term | Full Name (Portuguese) | Description |
+| :--- | :--- | :--- |
+| **CIL** | Código de Identificação Local | Local Identification Code. A unique 10-digit number identifying a specific electricity delivery point. |
+| **Contrato** | Número de Contrato | Electricity Contract Number. Associated with the CIL for authentication and billing. |
+| **Ponta** | Horas de Ponta | Peak hours. High consumption period with higher costs. |
+| **Cheias** | Horas de Cheias | Intermediate consumption period. |
+| **Vazio** | Horas de Vazio | Off-peak hours. Lower consumption period (usually at night) with lower costs. |
+| **Super Vazio** | Horas de Super Vazio | Deep off-peak. Even lower costs during specific night windows. |
+
+### Meter Registers (Contadores)
+The application handles up to three registers depending on the user's tariff:
+
+1.  **`valorContador1` (Register 1)**: Primary reading. In a *Simples* tariff, this is the only counter. In *Bi-horária* or *Tri-horária*, it typically maps to the **Peak/Intermediate (Ponta/Cheias)** period.
+2.  **`valorContador2` (Register 2)**: Used in *Bi-horária* and *Tri-horária* tariffs. Typically maps to the **Off-peak (Vazio)** period.
+3.  **`valorContador3` (Register 3)**: Used exclusively in *Tri-horária* tariffs. Typically maps to the **Super Off-peak (Super Vazio)** period.
+
 ## 🔄 Data Flow
 
 The following diagram illustrates how data flows from the API to the UI, highlighting the role of services and caching.
@@ -115,4 +135,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2025-05-14*
+*Last Updated: 2025-05-15*

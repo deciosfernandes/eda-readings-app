@@ -1,6 +1,10 @@
 /// Represents the response from the EDA API containing meter reading details.
+///
+/// This model encapsulates all metadata and current counter values for a specific
+/// delivery point (CIL), including the security token required for submissions.
 class ReadingResponse {
   /// Local Identification Code (Código de Identificação Local).
+  /// A unique 10-digit number identifying the delivery point.
   final String cil;
 
   /// Security token associated with this CIL for submission.
@@ -15,30 +19,31 @@ class ReadingResponse {
   /// Meter material/type code.
   final String material;
 
-  /// Electricity contract number.
+  /// Electricity contract number associated with the [cil].
   final String contrato;
 
-  /// Date of the most recent reading in the system.
+  /// Date of the most recent reading recorded in the EDA system.
   final String? data;
 
-  /// Recommended date for sending the next reading (data aconselhável de envio).
+  /// Recommended date for sending the next reading ("data aconselhável de envio").
+  /// The application uses this to schedule local reminders via the `NotificationService`.
   final String? dataAconselhavelEnvio;
 
   /// Origin of the last recorded reading (e.g., "Web", "App", "Estimativa").
   final String? origem;
 
-  /// The active electricity tariff (e.g., "Simples", "Bi-horária").
+  /// The active electricity tariff (e.g., "Simples", "Bi-horária", "Tri-horária").
   final String? tarifa;
   
-  /// Description for Counter 1 (e.g., "Cheio" / Peak).
+  /// Description for Counter 1 (e.g., "Ponta", "Cheias", or "Simples").
   final String? descContador1;
-  /// Current/Last value for Counter 1 in kWh.
+  /// Current/Last value for Counter 1 in kWh as recorded in the system.
   final String? valorContador1;
-  /// Minimum allowed value for the next Counter 1 reading.
+  /// Minimum allowed value for the next Counter 1 reading to prevent submission errors.
   final String? valorMinContador1;
-  /// Maximum allowed value for the next Counter 1 reading.
+  /// Maximum allowed value for the next Counter 1 reading to prevent submission errors.
   final String? valorMaxContador1;
-  /// Internal register code for Counter 1.
+  /// Internal register code for Counter 1, required for the [SendReadingPayload].
   final String? register1;
   
   /// Description for Counter 2 (e.g., "Vazio" / Off-peak).
@@ -184,6 +189,9 @@ class SendReadingPayload {
 }
 
 /// Represents a meter reading stored locally in the application's history.
+///
+/// **BOLT**: These objects are cached in-memory by the `HistoryService` and
+/// indexed by `profileId` to allow O(1) lookups during dashboard rendering.
 class LocalReadingHistory {
   /// Date and time when the reading was recorded locally.
   final DateTime date;
