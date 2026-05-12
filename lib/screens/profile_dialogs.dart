@@ -407,7 +407,8 @@ class ProfileDialogs {
                                       },
                                 mouseCursor: SystemMouseCursors.click,
                                 borderRadius: BorderRadius.circular(12),
-                                child: Container(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
                                   width: 60,
                                   decoration: BoxDecoration(
                                     color: isSelected
@@ -421,11 +422,26 @@ class ProfileDialogs {
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Icon(
-                                    icon,
-                                    color: isSelected
-                                        ? colorScheme.primary
-                                        : null,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Icon(
+                                        icon,
+                                        color: isSelected
+                                            ? colorScheme.primary
+                                            : null,
+                                      ),
+                                      if (isSelected)
+                                        Positioned(
+                                          top: 4,
+                                          right: 4,
+                                          child: Icon(
+                                            Icons.check_circle,
+                                            size: 16,
+                                            color: colorScheme.primary,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ),
