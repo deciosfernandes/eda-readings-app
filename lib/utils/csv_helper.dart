@@ -26,7 +26,11 @@ class CsvHelper {
   static String escapeField(String value) {
     if (value.isEmpty) return '';
 
-    if (_triggerChars.contains(value[0])) {
+    // SENTINEL: Detect trigger characters even if preceded by whitespace to prevent bypasses.
+    // We check both the original first character and the first non-whitespace character.
+    final trimmed = value.trimLeft();
+    if (_triggerChars.contains(value[0]) ||
+        (trimmed.isNotEmpty && _triggerChars.contains(trimmed[0]))) {
       value = "'$value";
     }
 

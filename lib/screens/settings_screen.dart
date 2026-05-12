@@ -157,8 +157,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
-      final bytes = result.files.first.bytes;
-      final path = result.files.first.path;
+      final file = result.files.first;
+
+      // SENTINEL: Enforce a 1MB file size limit to prevent client-side DoS or memory issues.
+      if (file.size > 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('File too large. Maximum size is 1MB.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        if (mounted) setState(() => _isImporting = false);
+        return;
+      }
+
+      final bytes = file.bytes;
+      final path = file.path;
 
       String content;
       if (bytes != null) {
