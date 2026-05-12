@@ -27,9 +27,9 @@ class HistoryService {
   // BOLT: Cache SharedPreferences instance to avoid repeated async lookups.
   SharedPreferences? _prefs;
 
-  // BOLT: Cache raw strings and fully instantiated objects to avoid redundant disk I/O,
+  // BOLT: Cache raw maps and fully instantiated objects to avoid redundant disk I/O,
   // JSON decoding, and O(N) object creation on every UI rebuild.
-  List<String>? _cachedStrings;
+  List<Map<String, dynamic>>? _cachedMaps;
   List<LocalReadingHistory>? _cachedObjects;
 
   // BOLT: Profile-based index using instantiated objects to achieve O(1) lookup.
@@ -41,7 +41,7 @@ class HistoryService {
   @visibleForTesting
   void clearCache() {
     _prefs = null;
-    _cachedStrings = null;
+    _cachedMaps = null;
     _cachedObjects = null;
     _indexedObjects = null;
     _loadCompleter = null;
@@ -62,29 +62,34 @@ class HistoryService {
     if (secureData != null) {
       try {
         final List<dynamic> decoded = json.decode(secureData);
-        _cachedStrings = decoded.cast<String>();
+        // BOLT: Support both legacy double-encoded (List<String>) and optimized single-encoded (List<Map>) formats.
+        if (decoded.isNotEmpty && decoded.first is String) {
+          _cachedMaps = decoded.map((s) => json.decode(s as String) as Map<String, dynamic>).toList();
+        } else {
+          _cachedMaps = decoded.cast<Map<String, dynamic>>();
+        }
       } catch (e) {
-        _cachedStrings = [];
+        _cachedMaps = [];
       }
     } else {
       // One-time migration from SharedPreferences to FlutterSecureStorage
       _prefs ??= await SharedPreferences.getInstance();
-      _cachedStrings = _prefs!.getStringList(keyHistory);
+      final legacyStrings = _prefs!.getStringList(keyHistory);
 
-      if (_cachedStrings != null) {
+      if (legacyStrings != null) {
+        _cachedMaps = legacyStrings.map((s) => json.decode(s) as Map<String, dynamic>).toList();
         await _secureStorage.write(
           key: keyHistory,
-          value: json.encode(_cachedStrings),
+          value: json.encode(_cachedMaps),
         );
         await _prefs!.remove(keyHistory);
       } else {
-        _cachedStrings = [];
+        _cachedMaps = [];
       }
     }
 
-    for (final item in _cachedStrings!) {
+    for (final map in _cachedMaps!) {
       try {
-        final map = json.decode(item) as Map<String, dynamic>;
         final reading = LocalReadingHistory.fromJson(map);
         _cachedObjects!.add(reading);
         _indexedObjects!.putIfAbsent(reading.profileId, () => []).add(reading);
@@ -109,11 +114,11 @@ class HistoryService {
         .putIfAbsent(reading.profileId, () => [])
         .insert(0, reading);
 
-    final encoded = json.encode(reading.toJson());
-    _cachedStrings!.insert(0, encoded);
+    // BOLT: Update raw map cache and persist using single-level JSON encoding.
+    _cachedMaps!.insert(0, reading.toJson());
     await _secureStorage.write(
       key: keyHistory,
-      value: json.encode(_cachedStrings),
+      value: json.encode(_cachedMaps),
     );
   }
 
@@ -142,11 +147,11 @@ class HistoryService {
     if (readings.isEmpty) return;
     await _ensureHistoryLoaded();
 
-    final newEncoded = readings.map((r) => json.encode(r.toJson())).toList();
+    final newMaps = readings.map((r) => r.toJson()).toList();
 
     // BOLT: Batch update all caches and persistent storage.
     _cachedObjects!.insertAll(0, readings);
-    _cachedStrings!.insertAll(0, newEncoded);
+    _cachedMaps!.insertAll(0, newMaps);
 
     // Group new items by profile to maintain relative order during prepending.
     final groupedByProfile = <String?, List<LocalReadingHistory>>{};
@@ -160,9 +165,10 @@ class HistoryService {
       _indexedObjects!.putIfAbsent(pId, () => []).insertAll(0, items);
     });
 
+    // BOLT: Persist data using single-level JSON encoding.
     await _secureStorage.write(
       key: keyHistory,
-      value: json.encode(_cachedStrings),
+      value: json.encode(_cachedMaps),
     );
   }
 
