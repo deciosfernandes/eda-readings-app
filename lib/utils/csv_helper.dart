@@ -1,8 +1,27 @@
+/// Utility class for handling CSV data transformation and security.
+///
+/// **INK**: This helper centralizes the logic for escaping and unescaping CSV fields,
+/// ensuring a consistent format across the application's import and export features.
+///
+/// **Data Format Specification:**
+/// The application uses a standard 5-column CSV format for reading history:
+/// 1. `Property`: The name of the [ContractProfile].
+/// 2. `Date`: The timestamp of the reading (`yyyy-MM-dd HH:mm:ss`).
+/// 3. `Counter 1`: Primary reading value in kWh.
+/// 4. `Counter 2`: (Optional) Off-peak reading value.
+/// 5. `Counter 3`: (Optional) Super Off-peak reading value.
+///
+/// **SENTINEL**: To protect users from malicious data, this class implements
+/// CSV Formula Injection protection. Any field starting with a trigger character
+/// is prepended with a single quote (') to ensure it is treated as literal text
+/// by spreadsheet applications like Excel or Google Sheets.
 class CsvHelper {
-  /// SENTINEL: Trigger characters that can be used for CSV formula injection.
+  /// SENTINEL: Characters that trigger CSV Formula Injection in spreadsheet software.
+  /// Prepending a single quote (') to fields starting with these characters prevents
+  /// them from being executed as formulas when the CSV is opened.
   static const _triggerChars = {'=', '+', '-', '@', '\t', '\r', '\n', '\''};
 
-  /// SENTINEL: Protect against CSV formula injection by prepending a single quote.
+  /// SENTINEL: Protects against CSV formula injection by prepending a single quote.
   /// Trigger characters include =, +, -, @, \t, \r, \n, and '.
   static String escapeField(String value) {
     if (value.isEmpty) return '';
