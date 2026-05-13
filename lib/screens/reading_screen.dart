@@ -40,15 +40,62 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   EDAClient? _client;
   String? _activeProfileId;
 
+  // BOLT: Pre-calculated UI strings to avoid redundant tr() lookups and string
+  // parsing during high-frequency input loops (setState on every keystroke).
+  late String _appBarTitle;
+  late String _retryButtonLabel;
+  late String _submitButtonLabel;
+  late String _unitLabel;
+  late String _clearTooltip;
+  late String _input1TutorialTitle;
+  late String _input1TutorialDesc;
+  late String _submitTutorialTitle;
+  late String _submitTutorialDesc;
+  late String _submitTooltip;
+
+  // Pre-parsed comparison values for consumption calculation.
+  double? _lastVal1;
+  double? _lastVal2;
+  double? _lastVal3;
+
+  // Pre-calculated helper text bases (last reading + range).
+  String _helperBase1 = '';
+  String _helperBase2 = '';
+  String _helperBase3 = '';
+
+  // Pre-calculated field labels.
+  String _label1 = '';
+  String _label2 = '';
+  String _label3 = '';
+
   @override
   void initState() {
     super.initState();
     ShowcaseView.register();
+
+    // BOLT: Initialize static UI strings early so they are available even if loading fails.
+    _appBarTitle = 'reading.title'.tr();
+    _retryButtonLabel = 'common.retry'.tr();
+    _submitButtonLabel = 'reading.submit'.tr();
+    _unitLabel = 'reading.unit_kwh'.tr();
+    _clearTooltip = 'common.clear'.tr();
+    _input1TutorialTitle = 'tutorial.reading_input_title'.tr();
+    _input1TutorialDesc = 'tutorial.reading_input_desc'.tr();
+    _submitTutorialTitle = 'tutorial.reading_submit_title'.tr();
+    _submitTutorialDesc = 'tutorial.reading_submit_desc'.tr();
+    _submitTooltip = 'reading.submit_tooltip'.tr();
+
     _loadInitialData();
-    
-    _f1FocusNode.addListener(() { if (!_f1FocusNode.hasFocus) _formKey.currentState?.validate(); });
-    _f2FocusNode.addListener(() { if (!_f2FocusNode.hasFocus) _formKey.currentState?.validate(); });
-    _f3FocusNode.addListener(() { if (!_f3FocusNode.hasFocus) _formKey.currentState?.validate(); });
+
+    _f1FocusNode.addListener(() {
+      if (!_f1FocusNode.hasFocus) _formKey.currentState?.validate();
+    });
+    _f2FocusNode.addListener(() {
+      if (!_f2FocusNode.hasFocus) _formKey.currentState?.validate();
+    });
+    _f3FocusNode.addListener(() {
+      if (!_f3FocusNode.hasFocus) _formKey.currentState?.validate();
+    });
   }
 
   @override
@@ -74,6 +121,37 @@ class _ReadingScreenState extends State<_ReadingScreen> {
 
       final data = await _client!.getReading();
       final appState = await SecureStorageService().getAppState();
+
+      // BOLT: Pre-calculate labels and parse numeric values once during load.
+      // This eliminates redundant lookups and string parsing in the high-frequency build loop.
+      _label1 = '${data.descContador1 ?? 'reading.counter_1'.tr()} *';
+      _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
+      _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
+
+      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
+      _lastVal2 = data.valorContador2 != null
+          ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
+          : null;
+      _lastVal3 = data.valorContador3 != null
+          ? double.tryParse(data.valorContador3!.replaceAll(',', '.'))
+          : null;
+
+      _helperBase1 = _buildHelperBase(
+        data.valorContador1,
+        data.valorMinContador1,
+        data.valorMaxContador1,
+      );
+      _helperBase2 = _buildHelperBase(
+        data.valorContador2,
+        data.valorMinContador2,
+        data.valorMaxContador2,
+      );
+      _helperBase3 = _buildHelperBase(
+        data.valorContador3,
+        data.valorMinContador3,
+        data.valorMaxContador3,
+      );
+
       setState(() {
         _currentData = data;
         _activeProfileId = appState.profiles.isNotEmpty
@@ -81,7 +159,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
             : null;
         _isLoading = false;
       });
-      
+
       _startTutorial();
     } catch (e, stack) {
       debugPrint('Error loading reading data: $e');
@@ -247,25 +325,27 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     );
   }
 
-  InputDecoration _buildInputDecoration({
-    required String label,
-    required String? lastValue,
-    required String? minValue,
-    required String? maxValue,
-    required TextEditingController controller,
-  }) {
+  String _buildHelperBase(String? lastValue, String? minValue, String? maxValue) {
     final lastReadingText = 'reading.last_reading'.tr(args: [lastValue ?? '0']);
     final rangeText = (minValue != null && maxValue != null)
         ? ' • ${'reading.min_max_helper'.tr(args: [minValue, maxValue])}'
         : '';
+    return '$lastReadingText$rangeText';
+  }
 
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required double? lastValue,
+    required String helperBase,
+    required TextEditingController controller,
+  }) {
     String consumptionText = '';
     if (lastValue != null && controller.text.isNotEmpty) {
       final current = double.tryParse(controller.text.replaceAll(',', '.'));
-      final last = double.tryParse(lastValue.replaceAll(',', '.'));
-      if (current != null && last != null && current > last) {
-        final diff = current - last;
-        consumptionText = ' (+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)})';
+      if (current != null && current > lastValue) {
+        final diff = current - lastValue;
+        consumptionText =
+            ' (+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)})';
       }
     }
 
@@ -274,7 +354,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       suffixIcon: controller.text.isNotEmpty
           ? IconButton(
               icon: const Icon(Icons.clear),
-              tooltip: 'common.clear'.tr(),
+              tooltip: _clearTooltip,
               onPressed: () {
                 HapticFeedback.selectionClick();
                 controller.clear();
@@ -282,190 +362,209 @@ class _ReadingScreenState extends State<_ReadingScreen> {
               },
             )
           : null,
-      suffixText: 'reading.unit_kwh'.tr(),
-      helperText: '$lastReadingText$rangeText$consumptionText',
+      suffixText: _unitLabel,
+      helperText: '$helperBase$consumptionText',
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('reading.title'.tr())),
-      body: _isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _error = null;
-                          _isLoading = true;
-                        });
-                        _loadInitialData();
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: Text('common.retry'.tr()),
-                    ),
-                  ],
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(_appBarTitle)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // BOLT: Hoist Theme and ColorScheme lookups to avoid redundant InheritedWidget traversals.
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(_appBarTitle)),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: colorScheme.primary.withValues(alpha: 0.5),
                 ),
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Showcase(
-                      key: _input1Key,
-                      title: 'tutorial.reading_input_title'.tr(),
-                      description: 'tutorial.reading_input_desc'.tr(),
-                      child: TextFormField(
-                        controller: _c1Controller,
-                        focusNode: _f1FocusNode,
-                        enabled: !_isSubmitting,
-                        maxLength: 15,
-                        autofocus: true,
-                        textInputAction: (_currentData!.descContador2 != null && _currentData!.descContador2!.isNotEmpty)
-                          ? TextInputAction.next
-                          : TextInputAction.done,
-                        onFieldSubmitted: (_) {
-                          if (_currentData!.descContador2 != null && _currentData!.descContador2!.isNotEmpty) {
-                            FocusScope.of(context).requestFocus(_f2FocusNode);
-                          } else {
-                            _submitReading();
-                          }
-                        },
-                        onChanged: (_) => setState(() {}),
-                        decoration: _buildInputDecoration(
-                          label: '${_currentData!.descContador1 ?? 'reading.counter_1'.tr()} *',
-                          lastValue: _currentData!.valorContador1,
-                          minValue: _currentData!.valorMinContador1,
-                          maxValue: _currentData!.valorMaxContador1,
-                          controller: _c1Controller,
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (value) => _validateReading(
-                          value, 
-                          _currentData!.valorMinContador1, 
-                          _currentData!.valorMaxContador1
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (_currentData!.descContador2 != null && _currentData!.descContador2!.isNotEmpty) ...[
-                      TextFormField(
-                        controller: _c2Controller,
-                        focusNode: _f2FocusNode,
-                        enabled: !_isSubmitting,
-                        maxLength: 15,
-                        textInputAction: (_currentData!.descContador3 != null && _currentData!.descContador3!.isNotEmpty)
-                          ? TextInputAction.next
-                          : TextInputAction.done,
-                        onFieldSubmitted: (_) {
-                          if (_currentData!.descContador3 != null && _currentData!.descContador3!.isNotEmpty) {
-                            FocusScope.of(context).requestFocus(_f3FocusNode);
-                          } else {
-                            _submitReading();
-                          }
-                        },
-                        onChanged: (_) => setState(() {}),
-                        decoration: _buildInputDecoration(
-                          label: _currentData!.descContador2 ??
-                              'reading.counter_2'.tr(),
-                          lastValue: _currentData!.valorContador2,
-                          minValue: _currentData!.valorMinContador2,
-                          maxValue: _currentData!.valorMaxContador2,
-                          controller: _c2Controller,
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return null; // Optional
-                          return _validateReading(
-                            value, 
-                            _currentData!.valorMinContador2, 
-                            _currentData!.valorMaxContador2
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    if (_currentData!.descContador3 != null && _currentData!.descContador3!.isNotEmpty) ...[
-                      TextFormField(
-                        controller: _c3Controller,
-                        focusNode: _f3FocusNode,
-                        enabled: !_isSubmitting,
-                        maxLength: 15,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => _submitReading(),
-                        onChanged: (_) => setState(() {}),
-                        decoration: _buildInputDecoration(
-                          label: _currentData!.descContador3 ??
-                              'reading.counter_3'.tr(),
-                          lastValue: _currentData!.valorContador3,
-                          minValue: _currentData!.valorMinContador3,
-                          maxValue: _currentData!.valorMaxContador3,
-                          controller: _c3Controller,
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return null; // Optional
-                          return _validateReading(
-                            value, 
-                            _currentData!.valorMinContador3, 
-                            _currentData!.valorMaxContador3
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Tooltip(
-                        message: 'reading.submit_tooltip'.tr(),
-                        child: Showcase(
-                          key: _submitButtonKey,
-                          title: 'tutorial.reading_submit_title'.tr(),
-                          description: 'tutorial.reading_submit_desc'.tr(),
-                          child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submitReading,
-                            child: _isSubmitting
-                                ? SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                    ),
-                                  )
-                                : Text('reading.submit'.tr()),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 16),
+                Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleLarge,
                 ),
-              ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _error = null;
+                      _isLoading = true;
+                    });
+                    _loadInitialData();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: Text(_retryButtonLabel),
+                ),
+              ],
             ),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(_appBarTitle)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Showcase(
+                key: _input1Key,
+                title: _input1TutorialTitle,
+                description: _input1TutorialDesc,
+                child: TextFormField(
+                  controller: _c1Controller,
+                  focusNode: _f1FocusNode,
+                  enabled: !_isSubmitting,
+                  maxLength: 15,
+                  autofocus: true,
+                  textInputAction: (_currentData!.descContador2 != null &&
+                          _currentData!.descContador2!.isNotEmpty)
+                      ? TextInputAction.next
+                      : TextInputAction.done,
+                  onFieldSubmitted: (_) {
+                    if (_currentData!.descContador2 != null &&
+                        _currentData!.descContador2!.isNotEmpty) {
+                      FocusScope.of(context).requestFocus(_f2FocusNode);
+                    } else {
+                      _submitReading();
+                    }
+                  },
+                  onChanged: (_) => setState(() {}),
+                  decoration: _buildInputDecoration(
+                    label: _label1,
+                    lastValue: _lastVal1,
+                    helperBase: _helperBase1,
+                    controller: _c1Controller,
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) => _validateReading(
+                    value,
+                    _currentData!.valorMinContador1,
+                    _currentData!.valorMaxContador1,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (_currentData!.descContador2 != null &&
+                  _currentData!.descContador2!.isNotEmpty) ...[
+                TextFormField(
+                  controller: _c2Controller,
+                  focusNode: _f2FocusNode,
+                  enabled: !_isSubmitting,
+                  maxLength: 15,
+                  textInputAction: (_currentData!.descContador3 != null &&
+                          _currentData!.descContador3!.isNotEmpty)
+                      ? TextInputAction.next
+                      : TextInputAction.done,
+                  onFieldSubmitted: (_) {
+                    if (_currentData!.descContador3 != null &&
+                        _currentData!.descContador3!.isNotEmpty) {
+                      FocusScope.of(context).requestFocus(_f3FocusNode);
+                    } else {
+                      _submitReading();
+                    }
+                  },
+                  onChanged: (_) => setState(() {}),
+                  decoration: _buildInputDecoration(
+                    label: _label2,
+                    lastValue: _lastVal2,
+                    helperBase: _helperBase2,
+                    controller: _c2Controller,
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return null; // Optional
+                    return _validateReading(
+                      value,
+                      _currentData!.valorMinContador2,
+                      _currentData!.valorMaxContador2,
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_currentData!.descContador3 != null &&
+                  _currentData!.descContador3!.isNotEmpty) ...[
+                TextFormField(
+                  controller: _c3Controller,
+                  focusNode: _f3FocusNode,
+                  enabled: !_isSubmitting,
+                  maxLength: 15,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submitReading(),
+                  onChanged: (_) => setState(() {}),
+                  decoration: _buildInputDecoration(
+                    label: _label3,
+                    lastValue: _lastVal3,
+                    helperBase: _helperBase3,
+                    controller: _c3Controller,
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return null; // Optional
+                    return _validateReading(
+                      value,
+                      _currentData!.valorMinContador3,
+                      _currentData!.valorMaxContador3,
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: Tooltip(
+                  message: _submitTooltip,
+                  child: Showcase(
+                    key: _submitButtonKey,
+                    title: _submitTutorialTitle,
+                    description: _submitTutorialDesc,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submitReading,
+                      child: _isSubmitting
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.onPrimary,
+                              ),
+                            )
+                          : Text(_submitButtonLabel),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

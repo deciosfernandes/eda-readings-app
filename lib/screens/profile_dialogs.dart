@@ -37,6 +37,23 @@ class ProfileDialogs {
     String? apiError;
     bool isLoading = false;
 
+    // BOLT: Pre-calculate all labels, hints, and error strings outside the builder
+    // to avoid redundant tr() lookups on every keystroke (rebuild).
+    final sErrorEmpty = 'login.error_empty'.tr();
+    final sAddSuccess = 'drawer.add_success'.tr();
+    final sErrorLogin = 'login.error_login'.tr();
+    final sTitle = 'drawer.add_profile'.tr();
+    final sCancel = 'common.cancel'.tr();
+    final sClose = 'common.close'.tr();
+    final sProfileName = 'drawer.profile_name'.tr();
+    final sProfileNameHint = 'login.profile_name_hint'.tr();
+    final sClear = 'common.clear'.tr();
+    final sCil = 'drawer.cil'.tr();
+    final sContract = 'drawer.contract'.tr();
+    final sSelectIcon = 'drawer.select_icon'.tr();
+    final sIconOption = 'drawer.icon_option'.tr();
+    final sAdd = 'drawer.add'.tr();
+
     try {
       await showModalBottomSheet<void>(
         context: context,
@@ -50,8 +67,8 @@ class ProfileDialogs {
             final textTheme = theme.textTheme;
 
             String? validateField(String value) {
-            return value.trim().isEmpty ? 'login.error_empty'.tr() : null;
-          }
+              return value.trim().isEmpty ? sErrorEmpty : null;
+            }
 
           bool isValid() =>
               nameError == null &&
@@ -106,7 +123,7 @@ class ProfileDialogs {
                       children: [
                         const Icon(Icons.check_circle, color: Colors.white),
                         const SizedBox(width: 12),
-                        Expanded(child: Text('drawer.add_success'.tr())),
+                        Expanded(child: Text(sAddSuccess)),
                       ],
                     ),
                     backgroundColor: Colors.green,
@@ -129,7 +146,7 @@ class ProfileDialogs {
             } catch (e) {
               setModalState(() {
                 isLoading = false;
-                apiError = 'login.error_login'.tr();
+                apiError = sErrorLogin;
               });
             }
           }
@@ -158,24 +175,24 @@ class ProfileDialogs {
                         Semantics(
                           header: true,
                           child: Text(
-                            'drawer.add_profile'.tr(),
+                            sTitle,
                             style: textTheme.titleLarge,
                           ),
                         ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.close,
-                          semanticLabel: 'common.cancel'.tr(),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close,
+                            semanticLabel: sCancel,
+                          ),
+                          tooltip: sCancel,
+                          isSelected: false,
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.pop(context);
+                                },
                         ),
-                        tooltip: 'common.cancel'.tr(),
-                        isSelected: false,
-                        onPressed: isLoading
-                            ? null
-                            : () {
-                                HapticFeedback.selectionClick();
-                                Navigator.pop(context);
-                              },
-                      ),
                     ],
                   ),
                   AnimatedSize(
@@ -214,9 +231,9 @@ class ProfileDialogs {
                                     Icons.close,
                                     size: 16,
                                     color: colorScheme.onErrorContainer,
-                                    semanticLabel: 'common.close'.tr(),
+                                    semanticLabel: sClose,
                                   ),
-                                  tooltip: 'common.close'.tr(),
+                                  tooltip: sClose,
                                   isSelected: false,
                                   onPressed: () {
                                     HapticFeedback.selectionClick();
@@ -245,17 +262,17 @@ class ProfileDialogs {
                       autofocus: true,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: '${'drawer.profile_name'.tr()} *',
-                        hintText: 'login.profile_name_hint'.tr(),
+                        labelText: '$sProfileName *',
+                        hintText: sProfileNameHint,
                         prefixIcon: const Icon(Icons.label_outline),
                         errorText: nameError,
                         suffixIcon: nameCtrl.text.isNotEmpty
                             ? IconButton(
                                 icon: Icon(
                                   Icons.clear,
-                                  semanticLabel: 'common.clear'.tr(),
+                                  semanticLabel: sClear,
                                 ),
-                                tooltip: 'common.clear'.tr(),
+                                tooltip: sClear,
                                 isSelected: false,
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
@@ -292,16 +309,16 @@ class ProfileDialogs {
                       textInputAction: TextInputAction.next,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
-                        labelText: '${'drawer.cil'.tr()} *',
+                        labelText: '$sCil *',
                         prefixIcon: const Icon(Icons.badge_outlined),
                         errorText: cilError,
                         suffixIcon: cilCtrl.text.isNotEmpty
                             ? IconButton(
                                 icon: Icon(
                                   Icons.clear,
-                                  semanticLabel: 'common.clear'.tr(),
+                                  semanticLabel: sClear,
                                 ),
-                                tooltip: 'common.clear'.tr(),
+                                tooltip: sClear,
                                 isSelected: false,
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
@@ -339,16 +356,16 @@ class ProfileDialogs {
                       onSubmitted: (_) => handleAdd(),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
-                        labelText: '${'drawer.contract'.tr()} *',
+                        labelText: '$sContract *',
                         prefixIcon: const Icon(Icons.description_outlined),
                         errorText: contractError,
                         suffixIcon: contractCtrl.text.isNotEmpty
                             ? IconButton(
                                 icon: Icon(
                                   Icons.clear,
-                                  semanticLabel: 'common.clear'.tr(),
+                                  semanticLabel: sClear,
                                 ),
-                                tooltip: 'common.clear'.tr(),
+                                tooltip: sClear,
                                 isSelected: false,
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
@@ -372,7 +389,7 @@ class ProfileDialogs {
                   Semantics(
                     header: true,
                     child: Text(
-                      'drawer.select_icon'.tr(),
+                      sSelectIcon,
                       style: textTheme.titleMedium,
                     ),
                   ),
@@ -393,7 +410,7 @@ class ProfileDialogs {
                           return Padding(
                             padding: const EdgeInsets.only(right: 12),
                             child: Semantics(
-                              label: 'drawer.icon_option'.tr(),
+                              label: sIconOption,
                               selected: isSelected,
                               button: true,
                               child: InkWell(
@@ -464,7 +481,7 @@ class ProfileDialogs {
                             ),
                           )
                         : const Icon(Icons.add),
-                    label: Text('drawer.add'.tr()),
+                    label: Text(sAdd),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
