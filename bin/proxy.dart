@@ -17,6 +17,9 @@ void main() async {
   stdout.writeln('CORS Proxy Server running on http://${server.address.host}:${server.port}');
 
   var client = HttpClient();
+  // Sentinel: Enforce a connection timeout to prevent the proxy from hanging indefinitely
+  // on unresponsive upstream requests, mitigating a potential local DoS risk.
+  client.connectionTimeout = const Duration(seconds: 15);
 
   await for (HttpRequest request in server) {
     // Add CORS headers to allow browser requests

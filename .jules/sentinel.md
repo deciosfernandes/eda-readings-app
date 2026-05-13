@@ -22,3 +22,8 @@
 **Vulnerability:** The development proxy used manual string interpolation for URI forwarding, and CSV imports lacked non-negative validation for numeric readings.
 **Learning:** Manual URI construction using string interpolation or `Uri.parse` with concatenated strings is fragile and can lead to injection if request components aren't properly encoded. Similarly, CSV validation must match UI validation (e.g., non-negative checks) to ensure data consistency and prevent logic bypasses.
 **Prevention:** Always use structured URI constructors like `Uri.https` with `queryParametersAll` to ensure robust encoding of all URI components. Synchronize validation logic between manual inputs and automated imports (e.g., CSV) to enforce uniform security and data integrity constraints.
+
+## 2026-06-05 - Hardening CSV Processing and Proxy Resilience
+**Vulnerability:** CSV formula injection could be bypassed with leading whitespace, imports lacked file size limits, and the development proxy lacked connection timeouts.
+**Learning:** Security filters that only check the first character (e.g., for CSV injection) can be easily bypassed by common spreadsheet behaviors like ignoring leading whitespace. Additionally, any external resource interaction (file imports, proxy requests) must have resource constraints (size limits, timeouts) to prevent local Denial of Service (DoS).
+**Prevention:** Harden injection filters to check both raw and trimmed input. Enforce explicit file size limits (e.g., 1MB) on all user-provided data imports and always configure connection timeouts on network clients to ensure the application remains responsive under adverse conditions.

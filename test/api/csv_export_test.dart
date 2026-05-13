@@ -20,6 +20,13 @@ void main() {
       expect(CsvHelper.escapeField("'Quote"), "''Quote");
     });
 
+    test('escapeField should protect against Formula Injection with leading whitespace', () {
+      expect(CsvHelper.escapeField(' =SUM(A1:B2)'), "' =SUM(A1:B2)");
+      expect(CsvHelper.escapeField('  +123'), "'  +123");
+      expect(CsvHelper.escapeField('\t-50'), "'\t-50");
+      expect(CsvHelper.escapeField(' \n@hint'), "' \n@hint");
+    });
+
     test('escapeField should handle combined quotes and formula injection', () {
       expect(CsvHelper.escapeField('="Quote"'), "'=\"\"Quote\"\"");
     });
