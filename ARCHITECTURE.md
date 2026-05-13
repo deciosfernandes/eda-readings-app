@@ -50,19 +50,55 @@ graph TD
     API -->|Confirmation| UI
     UI -->|Updates History| HS
     HS -->|Caches in Memory| MEM[(In-Memory Cache)]
-    HS -->|Persists| SP[SharedPreferences]
+    HS -->|Persists| FSS[Flutter Secure Storage]
 
     UI -->|Loads Profile| SSS[SecureStorageService]
     SSS -->|Caches State| SSS_MEM[(In-Memory Cache)]
-    SSS -->|Persists Credentials| FSS[Flutter Secure Storage]
+    SSS -->|Persists Credentials| FSS
+```
+
+### Reading Submission Flow
+The following sequence diagram detail the interaction between components during a meter reading submission, including token validation and local persistence.
+
+```mermaid
+sequenceDiagram
+    participant UI as ReadingScreen
+    participant CL as EDAClient
+    participant API as EDA API
+    participant HS as HistoryService
+
+    UI->>CL: getReading()
+    CL->>API: GET /api/leitura (CIL/Contract)
+    API-->>CL: ReadingResponse (Token, Last Values)
+    CL-->>UI: ReadingResponse
+
+    UI->>UI: Validate Input (Min/Max)
+
+    UI->>UI: Check Token Expiry
+    alt Token Expired
+        UI->>CL: getReading()
+        CL->>API: GET /api/leitura
+        API-->>CL: New Token
+        CL-->>UI: Refreshed Data
+    end
+
+    UI->>CL: sendReading(Payload)
+    CL->>API: PUT /api/leitura (Payload)
+    API-->>CL: 200/204 Success
+    CL-->>UI: Success
+
+    UI->>HS: addReading(LocalReadingHistory)
+    HS->>HS: Update In-Memory Cache
+    HS->>FSS: Persist (Encrypted JSON)
+    UI->>UI: Show Success SnackBar & Pop
 ```
 
 ## 🛠️ Core Services
 
 ### HistoryService
 A singleton that manages the user's reading history. It implements a write-through cache:
-1.  **Read**: Checks in-memory cache first, falls back to `SharedPreferences`.
-2.  **Write**: Updates in-memory list, updates profile-indexed map, and then asynchronously persists to `SharedPreferences`.
+1.  **Read**: Checks in-memory cache first, falls back to `FlutterSecureStorage` (encrypted). It also handles one-time migration from legacy `SharedPreferences` storage.
+2.  **Write**: Updates in-memory list, updates profile-indexed map, and then asynchronously persists to `FlutterSecureStorage`.
 
 ### SecureStorageService
 Manages sensitive user information (CIL/Contract) and the overall `AppStateData` (profiles, active profile). It uses `flutter_secure_storage` for encryption-at-rest.
@@ -78,7 +114,7 @@ A `ChangeNotifier` that manages the application's `ThemeMode`. It persists user 
 The application allows users to import and export their reading history via CSV files. This logic is centralized in the `ImportExportScreen` and `SettingsScreen`, utilizing the `CsvHelper` utility.
 
 ### Security (SENTINEL)
-- **Formula Injection Protection**: All exported fields starting with trigger characters (`=`, `+`, `-`, `@`) are prepended with a single quote (`'`) to prevent execution in spreadsheet software.
+- **Formula Injection Protection**: All exported fields starting with trigger characters (`=`, `+`, `-`, `@`, `\t`, `\r`, `\n`, `'`) are prepended with a single quote (`'`) to prevent execution in spreadsheet software.
 - **Input Validation**: During import, the application enforces length limits (e.g., 50 for names, 15 for readings) and validates numeric formats before insertion into local storage.
 
 ### Performance (BOLT)
@@ -111,6 +147,7 @@ The **Ink** pattern prioritizes codebase readability and developer experience.
 The **Sentinel** pattern focuses on application security, data protection, and robust input validation.
 - **Input Validation**: Strict enforcement of length limits and numeric format validation on all user-facing inputs.
 - **Secure Storage**: Using `flutter_secure_storage` for credentials and ensuring sensitive data is never exposed in logs or UI.
+- **Safe URI Construction**: Utilizing structured URI constructors (e.g., `Uri.https`, `Uri.replace(queryParameters: ...)`) to prevent injection vulnerabilities.
 - **PR Standards**: Security-focused PRs must follow the format `🛡️ Sentinel: [CRITICAL/HIGH/MEDIUM] Fix [vulnerability type]` and include detailed sections for Severity, Vulnerability, Impact, Fix, and Verification.
 
 ## 🚀 Development Best Practices
@@ -128,6 +165,7 @@ The **Sentinel** pattern focuses on application security, data protection, and r
 ### 🛡️ Security (SENTINEL)
 - **Safe Parsing**: When parsing numeric input, always use `double.tryParse` and verify `number.isFinite` and `number >= 0`.
 - **Length Limits**: Enforce `maxLength` on all `TextField` and `TextFormField` components (e.g., 50 for names, 15 for readings).
+- **Safe URI Construction**: Always use structured URI constructors like `Uri.https()` or `Uri.replace(queryParameters: ...)` instead of manual string interpolation to mitigate injection risks.
 - **Error Privacy**: Never expose raw exception messages in the UI; use localized, generic error messages.
 
 ## 🌐 Development Environment

@@ -31,5 +31,9 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Style Improvement**: Documenting the CSV schema and the security rationale behind formula injection protection.
 **Impact**: Reduces confusion for developers implementing or debugging import/export logic. By explicitly stating the 5-column format and the SENTINEL security requirements (e.g., single-quote prepending), we ensure that future changes maintain data integrity and user safety.
 
+### 🛡️ Persistence & Security Documentation Alignment
+**Gotcha**: Documentation rot often occurs during security-focused refactors (e.g., migrating from `SharedPreferences` to `FlutterSecureStorage`). Developers might rely on outdated "Data Flow" diagrams or service descriptions that no longer reflect the encrypted state of the data.
+**Solution**: Always audit `ARCHITECTURE.md` when changing storage providers or hardening API interactions. Explicitly documenting the transition (like the one-time migration in `HistoryService`) prevents confusion and ensures security-conscious development.
+
 ---
 *Last Updated: 2026-05-11*
