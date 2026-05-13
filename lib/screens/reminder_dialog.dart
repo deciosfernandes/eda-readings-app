@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../services/notification_service.dart';
 
@@ -61,9 +62,21 @@ class ReminderDialog extends StatelessWidget {
                       .tr(args: [profileName, displayDate]),
                 );
                 if (context.mounted) {
+                  HapticFeedback.lightImpact();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('notification.scheduled'.tr(args: [displayDate])),
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.white),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'notification.scheduled'
+                                  .tr(args: [displayDate]),
+                            ),
+                          ),
+                        ],
+                      ),
                       backgroundColor: Colors.green,
                     ),
                   );
