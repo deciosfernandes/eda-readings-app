@@ -27,3 +27,8 @@
 **Vulnerability:** CSV formula injection could be bypassed with leading whitespace, imports lacked file size limits, and the development proxy lacked connection timeouts.
 **Learning:** Security filters that only check the first character (e.g., for CSV injection) can be easily bypassed by common spreadsheet behaviors like ignoring leading whitespace. Additionally, any external resource interaction (file imports, proxy requests) must have resource constraints (size limits, timeouts) to prevent local Denial of Service (DoS).
 **Prevention:** Harden injection filters to check both raw and trimmed input. Enforce explicit file size limits (e.g., 1MB) on all user-provided data imports and always configure connection timeouts on network clients to ensure the application remains responsive under adverse conditions.
+
+## 2026-06-08 - Hardening Development Proxies against Cross-Origin and Open Proxy Attacks
+**Vulnerability:** The development proxy was an "Open Proxy" using wildcard CORS origins, allowing any website to abuse it for scanning or reaching unauthorized paths.
+**Learning:** Development utilities like CORS proxies are often overlooked but can be exploited if they are overly permissive. A wildcard `Access-Control-Allow-Origin` allows malicious sites to interact with the local proxy, and lack of path filtering allows it to be used as a general-purpose proxy to reach any resource.
+**Prevention:** Restrict development proxies to specific, validated origins (e.g., `localhost`). Use `headers.set()` instead of `add()` when forwarding upstream responses to prevent duplicate security headers. Implement path-based filtering to ensure the proxy only services expected API endpoints, transforming it from an open proxy into a restricted reverse proxy.
