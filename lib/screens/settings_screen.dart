@@ -324,7 +324,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Appearance ─────────────────────────────────────────────────────
-          _SectionHeader(title: 'settings.section_appearance'.tr()),
+          _SectionHeader(
+            title: 'settings.section_appearance'.tr(),
+            colorScheme: colorScheme,
+          ),
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: Text('settings.theme_label'.tr()),
@@ -368,7 +371,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1),
 
           // ── Data ──────────────────────────────────────────────────────────
-          _SectionHeader(title: 'settings.section_data'.tr()),
+          _SectionHeader(
+            title: 'settings.section_data'.tr(),
+            colorScheme: colorScheme,
+          ),
           if (profiles.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -466,7 +472,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1),
 
           // ── About ─────────────────────────────────────────────────────────
-          _SectionHeader(title: 'about.title'.tr()),
+          _SectionHeader(
+            title: 'about.title'.tr(),
+            colorScheme: colorScheme,
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Row(
@@ -509,8 +518,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+  // BOLT: Hoist ColorScheme lookup to avoid redundant InheritedWidget traversals in the list.
+  final ColorScheme colorScheme;
 
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -521,7 +532,7 @@ class _SectionHeader extends StatelessWidget {
         child: Text(
           title,
           style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
+            color: colorScheme.primary,
             fontWeight: FontWeight.w600,
             fontSize: 13,
           ),

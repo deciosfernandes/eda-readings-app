@@ -64,6 +64,24 @@ dart bin/proxy.dart
 flutter run -d chrome
 ```
 
+## 🛠️ Troubleshooting
+
+### 🌐 Web: "Failed to fetch" or CORS Errors
+If you see network errors when running in Chrome, ensure the CORS proxy is running:
+1. Stop the Flutter process.
+2. Run `dart bin/proxy.dart` in a terminal.
+3. Restart the app with `flutter run -d chrome`.
+
+### 📱 Android: Notifications Not Appearing
+Starting with Android 13 (API 33), users must explicitly grant notification permissions.
+- The app requests this on the first run via `NotificationService`.
+- If denied, you can manually enable it in **Settings > Apps > EDA Readings > Notifications**.
+- For development, ensure the emulator has Google Play Services if testing advanced notification features.
+
+### 🧪 Tests: "easy_localization" Race Conditions
+If `flutter test` fails randomly during widget tests, it may be due to localization loading timing.
+- **Solution**: Run specific tests using `flutter test --plain-name "[Test Name]"` to isolate the issue.
+
 ## 🏗️ Core Architecture
 
 This project follows a service-oriented architecture with aggressive in-memory caching for performance.

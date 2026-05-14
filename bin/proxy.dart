@@ -22,13 +22,46 @@ void main() async {
   client.connectionTimeout = const Duration(seconds: 15);
 
   await for (HttpRequest request in server) {
-    // Add CORS headers to allow browser requests
-    request.response.headers.add('Access-Control-Allow-Origin', '*');
-    request.response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    request.response.headers.add('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept');
+    // Sentinel: Implement Origin validation to prevent unauthorized cross-origin access.
+    // This proxy is for local development; only allow localhost/127.0.0.1.
+    final origin = request.headers.value('origin');
+    bool isAuthorized = true;
+    if (origin != null) {
+      try {
+        final uri = Uri.parse(origin);
+        isAuthorized = uri.host == 'localhost' || uri.host == '127.0.0.1';
+      } catch (_) {
+        isAuthorized = false;
+      }
+    }
+
+    if (!isAuthorized) {
+      stderr.writeln('Blocked request from unauthorized origin: $origin');
+      request.response.statusCode = HttpStatus.forbidden;
+      await request.response.close();
+      continue;
+    }
+
+    // Add CORS headers, mirroring the origin if valid or defaulting to localhost for non-browser requests
+    request.response.headers
+        .set('Access-Control-Allow-Origin', origin ?? 'http://localhost');
+    request.response.headers.set(
+        'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    request.response.headers
+        .set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept');
+    request.response.headers.set('X-Content-Type-Options', 'nosniff');
 
     if (request.method == 'OPTIONS') {
       request.response.statusCode = HttpStatus.ok;
+      await request.response.close();
+      continue;
+    }
+
+    // Sentinel: Restrict proxying to the expected API path to minimize attack surface.
+    if (!request.uri.path.startsWith('/api/leitura')) {
+      stderr
+          .writeln('Blocked request to unauthorized path: ${request.uri.path}');
+      request.response.statusCode = HttpStatus.notFound;
       await request.response.close();
       continue;
     }
