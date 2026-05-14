@@ -14,16 +14,20 @@ class ThemeService extends ChangeNotifier {
 
   static const String _key = 'theme_mode';
 
+  // BOLT: Cache SharedPreferences instance to avoid redundant platform channel calls.
+  SharedPreferences? _prefs;
+
   ThemeMode _themeMode = ThemeMode.system;
 
   ThemeMode get themeMode => _themeMode;
 
   /// Loads the persisted theme mode from disk.
-  Future<void> loadTheme() async {
+  Future<void> loadTheme({bool forceRefresh = false}) async {
     // BOLT: Persistently load the user's theme preference from SharedPreferences
     // to ensure the UI matches their previous choice immediately upon startup.
-    final prefs = await SharedPreferences.getInstance();
-    final index = prefs.getInt(_key);
+    if (forceRefresh) _prefs = await SharedPreferences.getInstance();
+    _prefs ??= await SharedPreferences.getInstance();
+    final index = _prefs!.getInt(_key);
     if (index != null && index >= 0 && index < ThemeMode.values.length) {
       _themeMode = ThemeMode.values[index];
     } else {
@@ -36,10 +40,12 @@ class ThemeService extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode == mode) return;
     _themeMode = mode;
-    // BOLT: Asynchronously persist the theme mode change to disk while
-    // notifying listeners to provide an immediate UI update.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_key, mode.index);
+
+    // BOLT: Call notifyListeners() immediately for instant UI feedback,
+    // then asynchronously persist the change to avoid blocking the main thread.
     notifyListeners();
+
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setInt(_key, mode.index);
   }
 }
