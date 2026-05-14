@@ -227,9 +227,21 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       await HistoryService().addReadings(newReadings);
 
       if (!mounted) return;
+      HapticFeedback.lightImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('import_export.import_success'.tr(args: [importCount.toString()])),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'import_export.import_success'
+                      .tr(args: [importCount.toString()]),
+                ),
+              ),
+            ],
+          ),
           backgroundColor: Colors.green,
         ),
       );
