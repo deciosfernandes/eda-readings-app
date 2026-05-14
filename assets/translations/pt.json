@@ -52,7 +52,9 @@
         "loading": "A carregar...",
         "save": "Guardar",
         "clear": "Limpar",
-        "retry": "Tentar novamente"
+        "retry": "Tentar novamente",
+        "select_all": "Selecionar tudo",
+        "deselect_all": "Limpar seleção"
     },
     "drawer": {
         "edit_user_name": "Editar Nome de Utilizador",

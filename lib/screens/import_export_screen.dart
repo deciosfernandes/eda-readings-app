@@ -264,13 +264,41 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Semantics(
-              header: true,
-              child: Text(
-                'import_export.select_properties'.tr(),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      'import_export.select_properties'.tr(),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+                if (profiles.isNotEmpty) ...[
+                  TextButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _selectedProfileIds = profiles.map((p) => p.id).toSet();
+                      });
+                    },
+                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    child: Text('common.select_all'.tr()),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _selectedProfileIds.clear();
+                      });
+                    },
+                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    child: Text('common.deselect_all'.tr()),
+                  ),
+                ],
+              ],
             ),
           ),
           if (profiles.isEmpty)
