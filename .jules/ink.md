@@ -28,8 +28,16 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Impact**: Bridges the language gap for non-Portuguese speakers and ensures consistent terminology across the codebase. It significantly reduces the cognitive load when working with API-driven models that reflect regional business logic.
 
 ### 📤 Data Portability Documentation
-**Style Improvement**: Documenting the CSV schema and the security rationale behind formula injection protection.
-**Impact**: Reduces confusion for developers implementing or debugging import/export logic. By explicitly stating the 5-column format and the SENTINEL security requirements (e.g., single-quote prepending), we ensure that future changes maintain data integrity and user safety.
+**Style Improvement**: Explicitly documenting the CSV schema in a tabular format within `ARCHITECTURE.md`.
+**Impact**: Reduces confusion for developers implementing or debugging import/export logic. By explicitly stating the 5-column format, constraints, and the SENTINEL security requirements (e.g., single-quote prepending), we ensure that future changes maintain data integrity and user safety.
+
+### 🗺️ Visualizing Navigation Flow
+**Style Improvement**: Adding Mermaid-based diagrams for screen-to-screen navigation.
+**Impact**: Bridges the "Visual Void" in architectural documentation. It allows developers to understand the relationship between core screens (e.g., how to reach Settings from the Dashboard via the ProfileDrawer) without tracing the `MaterialApp` routes.
+
+### 🛠️ Onboarding Troubleshooting Guide
+**Style Improvement**: Adding a proactive "Troubleshooting" section to the `README.md`.
+**Impact**: Reduces "Time to First Hello World" by addressing the most common setup friction points (CORS proxy, Android permissions, and test race conditions) in a central location.
 
 ### 🛡️ Persistence & Security Documentation Alignment
 **Gotcha**: Documentation rot often occurs during security-focused refactors (e.g., migrating from `SharedPreferences` to `FlutterSecureStorage`). Developers might rely on outdated "Data Flow" diagrams or service descriptions that no longer reflect the encrypted state of the data.
