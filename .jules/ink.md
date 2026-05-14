@@ -43,5 +43,9 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Gotcha**: Documentation rot often occurs during security-focused refactors (e.g., migrating from `SharedPreferences` to `FlutterSecureStorage`). Developers might rely on outdated "Data Flow" diagrams or service descriptions that no longer reflect the encrypted state of the data.
 **Solution**: Always audit `ARCHITECTURE.md` when changing storage providers or hardening API interactions. Explicitly documenting the transition (like the one-time migration in `HistoryService`) prevents confusion and ensures security-conscious development.
 
+### 🧬 Visualizing Data Pipelines
+**Style Improvement**: Using Mermaid sequence diagrams to map complex data transformation pipelines (like CSV Import/Export).
+**Impact**: Bridges the "Visual Void" for non-obvious logic flows that span multiple layers (UI -> Utility -> Service). By visualizing the interplay between **BOLT** and **SENTINEL** patterns in these pipelines, we reduce the cognitive load for developers tasked with maintaining data integrity and security in portability features.
+
 ---
-*Last Updated: 2026-05-11*
+*Last Updated: 2026-05-14*
