@@ -227,6 +227,12 @@ void main() {
   });
 
   group('ThemeService', () {
+    setUp(() async {
+      // BOLT: Clear singleton state between tests to ensure test isolation.
+      await ThemeService().setThemeMode(ThemeMode.system);
+      await ThemeService().loadTheme(forceRefresh: true); // Ensure _prefs is refreshed and state is system
+    });
+
     test('defaults to ThemeMode.system', () {
       final service = ThemeService();
       expect(service.themeMode, equals(ThemeMode.system));
@@ -242,7 +248,7 @@ void main() {
     test('loadTheme reads persisted value', () async {
       SharedPreferences.setMockInitialValues({'theme_mode': ThemeMode.light.index});
       final service = ThemeService();
-      await service.loadTheme();
+      await service.loadTheme(forceRefresh: true);
       expect(service.themeMode, equals(ThemeMode.light));
     });
 

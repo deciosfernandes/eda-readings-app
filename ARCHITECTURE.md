@@ -57,6 +57,22 @@ graph TD
     SSS -->|Persists Credentials| FSS
 ```
 
+### Navigation Flow
+The following diagram illustrates the primary user journey and the relationships between the application's screens.
+
+```mermaid
+graph TD
+    DS[DashboardScreen] -->|FAB| RS[ReadingScreen]
+    DS -->|Drawer| PD[ProfileDrawer]
+    PD -->|Navigate| SS[SettingsScreen]
+    PD -->|Navigate| IES[ImportExportScreen]
+    PD -->|Navigate| AS[AboutScreen]
+    PD -->|Dialog| PDiag[ProfileDialogs: Add/Edit Property]
+
+    SS -->|Inline| IES_I[Import/Export Logic]
+    SS -->|Link| GH[GitHub Issues]
+```
+
 ### Reading Submission Flow
 The following sequence diagram detail the interaction between components during a meter reading submission, including token validation and local persistence.
 
@@ -112,6 +128,17 @@ A `ChangeNotifier` that manages the application's `ThemeMode`. It persists user 
 ## 📤 Data Portability
 
 The application allows users to import and export their reading history via CSV files. This logic is centralized in the `ImportExportScreen` and `SettingsScreen`, utilizing the `CsvHelper` utility.
+
+### CSV Schema
+To ensure data portability and consistency, all imports and exports follow a strict 5-column schema.
+
+| Column | Name | Format / Constraint | Description |
+| :--- | :--- | :--- | :--- |
+| 1 | **Property** | String (Max 50) | The name of the property (Contract Profile). |
+| 2 | **Date** | `yyyy-MM-dd HH:mm:ss` | The exact timestamp of the meter reading. |
+| 3 | **Counter 1** | Numeric (Max 15) | Primary register value in kWh (Ponta/Cheias). |
+| 4 | **Counter 2** | Numeric (Max 15) | Optional: Off-peak register value (Vazio). |
+| 5 | **Counter 3** | Numeric (Max 15) | Optional: Super Off-peak register value (Super Vazio). |
 
 ### Security (SENTINEL)
 - **Formula Injection Protection**: All exported fields starting with trigger characters (`=`, `+`, `-`, `@`, `\t`, `\r`, `\n`, `'`) are prepended with a single quote (`'`) to prevent execution in spreadsheet software.
