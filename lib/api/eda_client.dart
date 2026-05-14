@@ -35,7 +35,12 @@ class EDAClient {
     required this.clientNumber,
     required this.contractNumber,
     http.Client? client,
-  }) : _client = client ?? _sharedClient;
+  }) : _client = client ?? _sharedClient {
+    // Sentinel: Validate CIL format (10-digit numeric) as a defense-in-depth measure.
+    if (clientNumber.length != 10 || !RegExp(r'^\d+$').hasMatch(clientNumber)) {
+      throw ArgumentError('Invalid CIL format. Must be a 10-digit numeric string.');
+    }
+  }
 
   /// Fetches the current meter status and reading metadata for the configured CIL/Contract.
   ///

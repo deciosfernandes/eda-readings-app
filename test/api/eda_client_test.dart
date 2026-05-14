@@ -8,7 +8,7 @@ import 'package:eda_app/api/eda_client.dart';
 import 'package:eda_app/models/reading_models.dart';
 
 void main() {
-  const testCil = 'PT001';
+  const testCil = '1234567890';
   const testContract = 'C001';
 
   final validReadingJson = {
@@ -57,7 +57,22 @@ void main() {
       expect(() => client.getReading(), throwsException);
     });
 
-    test('sends GET request to correct URL with encoded CIL and contract', () async {
+    test('throws ArgumentError on invalid CIL format', () {
+      expect(
+        () => EDAClient(clientNumber: '123', contractNumber: testContract),
+        throwsArgumentError,
+      );
+      expect(
+        () => EDAClient(clientNumber: 'PT12345678', contractNumber: testContract),
+        throwsArgumentError,
+      );
+      expect(
+        () => EDAClient(clientNumber: '12345678901', contractNumber: testContract),
+        throwsArgumentError,
+      );
+    });
+
+    test('sends GET request to correct URL with query parameters', () async {
       Uri? capturedUri;
       final mockClient = MockClient((request) async {
         capturedUri = request.url;
@@ -65,16 +80,16 @@ void main() {
       });
 
       final client = EDAClient(
-        clientNumber: 'PT 001',
-        contractNumber: 'C 001',
+        clientNumber: '1234567890',
+        contractNumber: 'C001',
         client: mockClient,
       );
 
       await client.getReading();
 
       expect(capturedUri, isNotNull);
-      expect(capturedUri!.queryParameters['cil'], 'PT 001');
-      expect(capturedUri!.queryParameters['contrato'], 'C 001');
+      expect(capturedUri!.queryParameters['cil'], '1234567890');
+      expect(capturedUri!.queryParameters['contrato'], 'C001');
     });
 
     test('throws Exception on HTTP 500', () async {
@@ -180,7 +195,7 @@ void main() {
       expect(body['valorContador1'], '999.00');
     });
 
-    test('sends PUT request to URL with encoded CIL', () async {
+    test('sends PUT request to correct URL with query parameters', () async {
       Uri? capturedUri;
       final mockClient = MockClient((request) async {
         capturedUri = request.url;
@@ -188,7 +203,7 @@ void main() {
       });
 
       final client = EDAClient(
-        clientNumber: 'PT 001',
+        clientNumber: '1234567890',
         contractNumber: testContract,
         client: mockClient,
       );
@@ -196,7 +211,7 @@ void main() {
       await client.sendReading(makePayload());
 
       expect(capturedUri, isNotNull);
-      expect(capturedUri!.queryParameters['cil'], 'PT 001');
+      expect(capturedUri!.queryParameters['cil'], '1234567890');
     });
   });
 }

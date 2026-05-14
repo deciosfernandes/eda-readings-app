@@ -208,7 +208,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Enforce length limits and validate numeric formats to prevent malformed data injection.
         final rawName = CsvHelper.unescapeField(fields[0]);
         final profileName = rawName.length > 50 ? rawName.substring(0, 50) : rawName;
-        final dateStr = CsvHelper.unescapeField(fields[1]);
+        final rawDate = CsvHelper.unescapeField(fields[1]);
+        final dateStr = rawDate.length > 30 ? rawDate.substring(0, 30) : rawDate;
         final rawC1 = CsvHelper.unescapeField(fields[2]);
         final c1 = rawC1.length > 15 ? rawC1.substring(0, 15) : rawC1;
         final rawC2 = CsvHelper.unescapeField(fields[3]);

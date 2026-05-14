@@ -48,6 +48,7 @@ class ProfileDialogs {
     final sProfileName = 'drawer.profile_name'.tr();
     final sProfileNameHint = 'login.profile_name_hint'.tr();
     final sClear = 'common.clear'.tr();
+    final sErrorCil = 'login.error_cil_length'.tr();
     final sCil = 'drawer.cil'.tr();
     final sContract = 'drawer.contract'.tr();
     final sSelectIcon = 'drawer.select_icon'.tr();
@@ -70,23 +71,30 @@ class ProfileDialogs {
               return value.trim().isEmpty ? sErrorEmpty : null;
             }
 
-          bool isValid() =>
-              nameError == null &&
-              cilError == null &&
-              contractError == null &&
-              nameCtrl.text.trim().isNotEmpty &&
-              cilCtrl.text.trim().isNotEmpty &&
-              contractCtrl.text.trim().isNotEmpty;
+            String? validateCil(String value) {
+              final cil = value.trim();
+              if (cil.isEmpty) return sErrorEmpty;
+              if (cil.length != 10) return sErrorCil;
+              return null;
+            }
 
-          Future<void> handleAdd() async {
-            // Force-validate all fields on submit
-            setModalState(() {
-              nameError = validateField(nameCtrl.text);
-              cilError = validateField(cilCtrl.text);
-              contractError = validateField(contractCtrl.text);
-            });
+            bool isValid() =>
+                nameError == null &&
+                cilError == null &&
+                contractError == null &&
+                nameCtrl.text.trim().isNotEmpty &&
+                cilCtrl.text.trim().length == 10 &&
+                contractCtrl.text.trim().isNotEmpty;
 
-            if (!isValid()) return;
+            Future<void> handleAdd() async {
+              // Force-validate all fields on submit
+              setModalState(() {
+                nameError = validateField(nameCtrl.text);
+                cilError = validateCil(cilCtrl.text);
+                contractError = validateField(contractCtrl.text);
+              });
+
+              if (!isValid()) return;
 
             setModalState(() => isLoading = true);
 
@@ -297,14 +305,14 @@ class ProfileDialogs {
                     onFocusChange: (hasFocus) {
                       if (!hasFocus) {
                         setModalState(() {
-                          cilError = validateField(cilCtrl.text);
+                            cilError = validateCil(cilCtrl.text);
                         });
                       }
                     },
                     child: TextField(
                       controller: cilCtrl,
                       enabled: !isLoading,
-                      maxLength: 20,
+                        maxLength: 10,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -331,7 +339,7 @@ class ProfileDialogs {
                       onChanged: (_) {
                         setModalState(() {
                           if (cilError != null) {
-                            cilError = validateField(cilCtrl.text);
+                            cilError = validateCil(cilCtrl.text);
                           }
                           apiError = null;
                         });
