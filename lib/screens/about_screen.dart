@@ -6,11 +6,13 @@ import 'package:url_launcher/url_launcher.dart';
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
+  // BOLT: Pre-parse static URI to avoid redundant string parsing on every tap.
+  static final Uri _githubIssuesUri = Uri.parse(
+    'https://github.com/deciosfernandes/eda-readings-app/issues',
+  );
+
   Future<void> _launchURL(BuildContext context) async {
-    final Uri url = Uri.parse(
-      'https://github.com/deciosfernandes/eda-readings-app/issues',
-    );
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+    if (!await launchUrl(_githubIssuesUri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('about.github_issue'.tr())),

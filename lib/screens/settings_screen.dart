@@ -58,11 +58,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  // BOLT: Pre-parse static URI to avoid redundant string parsing on every tap.
+  static final Uri _githubIssuesUri = Uri.parse(
+    'https://github.com/deciosfernandes/eda-readings-app/issues',
+  );
+
   Future<void> _launchURL() async {
-    final Uri url = Uri.parse(
-      'https://github.com/deciosfernandes/eda-readings-app/issues',
-    );
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+    if (!await launchUrl(_githubIssuesUri, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('about.github_issue'.tr())),
