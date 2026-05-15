@@ -9,7 +9,7 @@ import 'package:eda_app/models/reading_models.dart';
 
 void main() {
   const testCil = '1234567890';
-  const testContract = 'C001';
+  const testContract = '1000000001';
 
   final validReadingJson = {
     'cil': testCil,
@@ -63,11 +63,35 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () => EDAClient(clientNumber: 'PT12345678', contractNumber: testContract),
+        () => EDAClient(
+          clientNumber: 'PT12345678',
+          contractNumber: testContract,
+        ),
         throwsArgumentError,
       );
       expect(
-        () => EDAClient(clientNumber: '12345678901', contractNumber: testContract),
+        () => EDAClient(
+          clientNumber: '12345678901',
+          contractNumber: testContract,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('throws ArgumentError on invalid Contract format', () {
+      expect(
+        () => EDAClient(clientNumber: testCil, contractNumber: ''),
+        throwsArgumentError,
+      );
+      expect(
+        () => EDAClient(clientNumber: testCil, contractNumber: 'ABC'),
+        throwsArgumentError,
+      );
+      expect(
+        () => EDAClient(
+          clientNumber: testCil,
+          contractNumber: '1' * 21,
+        ),
         throwsArgumentError,
       );
     });
@@ -81,7 +105,7 @@ void main() {
 
       final client = EDAClient(
         clientNumber: '1234567890',
-        contractNumber: 'C001',
+        contractNumber: '1000000001',
         client: mockClient,
       );
 
@@ -89,7 +113,7 @@ void main() {
 
       expect(capturedUri, isNotNull);
       expect(capturedUri!.queryParameters['cil'], '1234567890');
-      expect(capturedUri!.queryParameters['contrato'], 'C001');
+      expect(capturedUri!.queryParameters['contrato'], '1000000001');
     });
 
     test('throws Exception on HTTP 500', () async {

@@ -12,6 +12,7 @@
         "submit": "Login",
         "error_empty": "This field is required",
         "error_cil_length": "CIL must be exactly 10 digits",
+        "error_contract_length": "Contract must be a number up to 20 digits",
         "error_login": "Failed to log in. Check your credentials.",
         "login_tooltip": "Authenticate and enter the app"
     },
