@@ -385,12 +385,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
             )
           else ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text(
-                'import_export.select_properties'.tr(),
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'import_export.select_properties'.tr(),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _selectedProfileIds = profiles.map((p) => p.id).toSet();
+                      });
+                    },
+                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    child: Text('common.select_all'.tr()),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _selectedProfileIds.clear();
+                      });
+                    },
+                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    child: Text('common.deselect_all'.tr()),
+                  ),
+                ],
               ),
             ),
             ...profiles.map((profile) {
