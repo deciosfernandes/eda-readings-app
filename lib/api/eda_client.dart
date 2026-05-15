@@ -14,6 +14,9 @@ class EDAClient {
         : 'https://smile.eda.pt/api/leitura',
   );
 
+  // BOLT: Move RegExp to a static final instance to avoid repeated allocation in the constructor.
+  static final RegExp _cilRegex = RegExp(r'^\d+$');
+
   // Sentinel: Enforce request timeouts to prevent resource exhaustion and hanging.
   static const Duration _timeout = Duration(seconds: 15);
 
@@ -37,7 +40,7 @@ class EDAClient {
     http.Client? client,
   }) : _client = client ?? _sharedClient {
     // Sentinel: Validate CIL format (10-digit numeric) as a defense-in-depth measure.
-    if (clientNumber.length != 10 || !RegExp(r'^\d+$').hasMatch(clientNumber)) {
+    if (clientNumber.length != 10 || !_cilRegex.hasMatch(clientNumber)) {
       throw ArgumentError('Invalid CIL format. Must be a 10-digit numeric string.');
     }
   }
