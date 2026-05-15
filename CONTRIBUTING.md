@@ -64,4 +64,4 @@ Each persona has a corresponding journal file in the `.jules/` directory. We use
 - Do not document trivial changes.
 
 ---
-*Last Updated: 2025-05-14*
+*Last Updated: 2026-05-14*

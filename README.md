@@ -112,4 +112,6 @@ The source file is located at [`docs/privacy-policy.html`](docs/privacy-policy.h
 
 ---
 
+*Last Updated: 2026-05-14*
+
 *Made for the Azores with ⚡ by Decio Fernandes.*

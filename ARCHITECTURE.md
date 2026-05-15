@@ -15,6 +15,7 @@ The project follows a standard Flutter directory structure with a clear separati
   - `ThemeService`: Handles theme persistence and state, ensuring UI consistency across app sessions.
 - **`lib/screens/`**: UI components categorized by screen. Includes dialogs and drawer components.
 - **`lib/theme/`**: Centralized theme definitions (`AppTheme`).
+- **`lib/utils/`**: Shared utility classes like `CsvHelper` for data transformation.
 - **`assets/`**: Static resources like translations (JSON) and icons.
 - **`bin/`**: Server-side or utility scripts (e.g., `proxy.dart` for Web development).
 - **`test/`**: Comprehensive test suite for APIs, models, and services.
@@ -148,6 +149,51 @@ To ensure data portability and consistency, all imports and exports follow a str
 - **Lookup Optimization**: During import, a lookup map of property names to IDs is pre-calculated to achieve O(1) matching, replacing O(N) list scans.
 - **Batch Processing**: Multiple readings are added to the `HistoryService` in a single atomic update to minimize secure storage I/O overhead.
 
+### Import Flow
+The following sequence diagram details the interaction between components during a CSV history import, highlighting the security and performance safeguards.
+
+```mermaid
+sequenceDiagram
+    participant UI as ImportExportScreen
+    participant FP as FilePicker
+    participant CH as CsvHelper
+    participant HS as HistoryService
+    participant FSS as FlutterSecureStorage
+
+    UI->>FP: pickFiles(allowedExtensions: ['csv'])
+    FP-->>UI: PlatformFile
+
+    UI->>UI: Validate File Size (SENTINEL: 1MB Limit)
+
+    alt File valid
+        UI->>UI: Decode content (UTF-8)
+        UI->>UI: Split into lines (LineSplitter)
+        UI->>UI: Pre-calculate Profile Lookup Map (BOLT: O(1))
+
+        loop For each Line (skip header)
+            UI->>CH: parseCsvLine(line)
+            CH-->>UI: List<String>
+            UI->>CH: unescapeField(field)
+            CH-->>UI: String
+            UI->>UI: Validate & Sanitize (SENTINEL)
+            UI->>UI: Map Profile Name to ID (BOLT: O(1))
+            UI->>UI: Add to newReadings list
+        end
+
+        UI->>HS: addReadings(newReadings)
+        HS->>HS: Update In-Memory Cache
+        HS->>FSS: Batch Persist (BOLT: Atomic Write)
+        UI->>UI: Show Success SnackBar
+    else File too large
+        UI->>UI: Show Error SnackBar
+    end
+```
+
+### Security & Performance in Portability
+The data portability engine is a prime example of the interplay between **BOLT** and **SENTINEL** patterns:
+- **Security-First Parsing**: The `CsvHelper` unescapes fields but the UI layer enforces strict length and type validation before any data enters the application state.
+- **Atomic Persistence**: By batching imports in the `HistoryService`, we ensure that even large history files result in minimal disk I/O, maintaining UI responsiveness on mobile devices.
+
 ## 🎭 Persona Patterns
 
 Development is guided by three core "Personas," each focusing on a specific dimension of software quality. You will find comments tagged with these personas throughout the codebase.
@@ -212,4 +258,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-11*
+*Last Updated: 2026-05-14*
