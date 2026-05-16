@@ -29,3 +29,7 @@
 ## 2026-02-16 - Resource Lifecycle Management in Async Builders
 **Learning:** Instantiating controllers (e.g., `ScrollController`) inside a `StatefulBuilder` or `builder` method of a modal causes redundant object creation on every rebuild (e.g., every keystroke) and prevents proper disposal, leading to memory leaks and erratic UI behavior (like scroll position loss).
 **Action:** Instantiate controllers outside the builder closure. Use a `try-finally` block around asynchronous UI calls like `showModalBottomSheet` to ensure `dispose()` is called on all local controllers regardless of how the modal is closed.
+
+## 2026-02-17 - O(1) Collection Views with UnmodifiableListView
+**Learning:** Using `List.from()` to return copies of internal collections from services ensures immutability but incurs O(N) allocation and copy costs. `UnmodifiableListView` provides the same security with O(1) overhead by wrapping the existing list.
+**Action:** Return `UnmodifiableListView` from service getters. Additionally, pass mapped iterables directly to `insertAll` in batch operations to avoid intermediate `.toList()` allocations.
