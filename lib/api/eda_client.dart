@@ -15,7 +15,7 @@ class EDAClient {
   );
 
   // BOLT: Move RegExp to a static final instance to avoid repeated allocation in the constructor.
-  static final RegExp _cilRegex = RegExp(r'^\d+$');
+  static final RegExp _digitsRegex = RegExp(r'^\d+$');
 
   // Sentinel: Enforce request timeouts to prevent resource exhaustion and hanging.
   static const Duration _timeout = Duration(seconds: 15);
@@ -40,8 +40,18 @@ class EDAClient {
     http.Client? client,
   }) : _client = client ?? _sharedClient {
     // Sentinel: Validate CIL format (10-digit numeric) as a defense-in-depth measure.
-    if (clientNumber.length != 10 || !_cilRegex.hasMatch(clientNumber)) {
-      throw ArgumentError('Invalid CIL format. Must be a 10-digit numeric string.');
+    if (clientNumber.length != 10 || !_digitsRegex.hasMatch(clientNumber)) {
+      throw ArgumentError(
+        'Invalid CIL format. Must be a 10-digit numeric string.',
+      );
+    }
+    // Sentinel: Validate Contract format (up to 20-digit numeric) as a defense-in-depth measure.
+    if (contractNumber.isEmpty ||
+        contractNumber.length > 20 ||
+        !_digitsRegex.hasMatch(contractNumber)) {
+      throw ArgumentError(
+        'Invalid Contract format. Must be a numeric string up to 20 digits.',
+      );
     }
   }
 
