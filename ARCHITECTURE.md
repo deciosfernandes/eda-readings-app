@@ -32,6 +32,7 @@ Understanding these terms is critical for working with the EDA API and the appli
 | **Cheias** | Horas de Cheias | Intermediate consumption period. |
 | **Vazio** | Horas de Vazio | Off-peak hours. Lower consumption period (usually at night) with lower costs. |
 | **Super Vazio** | Horas de Super Vazio | Deep off-peak. Even lower costs during specific night windows. |
+| **Janela de Envio** | Data Aconselhável de Envio | Recommended Submission Window. The date provided by EDA when a reading should be submitted to ensure accurate billing and avoid estimates. |
 
 ### Meter Registers (Contadores)
 The application handles up to three registers depending on the user's tariff:
@@ -39,6 +40,15 @@ The application handles up to three registers depending on the user's tariff:
 1.  **`valorContador1` (Register 1)**: Primary reading. In a *Simples* tariff, this is the only counter. In *Bi-horária* or *Tri-horária*, it typically maps to the **Peak/Intermediate (Ponta/Cheias)** period.
 2.  **`valorContador2` (Register 2)**: Used in *Bi-horária* and *Tri-horária* tariffs. Typically maps to the **Off-peak (Vazio)** period.
 3.  **`valorContador3` (Register 3)**: Used exclusively in *Tri-horária* tariffs. Typically maps to the **Super Off-peak (Super Vazio)** period.
+
+## 🏗️ State Management
+
+This project deliberately avoids external state management libraries (like Provider, Riverpod, or Bloc) to keep the dependency tree lean and the architecture simple.
+
+### Strategy
+1.  **Shared State (Services)**: Global or shared state (history, credentials, theme) is managed by **Singleton Services**. These services maintain in-memory caches and handle persistence.
+2.  **Local State (UI)**: Screen-specific or ephemeral state (form inputs, loading indicators, animation flags) is managed using standard `StatefulWidget` and `setState`.
+3.  **Communication**: UI components call service methods directly to trigger updates. Some services (like `ThemeService`) extend `ChangeNotifier` to allow the UI to react to changes via listeners.
 
 ## 🔄 Data Flow
 
@@ -111,6 +121,15 @@ sequenceDiagram
 ```
 
 ## 🛠️ Core Services
+
+The following table summarizes the primary responsibilities and storage strategies for the application's core singleton services.
+
+| Service | Primary Responsibility | Storage / Persistence | Personas |
+| :--- | :--- | :--- | :--- |
+| **`HistoryService`** | Manages reading history and O(1) profile lookups. | `FlutterSecureStorage` (Encrypted JSON) | **BOLT**, **SENTINEL** |
+| **`SecureStorageService`** | Manages credentials, profiles, and app state. | `FlutterSecureStorage` (Encrypted JSON) | **BOLT**, **SENTINEL** |
+| **`NotificationService`** | Schedules local reading reminders. | Platform Native (Notification Center) | **PALETTE**, **SENTINEL** |
+| **`ThemeService`** | Manages user theme preferences. | `SharedPreferences` (Plaintext) | **BOLT**, **PALETTE** |
 
 ### HistoryService
 A singleton that manages the user's reading history. It implements a write-through cache:
@@ -258,4 +277,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-14*
+*Last Updated: 2026-05-15*
