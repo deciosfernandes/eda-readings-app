@@ -319,7 +319,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text('$value ${'reading.unit_kwh'.tr()}'),
+          Text('$value $_unitLabel'),
         ],
       ),
     );

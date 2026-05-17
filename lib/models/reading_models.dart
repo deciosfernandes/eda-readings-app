@@ -204,13 +204,16 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  /// Memoized numeric value for Counter 1 to avoid redundant parsing.
+  final double val1;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  }) : val1 = double.tryParse(valorContador1.replaceAll(',', '.')) ?? 0.0;
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
