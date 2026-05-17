@@ -95,8 +95,18 @@ void main() async {
         // Avoid sending duplicate or restrictive CORS headers from the upstream
         if (name.toLowerCase() != 'access-control-allow-origin' &&
             name.toLowerCase() != 'content-security-policy') {
+          // Sentinel: Use set() for specific security headers to prevent duplication,
+          // but use add() for others (like Set-Cookie) to support multiple values.
+          final isSecurityHeader = name.toLowerCase() == 'x-content-type-options' ||
+              name.toLowerCase() == 'x-frame-options' ||
+              name.toLowerCase() == 'x-xss-protection';
+
           for (var value in values) {
-            request.response.headers.add(name, value);
+            if (isSecurityHeader) {
+              request.response.headers.set(name, value);
+            } else {
+              request.response.headers.add(name, value);
+            }
           }
         }
       });
@@ -107,7 +117,8 @@ void main() async {
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
       request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      // Sentinel: Return generic error message to prevent leaking internal state or stack traces.
+      request.response.write('Internal Server Error');
       await request.response.close();
     }
   }

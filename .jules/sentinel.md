@@ -32,3 +32,8 @@
 **Vulnerability:** The development proxy was an "Open Proxy" using wildcard CORS origins, allowing any website to abuse it for scanning or reaching unauthorized paths.
 **Learning:** Development utilities like CORS proxies are often overlooked but can be exploited if they are overly permissive. A wildcard `Access-Control-Allow-Origin` allows malicious sites to interact with the local proxy, and lack of path filtering allows it to be used as a general-purpose proxy to reach any resource.
 **Prevention:** Restrict development proxies to specific, validated origins (e.g., `localhost`). Use `headers.set()` instead of `add()` when forwarding upstream responses to prevent duplicate security headers. Implement path-based filtering to ensure the proxy only services expected API endpoints, transforming it from an open proxy into a restricted reverse proxy.
+
+## 2026-05-17 - Hardening Proxy Header Forwarding and Error Handling
+**Vulnerability:** The development proxy leaked internal state via verbose error messages and potentially duplicated security headers by using 'add()' during forwarding.
+**Learning:** Naively switching from 'add()' to 'set()' in a proxy's header forwarding loop to prevent duplication can break standard behavior for multi-value headers like 'Set-Cookie'. Security hardening of proxy headers must distinguish between singleton security headers and multi-value application headers.
+**Prevention:** Use generic error messages (e.g., 'Internal Server Error') for all proxy failures. For header forwarding, apply 'set()' only to a validated list of security headers (e.g., X-Content-Type-Options) while continuing to use 'add()' for general headers to preserve multi-value support.
