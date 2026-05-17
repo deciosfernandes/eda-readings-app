@@ -68,6 +68,44 @@ graph TD
     SSS -->|Persists Credentials| FSS
 ```
 
+### Bootstrap & Initialization
+The following sequence diagram illustrates the parallel initialization of core services during the application startup (`main.dart`). This strategy ensures that all essential components are ready before the UI is rendered, while minimizing total startup time.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SSS as SecureStorageService
+    participant HS as HistoryService
+    participant APP as MyApp
+
+    M->>M: WidgetsFlutterBinding.ensureInitialized()
+
+    Note over M, HS: Parallel Initialization (Future.wait)
+
+    par
+        M->>EL: ensureInitialized()
+    and
+        M->>NS: initialize()
+    and
+        M->>TS: loadTheme()
+    and
+        M->>SSS: getAppState()
+    and
+        M->>HS: getHistory()
+    end
+
+    EL-->>M: Ready
+    NS-->>M: Ready
+    TS-->>M: Ready
+    SSS-->>M: Ready
+    HS-->>M: Ready
+
+    M->>APP: runApp()
+```
+
 ### Navigation Flow
 The following diagram illustrates the primary user journey and the relationships between the application's screens.
 
@@ -248,6 +286,7 @@ The **Sentinel** pattern focuses on application security, data protection, and r
 - **Aggressive Caching**: Always check in-memory caches before performing disk I/O or platform channel calls.
 - **Loop Optimization**: Hoist expensive object instantiations (like `DateFormat`) out of loops.
 - **UI Responsiveness**: Pre-calculate derived data (like chart spots or formatted strings) during data loading rather than in the `build()` method.
+- **Stable Notification IDs**: Use `int.parse(id) % 0x7FFFFFFF` to generate notification IDs from timestamps. This ensures IDs stay within the 32-bit signed integer range required by the Android platform, preventing potential overflow crashes while maintaining uniqueness (BOLT/SENTINEL).
 
 ### 🎨 UX & Accessibility (PALETTE)
 - **Tactile Feedback**: Use `HapticFeedback.selectionClick()` or `lightImpact()` for interactive elements.

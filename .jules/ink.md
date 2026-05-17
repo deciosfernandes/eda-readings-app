@@ -47,5 +47,13 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Style Improvement**: Using Mermaid sequence diagrams to map complex data transformation pipelines (like CSV Import/Export).
 **Impact**: Bridges the "Visual Void" for non-obvious logic flows that span multiple layers (UI -> Utility -> Service). By visualizing the interplay between **BOLT** and **SENTINEL** patterns in these pipelines, we reduce the cognitive load for developers tasked with maintaining data integrity and security in portability features.
 
+### 🧬 Visualizing App Lifecycle
+**Style Improvement**: Adding a "Bootstrap & Initialization" sequence diagram to `ARCHITECTURE.md`.
+**Impact**: Clarifies the parallel startup logic in `main.dart`, helping developers understand the app's initial state and service dependencies. It bridges the gap between the entry point and the core services.
+
+### 🛡️ Documenting Platform-Specific "Gotchas"
+**Style Improvement**: Explicitly documenting the "Stable Notification ID" pattern (`timestamp % 0x7FFFFFFF`).
+**Impact**: Prevents recurring bugs related to integer overflows in platform-specific APIs (like Android's notification manager). By explaining the *why* (platform constraints) and the *how* (the modulo operation), we ensure future notification features remain robust.
+
 ---
-*Last Updated: 2026-05-14*
+*Last Updated: 2026-05-15*
