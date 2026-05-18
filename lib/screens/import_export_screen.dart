@@ -190,16 +190,17 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         final c3 = c3Raw.isEmpty ? null : c3Raw;
 
         // Sentinel: Validate that readings are finite non-negative numbers if present.
-        final n1 = double.tryParse(c1.replaceAll(',', '.'));
+        // BOLT: Use shared parsing logic from the model.
+        final n1 = LocalReadingHistory.parseValue(c1);
         if (n1 == null || !n1.isFinite || n1 < 0) continue;
 
         if (c2 != null) {
-          final n2 = double.tryParse(c2.replaceAll(',', '.'));
+          final n2 = LocalReadingHistory.parseValue(c2);
           if (n2 == null || !n2.isFinite || n2 < 0) continue;
         }
 
         if (c3 != null) {
-          final n3 = double.tryParse(c3.replaceAll(',', '.'));
+          final n3 = LocalReadingHistory.parseValue(c3);
           if (n3 == null || !n3.isFinite || n3 < 0) continue;
         }
 

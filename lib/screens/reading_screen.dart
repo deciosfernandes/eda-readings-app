@@ -128,13 +128,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
       _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
 
-      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
-      _lastVal2 = data.valorContador2 != null
-          ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
-          : null;
-      _lastVal3 = data.valorContador3 != null
-          ? double.tryParse(data.valorContador3!.replaceAll(',', '.'))
-          : null;
+      _lastVal1 = data.val1 ?? 0.0;
+      _lastVal2 = data.val2;
+      _lastVal3 = data.val3;
 
       _helperBase1 = _buildHelperBase(
         data.valorContador1,
@@ -255,7 +251,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     }
   }
 
-  String? _validateReading(String? value, String? min, String? max) {
+  String? _validateReading(String? value, double? minVal, double? maxVal) {
     if (value == null || value.isEmpty) {
       return 'login.error_empty'.tr();
     }
@@ -267,13 +263,15 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       return 'reading.error_not_number'.tr();
     }
 
-    if (min != null && max != null) {
-      final minVal = double.tryParse(min.replaceAll(',', '.'));
-      final maxVal = double.tryParse(max.replaceAll(',', '.'));
-      if (minVal != null && maxVal != null) {
-        if (number < minVal || number > maxVal) {
-          return 'reading.error_out_of_bounds'.tr(args: [min, max]);
-        }
+    if (minVal != null && maxVal != null) {
+      if (number < minVal || number > maxVal) {
+        // BOLT: Use pre-calculated values for error message if possible,
+        // but here we need the string representation for tr().
+        // We'll stick to the original string arguments for tr() consistency.
+        return 'reading.error_out_of_bounds'.tr(args: [
+          minVal.toString().replaceAll('.', ','),
+          maxVal.toString().replaceAll('.', ','),
+        ]);
       }
     }
     return null;
@@ -462,8 +460,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       const TextInputType.numberWithOptions(decimal: true),
                   validator: (value) => _validateReading(
                     value,
-                    _currentData!.valorMinContador1,
-                    _currentData!.valorMaxContador1,
+                    _currentData!.minVal1,
+                    _currentData!.maxVal1,
                   ),
                 ),
               ),
@@ -500,8 +498,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
-                      _currentData!.valorMinContador2,
-                      _currentData!.valorMaxContador2,
+                      _currentData!.minVal2,
+                      _currentData!.maxVal2,
                     );
                   },
                 ),
@@ -529,8 +527,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
-                      _currentData!.valorMinContador3,
-                      _currentData!.valorMaxContador3,
+                      _currentData!.minVal3,
+                      _currentData!.maxVal3,
                     );
                   },
                 ),

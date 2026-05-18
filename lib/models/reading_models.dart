@@ -2,6 +2,10 @@
 ///
 /// This model encapsulates all metadata and current counter values for a specific
 /// delivery point (CIL), including the security token required for submissions.
+///
+/// **BOLT**: Numeric values and ranges are memoized as `double` during
+/// instantiation to eliminate redundant parsing and European comma replacement
+/// logic in high-frequency validation loops (e.g., `ReadingScreen`).
 class ReadingResponse {
   /// Local Identification Code (Código de Identificação Local).
   /// A unique 10-digit number identifying the delivery point.
@@ -68,6 +72,27 @@ class ReadingResponse {
   /// Internal register code for Counter 3.
   final String? register3;
 
+  /// Pre-parsed numeric value for Counter 1.
+  final double? val1;
+  /// Pre-parsed minimum value for Counter 1.
+  final double? minVal1;
+  /// Pre-parsed maximum value for Counter 1.
+  final double? maxVal1;
+
+  /// Pre-parsed numeric value for Counter 2.
+  final double? val2;
+  /// Pre-parsed minimum value for Counter 2.
+  final double? minVal2;
+  /// Pre-parsed maximum value for Counter 2.
+  final double? maxVal2;
+
+  /// Pre-parsed numeric value for Counter 3.
+  final double? val3;
+  /// Pre-parsed minimum value for Counter 3.
+  final double? minVal3;
+  /// Pre-parsed maximum value for Counter 3.
+  final double? maxVal3;
+
   ReadingResponse({
     required this.cil,
     required this.cilToken,
@@ -94,7 +119,15 @@ class ReadingResponse {
     this.valorMinContador3,
     this.valorMaxContador3,
     this.register3,
-  });
+  })  : val1 = valorContador1 != null ? double.tryParse(valorContador1.replaceAll(',', '.')) : null,
+        minVal1 = valorMinContador1 != null ? double.tryParse(valorMinContador1.replaceAll(',', '.')) : null,
+        maxVal1 = valorMaxContador1 != null ? double.tryParse(valorMaxContador1.replaceAll(',', '.')) : null,
+        val2 = valorContador2 != null ? double.tryParse(valorContador2.replaceAll(',', '.')) : null,
+        minVal2 = valorMinContador2 != null ? double.tryParse(valorMinContador2.replaceAll(',', '.')) : null,
+        maxVal2 = valorMaxContador2 != null ? double.tryParse(valorMaxContador2.replaceAll(',', '.')) : null,
+        val3 = valorContador3 != null ? double.tryParse(valorContador3.replaceAll(',', '.')) : null,
+        minVal3 = valorMinContador3 != null ? double.tryParse(valorMinContador3.replaceAll(',', '.')) : null,
+        maxVal3 = valorMaxContador3 != null ? double.tryParse(valorMaxContador3.replaceAll(',', '.')) : null;
 
   factory ReadingResponse.fromJson(Map<String, dynamic> json) {
     return ReadingResponse(
@@ -192,6 +225,8 @@ class SendReadingPayload {
 ///
 /// **BOLT**: These objects are cached in-memory by the `HistoryService` and
 /// indexed by `profileId` to allow O(1) lookups during dashboard rendering.
+/// Numeric values are memoized as `double` during instantiation to eliminate
+/// redundant parsing overhead in UI loops and chart generation.
 class LocalReadingHistory {
   /// Date and time when the reading was recorded locally.
   final DateTime date;
@@ -204,13 +239,29 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  /// Pre-parsed numeric value for Counter 1.
+  final double val1;
+  /// Pre-parsed numeric value for Counter 2.
+  final double? val2;
+  /// Pre-parsed numeric value for Counter 3.
+  final double? val3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  })  : val1 = parseValue(valorContador1) ?? 0.0,
+        val2 = parseValue(valorContador2),
+        val3 = parseValue(valorContador3);
+
+  /// BOLT: Robust numeric parsing for European format (comma as decimal separator).
+  /// Replaces commas with periods before parsing to double.
+  static double? parseValue(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return double.tryParse(value.replaceAll(',', '.'));
+  }
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(

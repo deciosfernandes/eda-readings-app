@@ -33,3 +33,7 @@
 ## 2026-02-17 - O(1) Collection Views with UnmodifiableListView
 **Learning:** Using `List.from()` to return copies of internal collections from services ensures immutability but incurs O(N) allocation and copy costs. `UnmodifiableListView` provides the same security with O(1) overhead by wrapping the existing list.
 **Action:** Return `UnmodifiableListView` from service getters. Additionally, pass mapped iterables directly to `insertAll` in batch operations to avoid intermediate `.toList()` allocations.
+
+## 2026-02-18 - Memoization of European-formatted Numeric Strings
+**Learning:** Redundant `String.replaceAll` and `double.tryParse` calls in high-frequency UI loops (e.g., chart rendering or input validation) create measurable CPU overhead and garbage collection pressure, especially when handling European comma-based decimal separators.
+**Action:** Memoize parsed `double` values directly in data models (`LocalReadingHistory`, `ReadingResponse`) during instantiation. Use a shared, robust parsing utility to ensure consistency across models and CSV import logic.
