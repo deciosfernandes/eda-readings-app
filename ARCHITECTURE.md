@@ -68,6 +68,25 @@ graph TD
     SSS -->|Persists Credentials| FSS
 ```
 
+### Bootstrap & Initialization
+The application startup in `main.dart` is optimized for speed by parallelizing the initialization of core services. This ensures that all singletons and essential states are ready before the UI is rendered.
+
+```mermaid
+graph TD
+    Start[main.dart] --> BW[WidgetsFlutterBinding.ensureInitialized]
+    BW --> FW[Future.wait]
+    FW --> EL[EasyLocalization.ensureInitialized]
+    FW --> NS[NotificationService.initialize]
+    FW --> TS[ThemeService.loadTheme]
+    FW --> SSS[SecureStorageService.getAppState]
+    FW --> HS[HistoryService.getHistory]
+    EL --> RA[runApp]
+    NS --> RA
+    TS --> RA
+    SSS --> RA
+    HS --> RA
+```
+
 ### Navigation Flow
 The following diagram illustrates the primary user journey and the relationships between the application's screens.
 
@@ -168,6 +187,43 @@ To ensure data portability and consistency, all imports and exports follow a str
 - **Lookup Optimization**: During import, a lookup map of property names to IDs is pre-calculated to achieve O(1) matching, replacing O(N) list scans.
 - **Batch Processing**: Multiple readings are added to the `HistoryService` in a single atomic update to minimize secure storage I/O overhead.
 
+## 📡 API Reference
+
+The application interacts with the EDA Reading API. Understanding the mapping of the Portuguese response keys is essential for maintaining the data models.
+
+### ReadingResponse (GET /api/leitura)
+
+| Key | Type | Description | Usage |
+| :--- | :--- | :--- | :--- |
+| `cil` | `String` | Código de Identificação Local (10 digits) | Primary identifier for the delivery point. |
+| `cilToken` | `String` | Security token | Required for reading submission. |
+| `cilTokenExpires` | `int` | Unix timestamp (ms) | Expiration time for the `cilToken`. |
+| `serial` | `String` | Meter Serial Number | Used in the submission payload. |
+| `material` | `String` | Meter material code | Used in the submission payload. |
+| `contrato` | `String` | Contract Number | Associated with the CIL. |
+| `dataAconselhavelEnvio` | `String` | Recommended sending date | Used to schedule reminders. |
+| `tarifa` | `String` | Electricity Tariff | e.g., "Simples", "Bi-horária", etc. |
+| `valorContador1` | `String` | Counter 1 Value (kWh) | Peak/Intermediate reading. |
+| `valorMinContador1` | `String` | Counter 1 Min Value | Lower validation boundary. |
+| `valorMaxContador1` | `String` | Counter 1 Max Value | Upper validation boundary. |
+| `register1` | `String` | Counter 1 Register Code | Required for submission. |
+
+### SendReadingPayload (PUT /api/leitura)
+
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `cil` | `String` | Local Identification Code. |
+| `cilToken` | `String` | Security token from `ReadingResponse`. |
+| `cilTokenExpires` | `int` | Expiration timestamp from `ReadingResponse`. |
+| `serial` | `String` | Meter serial number. |
+| `material` | `String` | Meter material code. |
+| `valorContador1` | `String` | New value for Counter 1. |
+| `register1` | `String` | Register code for Counter 1. |
+| `valorContador2` | `String?` | Optional: New value for Counter 2. |
+| `register2` | `String?` | Optional: Register code for Counter 2. |
+| `valorContador3` | `String?` | Optional: New value for Counter 3. |
+| `register3` | `String?` | Optional: Register code for Counter 3. |
+
 ### Import Flow
 The following sequence diagram details the interaction between components during a CSV history import, highlighting the security and performance safeguards.
 
@@ -246,11 +302,13 @@ The **Sentinel** pattern focuses on application security, data protection, and r
 
 ### ⚡ Performance (BOLT)
 - **Aggressive Caching**: Always check in-memory caches before performing disk I/O or platform channel calls.
+- **Parallel Startup**: Use `Future.wait` to initialize independent services concurrently.
 - **Loop Optimization**: Hoist expensive object instantiations (like `DateFormat`) out of loops.
 - **UI Responsiveness**: Pre-calculate derived data (like chart spots or formatted strings) during data loading rather than in the `build()` method.
 
 ### 🎨 UX & Accessibility (PALETTE)
 - **Tactile Feedback**: Use `HapticFeedback.selectionClick()` or `lightImpact()` for interactive elements.
+- **Stable Notification IDs**: Generate stable IDs using `int.parse(profileId) % 0x7FFFFFFF`. This prevents overflow on 32-bit platforms while maintaining uniqueness across profiles.
 - **Rich Semantics**: Provide descriptive `Semantics` labels that concatenate multiple fields to provide full context for screen readers.
 - **Consistent States**: Use themed empty states with icons and clear Calls to Action (CTAs).
 
