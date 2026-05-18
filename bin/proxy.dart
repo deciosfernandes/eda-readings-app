@@ -74,6 +74,15 @@ void main() async {
         request.uri.queryParametersAll,
       );
 
+      // Sentinel: Redundant path validation on the final Uri object to protect against
+      // potential normalization bypasses (e.g., ../ segments in the original request).
+      if (!url.path.startsWith('/api/leitura')) {
+        stderr.writeln('Blocked proxying to invalid resolved path: ${url.path}');
+        request.response.statusCode = HttpStatus.notFound;
+        await request.response.close();
+        continue;
+      }
+
       var proxyRequest = await client.openUrl(request.method, url);
 
       // Forward headers, omitting host-specific ones
@@ -92,11 +101,20 @@ void main() async {
       // Forward response headers
       request.response.statusCode = proxyResponse.statusCode;
       proxyResponse.headers.forEach((name, values) {
+        final lowerName = name.toLowerCase();
         // Avoid sending duplicate or restrictive CORS headers from the upstream
-        if (name.toLowerCase() != 'access-control-allow-origin' &&
-            name.toLowerCase() != 'content-security-policy') {
+        if (lowerName != 'access-control-allow-origin' &&
+            lowerName != 'content-security-policy') {
           for (var value in values) {
-            request.response.headers.add(name, value);
+            // Sentinel: Use set() for security headers to ensure uniqueness and prevent
+            // inconsistency if the upstream also sends them. Use add() for others (like Set-Cookie).
+            if (lowerName == 'x-content-type-options' ||
+                lowerName == 'x-frame-options' ||
+                lowerName == 'x-xss-protection') {
+              request.response.headers.set(name, value);
+            } else {
+              request.response.headers.add(name, value);
+            }
           }
         }
       });
@@ -107,7 +125,9 @@ void main() async {
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
       request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      // Sentinel: Return a generic error message to avoid leaking internal proxy
+      // or upstream details to the client.
+      request.response.write('Internal Server Error');
       await request.response.close();
     }
   }
