@@ -262,5 +262,32 @@ void main() {
       expect(restored.valorContador3, isNull);
       expect(restored.profileId, original.profileId);
     });
+
+    group('parseValue', () {
+      test('returns null for null or empty input', () {
+        expect(LocalReadingHistory.parseValue(null), isNull);
+        expect(LocalReadingHistory.parseValue(''), isNull);
+        expect(LocalReadingHistory.parseValue('  '), isNull);
+      });
+
+      test('parses standard decimal strings', () {
+        expect(LocalReadingHistory.parseValue('123.45'), 123.45);
+        expect(LocalReadingHistory.parseValue('100'), 100.0);
+      });
+
+      test('handles European comma decimals', () {
+        expect(LocalReadingHistory.parseValue('123,45'), 123.45);
+      });
+
+      test('trims whitespace', () {
+        expect(LocalReadingHistory.parseValue(' 123.45 '), 123.45);
+        expect(LocalReadingHistory.parseValue('\t123,45\n'), 123.45);
+      });
+
+      test('returns null for invalid strings', () {
+        expect(LocalReadingHistory.parseValue('abc'), isNull);
+        expect(LocalReadingHistory.parseValue('12.34.56'), isNull);
+      });
+    });
   });
 }

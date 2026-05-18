@@ -231,4 +231,11 @@ class LocalReadingHistory {
       'profileId': profileId,
     };
   }
+
+  /// Centralized numeric parsing for counter values.
+  /// Handles European decimal formats by replacing commas with periods.
+  static double? parseValue(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return double.tryParse(value.trim().replaceAll(',', '.'));
+  }
 }
