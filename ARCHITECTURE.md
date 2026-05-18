@@ -276,5 +276,36 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
+## 📚 Technical Reference
+
+### API Reference
+The following table maps the Portuguese-named keys used by the EDA API to their technical roles and descriptions within the application's data models.
+
+| Key | Technical Role | Description |
+| :--- | :--- | :--- |
+| `cilToken` | Security Token | A short-lived authentication token required for reading submission. |
+| `cilTokenExpires` | Expiration (ms) | Unix timestamp indicating when the current `cilToken` expires. |
+| `dataAconselhavelEnvio` | Submission Window | The recommended date for sending the next reading to avoid estimates. |
+| `valorContador1` | Register 1 Value | Current/Last reading for the primary counter (Ponta/Cheias/Simples). |
+| `valorMinContador1` | Register 1 Min | The minimum valid value for the next reading of Register 1. |
+| `valorMaxContador1` | Register 1 Max | The maximum valid value for the next reading of Register 1. |
+| `register1` | Register 1 ID | The internal hardware/system identifier for the first register. |
+
+### Development Best Practices
+
+#### ⚡ Performance (BOLT)
+- **Parallel Startup**: Use `Future.wait` in `main.dart` to initialize independent services (Localization, Notifications, Storage) concurrently, reducing blocking boot time.
+- **Data Pre-calculation**: Always transform raw data into UI-ready formats (e.g., `FlSpot`, formatted dates, accessibility labels) during the data loading phase rather than inside the `build()` method or `ListView.builder`.
+- **Persistent Clients**: Maintain a static, shared `http.Client` instance in `EDAClient` to leverage TCP connection pooling and eliminate redundant SSL handshake latency.
+
+#### 🎨 UX & Accessibility (PALETTE)
+- **Stable Notification IDs**: Generate consistent notification IDs using `int.parse(profileId) % 0x7FFFFFFF` to prevent collisions across profiles while ensuring compatibility with 32-bit platforms.
+- **Hoisted Theme Lookups**: Access `Theme.of(context)` and `ColorScheme` once at the top of the `build()` method to avoid redundant InheritedWidget tree traversals.
+- **Optimistic UI**: Use optimistic updates in services like `ThemeService` to provide immediate visual feedback before asynchronous persistence completes.
+
+#### 🛡️ Security (SENTINEL)
+- **Defense in Depth**: Implement input validation at both the UI layer (for immediate feedback) and the service/API layer (as a final safeguard against malformed data).
+- **Safe Path Validation**: When implementing proxies or URI redirection, always validate the final resolved `Uri` object to prevent path traversal attacks via percent-encoded characters or `..` segments.
+
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*

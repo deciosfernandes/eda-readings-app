@@ -47,5 +47,9 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Style Improvement**: Using Mermaid sequence diagrams to map complex data transformation pipelines (like CSV Import/Export).
 **Impact**: Bridges the "Visual Void" for non-obvious logic flows that span multiple layers (UI -> Utility -> Service). By visualizing the interplay between **BOLT** and **SENTINEL** patterns in these pipelines, we reduce the cognitive load for developers tasked with maintaining data integrity and security in portability features.
 
+### 🏛️ Bridging the Architecture Gap
+**Style Improvement**: Explicitly documenting patterns and API keys in a "Technical Reference" section within `ARCHITECTURE.md`.
+**Impact**: Codifies "Dark Matter" knowledge—implementation details like stable notification ID generation and Portuguese-to-Technical API mapping—that are often hidden in code. This ensures that new contributors can understand the *reasoning* behind specific technical choices without needing a manual walkthrough.
+
 ---
-*Last Updated: 2026-05-14*
+*Last Updated: 2026-05-16*
