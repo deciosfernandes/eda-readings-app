@@ -50,6 +50,8 @@ void main() async {
     request.response.headers
         .set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept');
     request.response.headers.set('X-Content-Type-Options', 'nosniff');
+    request.response.headers.set('X-Frame-Options', 'DENY');
+    request.response.headers.set('X-XSS-Protection', '1; mode=block');
 
     if (request.method == 'OPTIONS') {
       request.response.statusCode = HttpStatus.ok;
@@ -62,6 +64,16 @@ void main() async {
       stderr
           .writeln('Blocked request to unauthorized path: ${request.uri.path}');
       request.response.statusCode = HttpStatus.notFound;
+      await request.response.close();
+      continue;
+    }
+
+    // Sentinel: Implement request body size limit (1MB) to prevent local DoS via large payloads.
+    const maxContentLength = 1024 * 1024;
+    if (request.contentLength > maxContentLength) {
+      stderr.writeln(
+          'Blocked request with excessive Content-Length: ${request.contentLength} bytes');
+      request.response.statusCode = HttpStatus.requestEntityTooLarge;
       await request.response.close();
       continue;
     }
@@ -85,18 +97,40 @@ void main() async {
         }
       });
 
+      // Sentinel: Use a transformer to enforce the 1MB limit on the request body,
+      // protecting against both large Content-Length and large chunked transfers.
+      int bytesRead = 0;
+      final limitedStream = request.map((chunk) {
+        bytesRead += chunk.length;
+        if (bytesRead > maxContentLength) {
+          throw const HttpException('Payload Too Large');
+        }
+        return chunk;
+      });
+
       // Forward request body
-      await proxyRequest.addStream(request);
+      await proxyRequest.addStream(limitedStream);
       var proxyResponse = await proxyRequest.close();
 
       // Forward response headers
       request.response.statusCode = proxyResponse.statusCode;
       proxyResponse.headers.forEach((name, values) {
+        final lowerName = name.toLowerCase();
         // Avoid sending duplicate or restrictive CORS headers from the upstream
-        if (name.toLowerCase() != 'access-control-allow-origin' &&
-            name.toLowerCase() != 'content-security-policy') {
-          for (var value in values) {
-            request.response.headers.add(name, value);
+        if (lowerName != 'access-control-allow-origin' &&
+            lowerName != 'content-security-policy') {
+          if (lowerName == 'x-content-type-options' ||
+              lowerName == 'x-frame-options' ||
+              lowerName == 'x-xss-protection') {
+            // Sentinel: Use set() for security headers to ensure they are not duplicated
+            // if the upstream also provides them, maintaining a consistent security posture.
+            for (var value in values) {
+              request.response.headers.set(name, value);
+            }
+          } else {
+            for (var value in values) {
+              request.response.headers.add(name, value);
+            }
           }
         }
       });
@@ -106,8 +140,14 @@ void main() async {
       await request.response.close();
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
-      request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      if (e is HttpException && e.message == 'Payload Too Large') {
+        request.response.statusCode = HttpStatus.requestEntityTooLarge;
+        request.response.write('Payload Too Large');
+      } else {
+        request.response.statusCode = HttpStatus.internalServerError;
+        // Sentinel: Return a generic error message to prevent leaking internal details or upstream state.
+        request.response.write('Internal Server Error');
+      }
       await request.response.close();
     }
   }
