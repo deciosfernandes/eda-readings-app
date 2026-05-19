@@ -33,3 +33,7 @@
 ## 2026-02-17 - O(1) Collection Views with UnmodifiableListView
 **Learning:** Using `List.from()` to return copies of internal collections from services ensures immutability but incurs O(N) allocation and copy costs. `UnmodifiableListView` provides the same security with O(1) overhead by wrapping the existing list.
 **Action:** Return `UnmodifiableListView` from service getters. Additionally, pass mapped iterables directly to `insertAll` in batch operations to avoid intermediate `.toList()` allocations.
+
+## 2026-05-19 - Centralized Numeric Parsing and Model Memoization
+**Learning:** Performing string-to-double parsing and character replacement (e.g., ',' to '.') in high-frequency UI paths (like charts or input validation) creates unnecessary CPU churn. Moving this logic to the model's constructor (memoization) and centralizing it in a robust utility ensures consistency and O(1) access during rendering.
+**Action:** Always memoize derived numeric values in models during instantiation if they are used in build loops or frequent validation logic. Use a centralized utility for locale-aware numeric parsing to avoid duplicating regex/replacement logic.

@@ -34,39 +34,62 @@ class ReadingResponse {
 
   /// The active electricity tariff (e.g., "Simples", "Bi-horária", "Tri-horária").
   final String? tarifa;
-  
+
   /// Description for Counter 1 (e.g., "Ponta", "Cheias", or "Simples").
   final String? descContador1;
+
   /// Current/Last value for Counter 1 in kWh as recorded in the system.
   final String? valorContador1;
+
   /// Minimum allowed value for the next Counter 1 reading to prevent submission errors.
   final String? valorMinContador1;
+
   /// Maximum allowed value for the next Counter 1 reading to prevent submission errors.
   final String? valorMaxContador1;
+
   /// Internal register code for Counter 1, required for the [SendReadingPayload].
   final String? register1;
-  
+
   /// Description for Counter 2 (e.g., "Vazio" / Off-peak).
   final String? descContador2;
+
   /// Current/Last value for Counter 2 in kWh.
   final String? valorContador2;
+
   /// Minimum allowed value for the next Counter 2 reading.
   final String? valorMinContador2;
+
   /// Maximum allowed value for the next Counter 2 reading.
   final String? valorMaxContador2;
+
   /// Internal register code for Counter 2.
   final String? register2;
-  
+
   /// Description for Counter 3 (e.g., "Super Vazio").
   final String? descContador3;
+
   /// Current/Last value for Counter 3 in kWh.
   final String? valorContador3;
+
   /// Minimum allowed value for the next Counter 3 reading.
   final String? valorMinContador3;
+
   /// Maximum allowed value for the next Counter 3 reading.
   final String? valorMaxContador3;
+
   /// Internal register code for Counter 3.
   final String? register3;
+
+  // BOLT: Memoized double values to avoid redundant parsing in UI loops.
+  late final double val1;
+  late final double? minVal1;
+  late final double? maxVal1;
+  late final double? val2;
+  late final double? minVal2;
+  late final double? maxVal2;
+  late final double? val3;
+  late final double? minVal3;
+  late final double? maxVal3;
 
   ReadingResponse({
     required this.cil,
@@ -94,7 +117,17 @@ class ReadingResponse {
     this.valorMinContador3,
     this.valorMaxContador3,
     this.register3,
-  });
+  }) {
+    val1 = LocalReadingHistory.parseValue(valorContador1) ?? 0.0;
+    minVal1 = LocalReadingHistory.parseValue(valorMinContador1);
+    maxVal1 = LocalReadingHistory.parseValue(valorMaxContador1);
+    val2 = LocalReadingHistory.parseValue(valorContador2);
+    minVal2 = LocalReadingHistory.parseValue(valorMinContador2);
+    maxVal2 = LocalReadingHistory.parseValue(valorMaxContador2);
+    val3 = LocalReadingHistory.parseValue(valorContador3);
+    minVal3 = LocalReadingHistory.parseValue(valorMinContador3);
+    maxVal3 = LocalReadingHistory.parseValue(valorMaxContador3);
+  }
 
   factory ReadingResponse.fromJson(Map<String, dynamic> json) {
     return ReadingResponse(
@@ -131,24 +164,34 @@ class ReadingResponse {
 class SendReadingPayload {
   /// Local Identification Code (CIL).
   final String cil;
+
   /// Security token obtained from [ReadingResponse].
   final String cilToken;
+
   /// Expiration timestamp for the [cilToken].
   final int cilTokenExpires;
+
   /// Meter serial number.
   final String serial;
+
   /// Meter material code.
   final String material;
+
   /// New value for Counter 1 in kWh.
   final String valorContador1;
+
   /// Internal register code for Counter 1.
   final String register1;
+
   /// Optional new value for Counter 2 in kWh.
   final String? valorContador2;
+
   /// Optional internal register code for Counter 2.
   final String? register2;
+
   /// Optional new value for Counter 3 in kWh.
   final String? valorContador3;
+
   /// Optional internal register code for Counter 3.
   final String? register3;
 
@@ -195,14 +238,23 @@ class SendReadingPayload {
 class LocalReadingHistory {
   /// Date and time when the reading was recorded locally.
   final DateTime date;
+
   /// Value for Counter 1 in kWh.
   final String valorContador1;
+
   /// Optional value for Counter 2 in kWh.
   final String? valorContador2;
+
   /// Optional value for Counter 3 in kWh.
   final String? valorContador3;
+
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
+
+  // BOLT: Memoized double values to avoid redundant parsing in UI loops.
+  late final double val1;
+  late final double? val2;
+  late final double? val3;
 
   LocalReadingHistory({
     required this.date,
@@ -210,7 +262,18 @@ class LocalReadingHistory {
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  }) {
+    val1 = parseValue(valorContador1) ?? 0.0;
+    val2 = parseValue(valorContador2);
+    val3 = parseValue(valorContador3);
+  }
+
+  /// BOLT: Centralized robust numeric parsing that handles nulls and comma-based
+  /// decimal formats common in European locales.
+  static double? parseValue(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return double.tryParse(value.replaceAll(',', '.'));
+  }
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
