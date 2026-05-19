@@ -34,12 +34,73 @@ Understanding these terms is critical for working with the EDA API and the appli
 | **Super Vazio** | Horas de Super Vazio | Deep off-peak. Even lower costs during specific night windows. |
 | **Janela de Envio** | Data Aconselhável de Envio | Recommended Submission Window. The date provided by EDA when a reading should be submitted to ensure accurate billing and avoid estimates. |
 
+## 📖 API Reference
+
+This section maps the Portuguese-named keys from the EDA API (as seen in `ReadingResponse` and `SendReadingPayload`) to their technical roles and descriptions.
+
+| Key | Type | Description |
+| :--- | :--- | :--- |
+| `cil` | String | Local Identification Code (10 digits). Unique delivery point identifier. |
+| `cilToken` | String | Security token required for `PUT` submission (`sendReading`). |
+| `cilTokenExpires` | Integer | Epoch timestamp (ms) indicating when the `cilToken` expires. |
+| `serial` | String | The physical meter serial number. |
+| `material` | String | Meter model/material code. |
+| `contrato` | String | The electricity contract number. |
+| `data` | String | Date of the last recorded reading in the EDA system. |
+| `dataAconselhavelEnvio` | String | The recommended date for the next reading submission. |
+| `origem` | String | The source of the last reading (e.g., "Web", "App", "Estimativa"). |
+| `tarifa` | String | The current tariff type (e.g., "Simples", "Bi-horária", "Tri-horária"). |
+| `valorContador[1-3]` | String | The last recorded value for the respective counter register. |
+| `valorMinContador[1-3]`| String | The minimum allowed value for the next submission for this register. |
+| `valorMaxContador[1-3]`| String | The maximum allowed value for the next submission for this register. |
+| `descContador[1-3]` | String | Description of the register (e.g., "Ponta", "Vazio", "Super Vazio"). |
+| `register[1-3]` | String | The internal register code required for the `SendReadingPayload`. |
+
 ### Meter Registers (Contadores)
 The application handles up to three registers depending on the user's tariff:
 
 1.  **`valorContador1` (Register 1)**: Primary reading. In a *Simples* tariff, this is the only counter. In *Bi-horária* or *Tri-horária*, it typically maps to the **Peak/Intermediate (Ponta/Cheias)** period.
 2.  **`valorContador2` (Register 2)**: Used in *Bi-horária* and *Tri-horária* tariffs. Typically maps to the **Off-peak (Vazio)** period.
 3.  **`valorContador3` (Register 3)**: Used exclusively in *Tri-horária* tariffs. Typically maps to the **Super Off-peak (Super Vazio)** period.
+
+## 🏗️ Lifecycle & Initialization
+
+The application uses a parallel initialization strategy to minimize startup time. All core services are initialized concurrently before the UI is mounted.
+
+### Bootstrap & Initialization
+The following sequence diagram illustrates the parallel startup flow in `main.dart`.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SSS as SecureStorageService
+    participant HS as HistoryService
+    participant App as MyApp
+
+    M->>M: WidgetsFlutterBinding.ensureInitialized()
+
+    rect rgb(200, 230, 255)
+        Note over M, HS: BOLT: Parallel Initialization (Future.wait)
+        par Concurrent Tasks
+            M->>EL: ensureInitialized()
+            M->>NS: initialize()
+            M->>TS: loadTheme()
+            M->>SSS: getAppState()
+            M->>HS: getHistory()
+        end
+    end
+
+    EL-->>M: Ready
+    NS-->>M: Ready (Permissions Handled)
+    TS-->>M: Ready (Theme Cached)
+    SSS-->>M: Ready (State Cached)
+    HS-->>M: Ready (History Cached)
+
+    M->>App: runApp()
+```
 
 ## 🏗️ State Management
 
