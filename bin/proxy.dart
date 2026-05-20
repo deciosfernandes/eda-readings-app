@@ -66,6 +66,14 @@ void main() async {
       continue;
     }
 
+    // Sentinel: Enforce request body size limits to mitigate DoS via large payloads.
+    const maxBodySize = 1024 * 1024; // 1MB
+    if (request.contentLength > maxBodySize) {
+      request.response.statusCode = HttpStatus.requestEntityTooLarge;
+      await request.response.close();
+      continue;
+    }
+
     try {
       // Sentinel: Use Uri.https for safer URI construction, mitigating injection risks.
       final url = Uri.https(
@@ -85,8 +93,27 @@ void main() async {
         }
       });
 
-      // Forward request body
-      await proxyRequest.addStream(request);
+      // Sentinel: Forward request body with byte counting to enforce limit (e.g. for chunked transfers).
+      int bytesRead = 0;
+      final limitedStream = request.map((data) {
+        bytesRead += data.length;
+        if (bytesRead > maxBodySize) {
+          throw const HttpException('Payload Too Large');
+        }
+        return data;
+      });
+
+      try {
+        await proxyRequest.addStream(limitedStream);
+      } catch (e) {
+        if (e is HttpException && e.message == 'Payload Too Large') {
+          request.response.statusCode = HttpStatus.requestEntityTooLarge;
+          await request.response.close();
+          continue;
+        }
+        rethrow;
+      }
+
       var proxyResponse = await proxyRequest.close();
 
       // Forward response headers
@@ -107,7 +134,7 @@ void main() async {
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
       request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      request.response.write('Internal Server Error');
       await request.response.close();
     }
   }

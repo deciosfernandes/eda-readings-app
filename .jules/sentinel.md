@@ -32,3 +32,8 @@
 **Vulnerability:** The development proxy was an "Open Proxy" using wildcard CORS origins, allowing any website to abuse it for scanning or reaching unauthorized paths.
 **Learning:** Development utilities like CORS proxies are often overlooked but can be exploited if they are overly permissive. A wildcard `Access-Control-Allow-Origin` allows malicious sites to interact with the local proxy, and lack of path filtering allows it to be used as a general-purpose proxy to reach any resource.
 **Prevention:** Restrict development proxies to specific, validated origins (e.g., `localhost`). Use `headers.set()` instead of `add()` when forwarding upstream responses to prevent duplicate security headers. Implement path-based filtering to ensure the proxy only services expected API endpoints, transforming it from an open proxy into a restricted reverse proxy.
+
+## 2026-05-20 - Idiomatic DoS Protection in Dart Proxies
+**Vulnerability:** Proxies can be vulnerable to resource exhaustion (DoS) if they ingest and forward large payloads without limits.
+**Learning:** Simply checking `Content-Length` is insufficient for chunked transfers. A robust fix must use a stream-based byte counter. In Dart, throwing an exception inside `request.map` or a `StreamTransformer` during `addStream` is the idiomatic way to stop processing, as it automatically cancels the source subscription.
+**Prevention:** Always wrap request streams in a byte-counting transformer and enforce a reasonable limit (e.g., 1MB) for expected API payloads.
