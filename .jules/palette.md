@@ -29,3 +29,7 @@
 ## 2026-05-26 - [Unambiguous selection feedback in horizontal lists]
 **Learning:** For item selectors in horizontal lists (e.g., icon pickers), a simple background color change can be subtle and easily missed, especially in high-brightness environments. Combining an 'AnimatedContainer' for smooth transitions with a 'Stack'-based checkmark overlay ('Icons.check_circle') provides clear, unambiguous, and delightful visual confirmation of the selected state.
 **Action:** Use 'AnimatedContainer' and a checkmark status indicator for all selection components where clarity is paramount.
+
+## 2026-05-27 - [Contextual consumption deltas in history lists]
+**Learning:** Providing immediate visual and semantic feedback on consumption trends (deltas) directly in history lists significantly reduces the cognitive effort required for users to understand their usage patterns. For accessibility, these visual badges must be mirrored in the 'Semantics' labels to ensure parity for screen reader users.
+**Action:** Always calculate and display deltas for chronological data series, ensuring they are pre-calculated for performance and included in accessibility labels.
