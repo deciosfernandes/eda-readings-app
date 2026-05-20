@@ -41,6 +41,34 @@ The application handles up to three registers depending on the user's tariff:
 2.  **`valorContador2` (Register 2)**: Used in *Bi-horária* and *Tri-horária* tariffs. Typically maps to the **Off-peak (Vazio)** period.
 3.  **`valorContador3` (Register 3)**: Used exclusively in *Tri-horária* tariffs. Typically maps to the **Super Off-peak (Super Vazio)** period.
 
+### API Reference
+The application interacts with the EDA API using specific Portuguese keys. This table maps those keys to their technical roles and descriptions to ensure clarity across the codebase.
+
+| Key | Portuguese Name | Technical Role | Description |
+| :--- | :--- | :--- | :--- |
+| `cil` | Código de Identificação Local | Identity | 10-digit unique delivery point identifier. |
+| `cilToken` | Token de Segurança | Authentication | Transient security token required for submissions. |
+| `cilTokenExpires` | Expiração do Token | Lifecycle | Epoch timestamp (ms) when the token becomes invalid. |
+| `serial` | Número de Série | Metadata | The physical meter's serial number. |
+| `material` | Código de Material | Metadata | Internal code for the meter type/hardware. |
+| `contrato` | Número de Contrato | Identity | The electricity contract number associated with the CIL. |
+| `data` | Data da Leitura | State | Date of the last recorded reading in the EDA system. |
+| `dataAconselhavelEnvio` | Janela de Envio | Logic | Recommended date for the next submission. Used for notifications. |
+| `origem` | Origem | Metadata | Source of the last reading (e.g., 'App', 'Web', 'Estimativa'). |
+| `tarifa` | Tarifa | Logic | The user's active tariff type (Simples, Bi-horária, Tri-horária). |
+| `valorContador1` | Leitura (Ponta/Cheias) | Data | Current/New value for the first meter register in kWh. |
+| `valorMinContador1` | Limite Mínimo | Validation | The minimum allowed value for Counter 1 submission. |
+| `valorMaxContador1` | Limite Máximo | Validation | The maximum allowed value for Counter 1 submission. |
+| `register1` | Código de Registo 1 | Logic | Internal API identifier for the first register. |
+| `valorContador2` | Leitura (Vazio) | Data | Value for the second meter register (Off-peak). |
+| `valorMinContador2` | Limite Mínimo | Validation | Minimum allowed value for Counter 2. |
+| `valorMaxContador2` | Limite Máximo | Validation | Maximum allowed value for Counter 2. |
+| `register2` | Código de Registo 2 | Logic | Internal API identifier for the second register. |
+| `valorContador3` | Leitura (Super Vazio) | Data | Value for the third meter register (Super Off-peak). |
+| `valorMinContador3` | Limite Mínimo | Validation | Minimum allowed value for Counter 3. |
+| `valorMaxContador3` | Limite Máximo | Validation | Maximum allowed value for Counter 3. |
+| `register3` | Código de Registo 3 | Logic | Internal API identifier for the third register. |
+
 ## 🏗️ State Management
 
 This project deliberately avoids external state management libraries (like Provider, Riverpod, or Bloc) to keep the dependency tree lean and the architecture simple.
@@ -118,6 +146,37 @@ sequenceDiagram
     HS->>HS: Update In-Memory Cache
     HS->>FSS: Persist (Encrypted JSON)
     UI->>UI: Show Success SnackBar & Pop
+```
+
+### Lifecycle & Initialization
+The following sequence diagram illustrates the parallel initialization of services during application startup in `main.dart`. This **BOLT** pattern ensures the app becomes interactive as quickly as possible.
+
+```mermaid
+sequenceDiagram
+    participant Main as main()
+    participant FW as Future.wait
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SS as SecureStorageService
+    participant HS as HistoryService
+    participant App as MyApp
+
+    Main->>FW: [Async Start]
+    par Parallel Initialization
+        FW->>EL: ensureInitialized()
+        FW->>NS: initialize()
+        FW->>TS: loadTheme()
+        FW->>SS: getAppState()
+        FW->>HS: getHistory()
+    end
+    EL-->>FW: Complete
+    NS-->>FW: Complete
+    TS-->>FW: Complete
+    SS-->>FW: Complete
+    HS-->>FW: Complete
+    FW-->>Main: [Async End]
+    Main->>App: runApp()
 ```
 
 ## 🛠️ Core Services

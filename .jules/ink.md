@@ -47,5 +47,9 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Style Improvement**: Using Mermaid sequence diagrams to map complex data transformation pipelines (like CSV Import/Export).
 **Impact**: Bridges the "Visual Void" for non-obvious logic flows that span multiple layers (UI -> Utility -> Service). By visualizing the interplay between **BOLT** and **SENTINEL** patterns in these pipelines, we reduce the cognitive load for developers tasked with maintaining data integrity and security in portability features.
 
+### 🧬 Verifying "Dark Matter" before Documentation
+**Gotcha**: Technical documentation or memories might suggest the existence of helper methods (e.g., `_parseLocaleDouble`) or optimized models that haven't actually been implemented yet.
+**Solution**: Always perform a `grep` or file audit before documenting "architectural patterns". In this project, auditing revealed that locale-aware parsing is still handled via inline `.replaceAll(',', '.')` in screens, which informed the accuracy of the new **API Reference**.
+
 ---
-*Last Updated: 2026-05-14*
+*Last Updated: 2026-05-15*
