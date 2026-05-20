@@ -105,6 +105,26 @@ void main() {
       expect(response.valorContador2, isNull);
       expect(response.valorContador3, isNull);
     });
+
+    test('memoizes numeric values correctly', () {
+      final json = {
+        'cil': 'PT123',
+        'cilToken': 'token',
+        'cilTokenExpires': 0,
+        'serial': 'S',
+        'material': 'M',
+        'contrato': 'C',
+        'valorContador1': '1234,56',
+        'valorMinContador1': '1000.00',
+        'valorMaxContador1': '2000,00',
+      };
+
+      final response = ReadingResponse.fromJson(json);
+
+      expect(response.val1, 1234.56);
+      expect(response.minVal1, 1000.00);
+      expect(response.maxVal1, 2000.00);
+    });
   });
 
   group('SendReadingPayload', () {
@@ -261,6 +281,34 @@ void main() {
       expect(restored.valorContador2, isNull);
       expect(restored.valorContador3, isNull);
       expect(restored.profileId, original.profileId);
+    });
+
+    test('memoizes numeric values correctly', () {
+      final json = {
+        'date': '2024-03-15T10:30:00.000Z',
+        'valorContador1': '1234,56',
+        'valorContador2': '500,00',
+        'valorContador3': '200.00',
+      };
+
+      final history = LocalReadingHistory.fromJson(json);
+
+      expect(history.val1, 1234.56);
+      expect(history.val2, 500.00);
+      expect(history.val3, 200.00);
+    });
+
+    test('Handles null and empty strings in memoization', () {
+      final json = {
+        'date': '2024-03-15T10:30:00.000Z',
+        'valorContador1': '',
+        'valorContador2': null,
+      };
+
+      final history = LocalReadingHistory.fromJson(json);
+
+      expect(history.val1, 0.0);
+      expect(history.val2, isNull);
     });
   });
 }

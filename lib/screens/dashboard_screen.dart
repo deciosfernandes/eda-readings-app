@@ -35,6 +35,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<String> _historyFormattedDates = [];
   // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
   List<String> _historySemantics = [];
+  // BOLT: Pre-calculated consumption deltas to ensure O(1) build performance.
+  List<double?> _historyDeltas = [];
   bool _isLoading = true;
   AppStateData? _appState;
   // BOLT: Cache DateFormat instance to avoid repeated creation in ListView.builder
@@ -76,6 +78,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
     final semantics = List<String>.filled(historyLength, '');
+    final deltas = List<double?>.filled(historyLength, null);
 
     for (int i = 0; i < historyLength; i++) {
       final reverseIdx = historyLength - 1 - i;
@@ -86,22 +89,35 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       final c1 = item.valorContador1;
       final c2 = item.valorContador2;
       final c3 = item.valorContador3;
+      final val1 = item.val1;
 
       // History list uses newest-first order.
       final formattedDate = _historyDateFormat.format(date);
       formattedDates[i] = formattedDate;
 
+      // BOLT: Pre-calculate consumption delta (difference from previous reading in chronological order).
+      // Since 'history' is newest-first, the previous reading is at index i + 1.
+      if (i < historyLength - 1) {
+        final prevVal = history[i + 1].val1;
+        if (val1 > prevVal) {
+          deltas[i] = val1 - prevVal;
+        }
+      }
+
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
+      if (deltas[i] != null) {
+        final d = deltas[i]!;
+        buffer.write(', +${d.toStringAsFixed(d.truncateToDouble() == d ? 0 : 2)} kWh');
+      }
       if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
       if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
       semantics[i] = buffer.toString();
 
       // Charts use chronological order (oldest to newest). We use the same 'item'
       // but map it to 'reverseIdx' to eliminate the 'reverseItem' lookup and halving O(N) work.
-      final val = double.tryParse(c1) ?? 0.0;
-      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), val);
+      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), val1);
       labels[reverseIdx] = '${date.day}/${date.month}';
     }
 
@@ -112,6 +128,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
       _historySemantics = semantics;
+      _historyDeltas = deltas;
       _isLoading = false;
     });
 
@@ -415,6 +432,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
         final item = _history[index];
         // BOLT: Use pre-calculated formatted date to avoid redundant processing.
         final formattedDate = _historyFormattedDates[index];
+        final delta = _historyDeltas[index];
 
         return Card(
           elevation: 1,
@@ -431,9 +449,17 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 backgroundColor: colorScheme.primaryContainer,
                 child: const Icon(Icons.flash_on),
               ),
-              title: Text(
-                '${item.valorContador1} kWh',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              title: Row(
+                children: [
+                  Text(
+                    '${item.valorContador1} kWh',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (delta != null) ...[
+                    const SizedBox(width: 8),
+                    _ConsumptionDeltaBadge(delta: delta, colorScheme: colorScheme),
+                  ],
+                ],
               ),
               subtitle: Text(formattedDate),
               trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
@@ -531,6 +557,44 @@ class _HistoryBadge extends StatelessWidget {
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
+      ),
+    );
+  }
+}
+
+// PALETTE: Display consumption delta with visual delight and clarity.
+class _ConsumptionDeltaBadge extends StatelessWidget {
+  final double delta;
+  final ColorScheme colorScheme;
+
+  const _ConsumptionDeltaBadge({required this.delta, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.trending_up,
+            size: 14,
+            color: colorScheme.secondary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '+${delta.toStringAsFixed(delta.truncateToDouble() == delta ? 0 : 2)}',
+            style: TextStyle(
+              color: colorScheme.secondary,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }

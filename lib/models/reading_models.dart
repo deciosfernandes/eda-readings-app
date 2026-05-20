@@ -34,7 +34,7 @@ class ReadingResponse {
 
   /// The active electricity tariff (e.g., "Simples", "Bi-horária", "Tri-horária").
   final String? tarifa;
-  
+
   /// Description for Counter 1 (e.g., "Ponta", "Cheias", or "Simples").
   final String? descContador1;
   /// Current/Last value for Counter 1 in kWh as recorded in the system.
@@ -45,7 +45,7 @@ class ReadingResponse {
   final String? valorMaxContador1;
   /// Internal register code for Counter 1, required for the [SendReadingPayload].
   final String? register1;
-  
+
   /// Description for Counter 2 (e.g., "Vazio" / Off-peak).
   final String? descContador2;
   /// Current/Last value for Counter 2 in kWh.
@@ -56,7 +56,7 @@ class ReadingResponse {
   final String? valorMaxContador2;
   /// Internal register code for Counter 2.
   final String? register2;
-  
+
   /// Description for Counter 3 (e.g., "Super Vazio").
   final String? descContador3;
   /// Current/Last value for Counter 3 in kWh.
@@ -67,6 +67,17 @@ class ReadingResponse {
   final String? valorMaxContador3;
   /// Internal register code for Counter 3.
   final String? register3;
+
+  // BOLT: Memoized numeric values to avoid redundant parsing in UI loops.
+  final double? val1;
+  final double? minVal1;
+  final double? maxVal1;
+  final double? val2;
+  final double? minVal2;
+  final double? maxVal2;
+  final double? val3;
+  final double? minVal3;
+  final double? maxVal3;
 
   ReadingResponse({
     required this.cil,
@@ -94,9 +105,28 @@ class ReadingResponse {
     this.valorMinContador3,
     this.valorMaxContador3,
     this.register3,
+    this.val1,
+    this.minVal1,
+    this.maxVal1,
+    this.val2,
+    this.minVal2,
+    this.maxVal2,
+    this.val3,
+    this.minVal3,
+    this.maxVal3,
   });
 
   factory ReadingResponse.fromJson(Map<String, dynamic> json) {
+    final v1 = json['valorContador1'] as String?;
+    final vMin1 = json['valorMinContador1'] as String?;
+    final vMax1 = json['valorMaxContador1'] as String?;
+    final v2 = json['valorContador2'] as String?;
+    final vMin2 = json['valorMinContador2'] as String?;
+    final vMax2 = json['valorMaxContador2'] as String?;
+    final v3 = json['valorContador3'] as String?;
+    final vMin3 = json['valorMinContador3'] as String?;
+    final vMax3 = json['valorMaxContador3'] as String?;
+
     return ReadingResponse(
       cil: json['cil'] ?? '',
       cilToken: json['cilToken'] ?? '',
@@ -109,20 +139,29 @@ class ReadingResponse {
       origem: json['origem'],
       tarifa: json['tarifa'],
       descContador1: json['descContador1'],
-      valorContador1: json['valorContador1'],
-      valorMinContador1: json['valorMinContador1'],
-      valorMaxContador1: json['valorMaxContador1'],
+      valorContador1: v1,
+      valorMinContador1: vMin1,
+      valorMaxContador1: vMax1,
       register1: json['register1'],
       descContador2: json['descContador2'],
-      valorContador2: json['valorContador2'],
-      valorMinContador2: json['valorMinContador2'],
-      valorMaxContador2: json['valorMaxContador2'],
+      valorContador2: v2,
+      valorMinContador2: vMin2,
+      valorMaxContador2: vMax2,
       register2: json['register2'],
       descContador3: json['descContador3'],
-      valorContador3: json['valorContador3'],
-      valorMinContador3: json['valorMinContador3'],
-      valorMaxContador3: json['valorMaxContador3'],
+      valorContador3: v3,
+      valorMinContador3: vMin3,
+      valorMaxContador3: vMax3,
       register3: json['register3'],
+      val1: _parseLocaleDouble(v1),
+      minVal1: _parseLocaleDouble(vMin1),
+      maxVal1: _parseLocaleDouble(vMax1),
+      val2: _parseLocaleDouble(v2),
+      minVal2: _parseLocaleDouble(vMin2),
+      maxVal2: _parseLocaleDouble(vMax2),
+      val3: _parseLocaleDouble(v3),
+      minVal3: _parseLocaleDouble(vMin3),
+      maxVal3: _parseLocaleDouble(vMax3),
     );
   }
 }
@@ -204,21 +243,36 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  // BOLT: Memoized numeric values to avoid redundant parsing in UI loops.
+  final double val1;
+  final double? val2;
+  final double? val3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
+    this.val1 = 0.0,
+    this.val2,
+    this.val3,
   });
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
+    final v1 = json['valorContador1'] as String? ?? '0';
+    final v2 = json['valorContador2'] as String?;
+    final v3 = json['valorContador3'] as String?;
+
     return LocalReadingHistory(
       date: DateTime.parse(json['date'] as String),
-      valorContador1: json['valorContador1'] as String? ?? '0',
-      valorContador2: json['valorContador2'] as String?,
-      valorContador3: json['valorContador3'] as String?,
+      valorContador1: v1,
+      valorContador2: v2,
+      valorContador3: v3,
       profileId: json['profileId'] as String?,
+      val1: _parseLocaleDouble(v1) ?? 0.0,
+      val2: _parseLocaleDouble(v2),
+      val3: _parseLocaleDouble(v3),
     );
   }
 
@@ -231,4 +285,10 @@ class LocalReadingHistory {
       'profileId': profileId,
     };
   }
+}
+
+/// BOLT: Helper to parse numeric strings that may use European (comma) decimal separators.
+double? _parseLocaleDouble(String? value) {
+  if (value == null || value.isEmpty) return null;
+  return double.tryParse(value.replaceAll(',', '.'));
 }

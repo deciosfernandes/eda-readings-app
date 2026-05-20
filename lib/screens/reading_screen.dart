@@ -53,11 +53,6 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   late String _submitTutorialDesc;
   late String _submitTooltip;
 
-  // Pre-parsed comparison values for consumption calculation.
-  double? _lastVal1;
-  double? _lastVal2;
-  double? _lastVal3;
-
   // Pre-calculated helper text bases (last reading + range).
   String _helperBase1 = '';
   String _helperBase2 = '';
@@ -127,14 +122,6 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       _label1 = '${data.descContador1 ?? 'reading.counter_1'.tr()} *';
       _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
       _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
-
-      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
-      _lastVal2 = data.valorContador2 != null
-          ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
-          : null;
-      _lastVal3 = data.valorContador3 != null
-          ? double.tryParse(data.valorContador3!.replaceAll(',', '.'))
-          : null;
 
       _helperBase1 = _buildHelperBase(
         data.valorContador1,
@@ -255,7 +242,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     }
   }
 
-  String? _validateReading(String? value, String? min, String? max) {
+  String? _validateReading(String? value, double? minVal, double? maxVal, String? minStr, String? maxStr) {
     if (value == null || value.isEmpty) {
       return 'login.error_empty'.tr();
     }
@@ -267,13 +254,10 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       return 'reading.error_not_number'.tr();
     }
 
-    if (min != null && max != null) {
-      final minVal = double.tryParse(min.replaceAll(',', '.'));
-      final maxVal = double.tryParse(max.replaceAll(',', '.'));
-      if (minVal != null && maxVal != null) {
-        if (number < minVal || number > maxVal) {
-          return 'reading.error_out_of_bounds'.tr(args: [min, max]);
-        }
+    // BOLT: Use pre-parsed comparison values from the model.
+    if (minVal != null && maxVal != null) {
+      if (number < minVal || number > maxVal) {
+        return 'reading.error_out_of_bounds'.tr(args: [minStr ?? '0', maxStr ?? '0']);
       }
     }
     return null;
@@ -454,7 +438,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                   onChanged: (_) => setState(() {}),
                   decoration: _buildInputDecoration(
                     label: _label1,
-                    lastValue: _lastVal1,
+                    lastValue: _currentData!.val1,
                     helperBase: _helperBase1,
                     controller: _c1Controller,
                   ),
@@ -462,6 +446,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       const TextInputType.numberWithOptions(decimal: true),
                   validator: (value) => _validateReading(
                     value,
+                    _currentData!.minVal1,
+                    _currentData!.maxVal1,
                     _currentData!.valorMinContador1,
                     _currentData!.valorMaxContador1,
                   ),
@@ -490,7 +476,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                   onChanged: (_) => setState(() {}),
                   decoration: _buildInputDecoration(
                     label: _label2,
-                    lastValue: _lastVal2,
+                    lastValue: _currentData!.val2,
                     helperBase: _helperBase2,
                     controller: _c2Controller,
                   ),
@@ -500,6 +486,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
+                      _currentData!.minVal2,
+                      _currentData!.maxVal2,
                       _currentData!.valorMinContador2,
                       _currentData!.valorMaxContador2,
                     );
@@ -519,7 +507,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                   onChanged: (_) => setState(() {}),
                   decoration: _buildInputDecoration(
                     label: _label3,
-                    lastValue: _lastVal3,
+                    lastValue: _currentData!.val3,
                     helperBase: _helperBase3,
                     controller: _c3Controller,
                   ),
@@ -529,6 +517,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
+                      _currentData!.minVal3,
+                      _currentData!.maxVal3,
                       _currentData!.valorMinContador3,
                       _currentData!.valorMaxContador3,
                     );
