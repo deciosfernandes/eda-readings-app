@@ -26,7 +26,8 @@
         "add_reading_tooltip": "Registar nova leitura do contador",
         "reading_history_item": "Leitura: {} kWh em {}",
         "no_properties": "Não existem propriedades",
-        "no_properties_desc": "Não existem propriedades. Adicione uma para poder enviar leituras"
+        "no_properties_desc": "Não existem propriedades. Adicione uma para poder enviar leituras",
+        "consumption_delta": "+{} kWh"
     },
     "reading": {
         "title": "Enviar Leitura",

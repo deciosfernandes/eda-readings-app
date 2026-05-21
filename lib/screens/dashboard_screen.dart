@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
+  // BOLT: Pre-calculated data to avoid repeated math in history list.
+  List<double?> _historyDeltas = [];
   // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
   List<String> _historySemantics = [];
   bool _isLoading = true;
@@ -75,6 +77,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final deltas = List<double?>.filled(historyLength, null);
     final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
@@ -91,9 +94,27 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       final formattedDate = _historyDateFormat.format(date);
       formattedDates[i] = formattedDate;
 
+      // BOLT: Calculate delta with chronologically previous reading (if exists).
+      // 'history' is newest-first, so i+1 is older.
+      if (i < historyLength - 1) {
+        final current = double.tryParse(c1.replaceAll(',', '.'));
+        final previous = double.tryParse(history[i + 1].valorContador1.replaceAll(',', '.'));
+        if (current != null && previous != null && current >= previous) {
+          deltas[i] = current - previous;
+        }
+      }
+
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
+      if (deltas[i] != null) {
+        final deltaVal = deltas[i]!;
+        final deltaStr = deltaVal.truncateToDouble() == deltaVal
+            ? deltaVal.toStringAsFixed(0)
+            : deltaVal.toStringAsFixed(2);
+        buffer.write(', ');
+        buffer.write('dashboard.consumption_delta'.tr(args: [deltaStr]));
+      }
       if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
       if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
       semantics[i] = buffer.toString();
@@ -111,6 +132,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historyDeltas = deltas;
       _historySemantics = semantics;
       _isLoading = false;
     });
@@ -423,7 +445,6 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
           child: Semantics(
-            // BOLT: Use pre-calculated semantics label for O(1) build performance.
             label: _historySemantics[index],
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -431,16 +452,71 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 backgroundColor: colorScheme.primaryContainer,
                 child: const Icon(Icons.flash_on),
               ),
-              title: Text(
-                '${item.valorContador1} kWh',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+            title: Row(
+              children: [
+                Text(
+                  '${item.valorContador1} kWh',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (_historyDeltas[index] != null) ...[
+                  const SizedBox(width: 8),
+                  _ConsumptionDeltaBadge(
+                    delta: _historyDeltas[index]!,
+                    colorScheme: colorScheme,
+                  ),
+                ],
+              ],
+            ),
               subtitle: Text(formattedDate),
               trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _ConsumptionDeltaBadge extends StatelessWidget {
+  final double delta;
+  final ColorScheme colorScheme;
+
+  const _ConsumptionDeltaBadge({
+    required this.delta,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final deltaStr = delta.truncateToDouble() == delta
+        ? delta.toStringAsFixed(0)
+        : delta.toStringAsFixed(2);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.trending_up,
+            size: 14,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'dashboard.consumption_delta'.tr(args: [deltaStr]),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSecondaryContainer,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
