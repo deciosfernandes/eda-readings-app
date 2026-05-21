@@ -22,6 +22,15 @@ void main() async {
   client.connectionTimeout = const Duration(seconds: 15);
 
   await for (HttpRequest request in server) {
+    // Sentinel: Enforce a 1MB request body limit to prevent local DoS.
+    const int maxRequestBodySize = 1024 * 1024;
+    if (request.contentLength > maxRequestBodySize) {
+      stderr.writeln('Blocked request: Content-Length exceeds limit');
+      request.response.statusCode = HttpStatus.requestEntityTooLarge;
+      await request.response.close();
+      continue;
+    }
+
     // Sentinel: Implement Origin validation to prevent unauthorized cross-origin access.
     // This proxy is for local development; only allow localhost/127.0.0.1.
     final origin = request.headers.value('origin');
@@ -85,8 +94,28 @@ void main() async {
         }
       });
 
-      // Forward request body
-      await proxyRequest.addStream(request);
+      // Sentinel: Forward request body with size-limiting transformer to handle chunked encoding.
+      int bytesReceived = 0;
+      final sizeLimiter = request.map((List<int> chunk) {
+        bytesReceived += chunk.length;
+        if (bytesReceived > maxRequestBodySize) {
+          throw HttpException('Payload Too Large');
+        }
+        return chunk;
+      });
+
+      try {
+        await proxyRequest.addStream(sizeLimiter);
+      } catch (e) {
+        if (e is HttpException && e.message == 'Payload Too Large') {
+          stderr.writeln('Blocked request: Stream exceeds body limit');
+          request.response.statusCode = HttpStatus.requestEntityTooLarge;
+          await request.response.close();
+          continue;
+        }
+        rethrow;
+      }
+
       var proxyResponse = await proxyRequest.close();
 
       // Forward response headers
