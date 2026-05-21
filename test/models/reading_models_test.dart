@@ -73,6 +73,30 @@ void main() {
       expect(response.valorMinContador3, '190.00');
       expect(response.valorMaxContador3, '210.00');
       expect(response.register3, 'REG03');
+
+      // BOLT: Verify pre-parsed numeric fields
+      expect(response.v1, 1234.56);
+      expect(response.v2, 500.0);
+      expect(response.v3, 200.0);
+    });
+
+    test('ReadingResponse handles Portuguese decimal commas', () {
+      final json = {
+        'cil': 'PT123',
+        'cilToken': 'tok',
+        'cilTokenExpires': 0,
+        'serial': 'SN',
+        'material': 'MAT',
+        'contrato': 'C',
+        'valorContador1': '1234,56',
+        'valorContador2': '500,00',
+      };
+
+      final response = ReadingResponse.fromJson(json);
+
+      expect(response.v1, 1234.56);
+      expect(response.v2, 500.0);
+      expect(response.v3, isNull);
     });
 
     test('fromJson uses empty strings for missing required fields', () {
@@ -209,6 +233,25 @@ void main() {
       expect(history.valorContador2, '500.00');
       expect(history.valorContador3, '200.00');
       expect(history.profileId, 'profile_001');
+
+      // BOLT: Verify pre-parsed numeric fields
+      expect(history.v1, 1234.56);
+      expect(history.v2, 500.0);
+      expect(history.v3, 200.0);
+    });
+
+    test('LocalReadingHistory handles Portuguese decimal commas', () {
+      final json = {
+        'date': '2024-03-15T10:30:00.000Z',
+        'valorContador1': '1234,56',
+        'valorContador2': '500,00',
+      };
+
+      final history = LocalReadingHistory.fromJson(json);
+
+      expect(history.v1, 1234.56);
+      expect(history.v2, 500.0);
+      expect(history.v3, isNull);
     });
 
     test('fromJson sets optional fields to null when absent', () {

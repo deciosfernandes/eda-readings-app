@@ -1,3 +1,8 @@
+double? _parseLocaleDouble(String? value) {
+  if (value == null) return null;
+  return double.tryParse(value.replaceAll(',', '.'));
+}
+
 /// Represents the response from the EDA API containing meter reading details.
 ///
 /// This model encapsulates all metadata and current counter values for a specific
@@ -68,6 +73,11 @@ class ReadingResponse {
   /// Internal register code for Counter 3.
   final String? register3;
 
+  // BOLT: Pre-parsed numeric values to avoid O(N) string parsing in build() loops.
+  final double? v1;
+  final double? v2;
+  final double? v3;
+
   ReadingResponse({
     required this.cil,
     required this.cilToken,
@@ -94,7 +104,9 @@ class ReadingResponse {
     this.valorMinContador3,
     this.valorMaxContador3,
     this.register3,
-  });
+  })  : v1 = _parseLocaleDouble(valorContador1),
+        v2 = _parseLocaleDouble(valorContador2),
+        v3 = _parseLocaleDouble(valorContador3);
 
   factory ReadingResponse.fromJson(Map<String, dynamic> json) {
     return ReadingResponse(
@@ -204,13 +216,20 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  // BOLT: Pre-parsed numeric values to avoid O(N) string parsing in build() loops.
+  final double v1;
+  final double? v2;
+  final double? v3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  })  : v1 = _parseLocaleDouble(valorContador1) ?? 0.0,
+        v2 = _parseLocaleDouble(valorContador2),
+        v3 = _parseLocaleDouble(valorContador3);
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(

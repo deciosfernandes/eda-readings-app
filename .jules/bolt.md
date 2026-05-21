@@ -33,3 +33,7 @@
 ## 2026-02-17 - O(1) Collection Views with UnmodifiableListView
 **Learning:** Using `List.from()` to return copies of internal collections from services ensures immutability but incurs O(N) allocation and copy costs. `UnmodifiableListView` provides the same security with O(1) overhead by wrapping the existing list.
 **Action:** Return `UnmodifiableListView` from service getters. Additionally, pass mapped iterables directly to `insertAll` in batch operations to avoid intermediate `.toList()` allocations.
+
+## 2026-02-18 - Computational Offloading to Model Ingestion
+**Learning:** Performing locale-aware string parsing (e.g., replacing Portuguese decimal commas) inside `ListView.builder` or `LineChart` spot generation creates O(N) overhead on every frame or UI update. Offloading this parsing to the model's constructor/factory during initial data ingestion or storage loading keeps the UI thread idle and build methods $O(1)$ relative to value transformation.
+**Action:** Implement pre-parsed numeric fields (`double`) in models that wrap regional API strings. Use these fields directly in charts and lists to eliminate redundant regex replacements and parsing calls in the UI layer.

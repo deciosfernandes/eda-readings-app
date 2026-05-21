@@ -128,13 +128,10 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
       _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
 
-      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
-      _lastVal2 = data.valorContador2 != null
-          ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
-          : null;
-      _lastVal3 = data.valorContador3 != null
-          ? double.tryParse(data.valorContador3!.replaceAll(',', '.'))
-          : null;
+      // BOLT: Use pre-calculated numeric values from the model.
+      _lastVal1 = data.v1;
+      _lastVal2 = data.v2;
+      _lastVal3 = data.v3;
 
       _helperBase1 = _buildHelperBase(
         data.valorContador1,
@@ -268,6 +265,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     }
 
     if (min != null && max != null) {
+      // BOLT: Consider caching these min/max values if they become a bottleneck,
+      // but they are currently only parsed on form validation (not high frequency).
       final minVal = double.tryParse(min.replaceAll(',', '.'));
       final maxVal = double.tryParse(max.replaceAll(',', '.'));
       if (minVal != null && maxVal != null) {
@@ -341,6 +340,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   }) {
     String consumptionText = '';
     if (lastValue != null && controller.text.isNotEmpty) {
+      // BOLT: Still need to parse the CURRENT input value, but lastValue is now pre-parsed.
       final current = double.tryParse(controller.text.replaceAll(',', '.'));
       if (current != null && current > lastValue) {
         final diff = current - lastValue;

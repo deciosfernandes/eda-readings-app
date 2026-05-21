@@ -100,8 +100,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
 
       // Charts use chronological order (oldest to newest). We use the same 'item'
       // but map it to 'reverseIdx' to eliminate the 'reverseItem' lookup and halving O(N) work.
-      final val = double.tryParse(c1) ?? 0.0;
-      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), val);
+      // BOLT: Use pre-calculated v1 to avoid O(N) double.tryParse and string replacement in every loop.
+      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), item.v1);
       labels[reverseIdx] = '${date.day}/${date.month}';
     }
 
