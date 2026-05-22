@@ -262,5 +262,38 @@ void main() {
       expect(restored.valorContador3, isNull);
       expect(restored.profileId, original.profileId);
     });
+
+    test('pre-parses numeric fields correctly', () {
+      final history = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: '1.234,56',
+        valorContador2: '500.00',
+        valorContador3: '',
+      );
+
+      expect(history.v1, 1234.56);
+      expect(history.v2, 500.0);
+      expect(history.v3, isNull);
+    });
+  });
+
+  group('ReadingResponse BOLT', () {
+    test('pre-parses numeric fields correctly', () {
+      final response = ReadingResponse(
+        cil: 'PT123',
+        cilToken: 'tok',
+        cilTokenExpires: 0,
+        serial: 'SN',
+        material: 'MAT',
+        contrato: 'C',
+        valorContador1: '1.234,56',
+        valorContador2: '500.00',
+        valorContador3: null,
+      );
+
+      expect(response.v1, 1234.56);
+      expect(response.v2, 500.0);
+      expect(response.v3, isNull);
+    });
   });
 }

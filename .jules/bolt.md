@@ -33,3 +33,7 @@
 ## 2026-02-17 - O(1) Collection Views with UnmodifiableListView
 **Learning:** Using `List.from()` to return copies of internal collections from services ensures immutability but incurs O(N) allocation and copy costs. `UnmodifiableListView` provides the same security with O(1) overhead by wrapping the existing list.
 **Action:** Return `UnmodifiableListView` from service getters. Additionally, pass mapped iterables directly to `insertAll` in batch operations to avoid intermediate `.toList()` allocations.
+
+## 2026-05-16 - Computational Shift: Pre-parsed Models and Pre-calculated Deltas
+**Learning:** Performing locale-aware string parsing (`double.tryParse` with `replaceAll`) and consumption calculations inside `ListView.builder` or `LineChart` generators leads to redundant work that scales with the number of items and interaction frequency. Pre-parsing these values into the data model and pre-calculating deltas during the initial load shifts this cost to the asynchronous background phase, ensuring O(1) performance during UI builds and scrolling.
+**Action:** Implement memoized `double` fields in data models (e.g., `v1`, `v2`, `v3`) via a centralized helper that handles localized decimal formats and thousand separators. Pre-calculate derived UI state (like consumption deltas and combined semantics labels) in services or view models before triggering a UI rebuild.

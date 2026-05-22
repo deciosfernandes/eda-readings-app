@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
+  // BOLT: Pre-calculated consumption deltas to ensure O(1) build performance in the history list.
+  List<double?> _historyDeltas = [];
   // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
   List<String> _historySemantics = [];
   bool _isLoading = true;
@@ -75,6 +77,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final deltas = List<double?>.filled(historyLength, null);
     final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
@@ -91,17 +94,32 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       final formattedDate = _historyDateFormat.format(date);
       formattedDates[i] = formattedDate;
 
+      // BOLT: Calculate consumption delta (difference from previous chronological reading).
+      // Since 'history' is newest-first, the previous reading is at index i + 1.
+      if (i + 1 < historyLength) {
+        final previousItem = history[i + 1];
+        deltas[i] = item.v1 - previousItem.v1;
+      }
+
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
       if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
       if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
+
+      // BOLT: Include consumption delta in the semantics label for screen reader users.
+      final delta = deltas[i];
+      if (delta != null) {
+        final deltaText = delta >= 0 ? '+${delta.toStringAsFixed(1)}' : delta.toStringAsFixed(1);
+        buffer.write(', ${'dashboard.consumption_delta'.tr(args: [deltaText])}');
+      }
+
       semantics[i] = buffer.toString();
 
       // Charts use chronological order (oldest to newest). We use the same 'item'
       // but map it to 'reverseIdx' to eliminate the 'reverseItem' lookup and halving O(N) work.
-      final val = double.tryParse(c1) ?? 0.0;
-      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), val);
+      // BOLT: Use pre-parsed 'v1' from the model to avoid O(N) string parsing.
+      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), item.v1);
       labels[reverseIdx] = '${date.day}/${date.month}';
     }
 
@@ -111,6 +129,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historyDeltas = deltas;
       _historySemantics = semantics;
       _isLoading = false;
     });
@@ -436,7 +455,11 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(formattedDate),
-              trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
+              trailing: _HistoryTrailing(
+                item: item,
+                delta: _historyDeltas[index],
+                colorScheme: colorScheme,
+              ),
             ),
           ),
         );
@@ -469,15 +492,26 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 // BOLT: Refactor trailing badges into a StatelessWidget to optimize widget reconstruction and reconciliation.
 class _HistoryTrailing extends StatelessWidget {
   final LocalReadingHistory item;
+  final double? delta;
   final ColorScheme colorScheme;
 
-  const _HistoryTrailing({required this.item, required this.colorScheme});
+  const _HistoryTrailing({
+    required this.item,
+    required this.delta,
+    required this.colorScheme,
+  });
 
   @override
   Widget build(BuildContext context) {
     final badges = <Widget>[];
 
+    // BOLT: Display pre-calculated consumption delta.
+    if (delta != null) {
+      badges.add(_ConsumptionDeltaBadge(delta: delta!, colorScheme: colorScheme));
+    }
+
     if (item.valorContador2?.isNotEmpty == true) {
+      if (badges.isNotEmpty) badges.add(const SizedBox(height: 4));
       badges.add(_HistoryBadge(
         label: 'C2',
         value: item.valorContador2!,
@@ -485,9 +519,7 @@ class _HistoryTrailing extends StatelessWidget {
       ));
     }
     if (item.valorContador3?.isNotEmpty == true) {
-      if (badges.isNotEmpty) {
-        badges.add(const SizedBox(height: 4));
-      }
+      if (badges.isNotEmpty) badges.add(const SizedBox(height: 4));
       badges.add(_HistoryBadge(
         label: 'C3',
         value: item.valorContador3!,
@@ -500,7 +532,49 @@ class _HistoryTrailing extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: badges,
+    );
+  }
+}
+
+/// PALETTE: Visual badge for consumption delta with trending icon.
+class _ConsumptionDeltaBadge extends StatelessWidget {
+  final double delta;
+  final ColorScheme colorScheme;
+
+  const _ConsumptionDeltaBadge({required this.delta, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPositive = delta >= 0;
+    final deltaText = isPositive ? '+${delta.toStringAsFixed(1)}' : delta.toStringAsFixed(1);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPositive ? Icons.trending_up : Icons.trending_down,
+            size: 14,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'dashboard.consumption_delta'.tr(args: [deltaText]),
+            style: TextStyle(
+              color: colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

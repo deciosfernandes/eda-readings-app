@@ -2,6 +2,10 @@
 ///
 /// This model encapsulates all metadata and current counter values for a specific
 /// delivery point (CIL), including the security token required for submissions.
+///
+/// **BOLT**: This model pre-parses numeric strings into [double] fields (`v1`, `v2`, `v3`)
+/// during instantiation. This moves the computational cost of locale-aware parsing
+/// from high-frequency UI build loops to the asynchronous data loading phase.
 class ReadingResponse {
   /// Local Identification Code (Código de Identificação Local).
   /// A unique 10-digit number identifying the delivery point.
@@ -68,6 +72,13 @@ class ReadingResponse {
   /// Internal register code for Counter 3.
   final String? register3;
 
+  /// BOLT: Pre-parsed value for Counter 1.
+  final double v1;
+  /// BOLT: Pre-parsed value for Counter 2.
+  final double? v2;
+  /// BOLT: Pre-parsed value for Counter 3.
+  final double? v3;
+
   ReadingResponse({
     required this.cil,
     required this.cilToken,
@@ -94,7 +105,9 @@ class ReadingResponse {
     this.valorMinContador3,
     this.valorMaxContador3,
     this.register3,
-  });
+  })  : v1 = _parseLocaleDouble(valorContador1) ?? 0.0,
+        v2 = _parseLocaleDouble(valorContador2),
+        v3 = _parseLocaleDouble(valorContador3);
 
   factory ReadingResponse.fromJson(Map<String, dynamic> json) {
     return ReadingResponse(
@@ -192,6 +205,9 @@ class SendReadingPayload {
 ///
 /// **BOLT**: These objects are cached in-memory by the `HistoryService` and
 /// indexed by `profileId` to allow O(1) lookups during dashboard rendering.
+///
+/// **BOLT**: This model pre-parses numeric strings into [double] fields (`v1`, `v2`, `v3`)
+/// during instantiation to ensure O(1) build performance in charts and lists.
 class LocalReadingHistory {
   /// Date and time when the reading was recorded locally.
   final DateTime date;
@@ -204,13 +220,22 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  /// BOLT: Pre-parsed value for Counter 1.
+  final double v1;
+  /// BOLT: Pre-parsed value for Counter 2.
+  final double? v2;
+  /// BOLT: Pre-parsed value for Counter 3.
+  final double? v3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  })  : v1 = _parseLocaleDouble(valorContador1) ?? 0.0,
+        v2 = _parseLocaleDouble(valorContador2),
+        v3 = _parseLocaleDouble(valorContador3);
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
@@ -231,4 +256,17 @@ class LocalReadingHistory {
       'profileId': profileId,
     };
   }
+}
+
+/// BOLT: Centralized helper for parsing numeric strings that may use commas as decimal separators.
+/// Handles both standard formats (1234.56) and European formats (1.234,56).
+double? _parseLocaleDouble(String? value) {
+  if (value == null || value.isEmpty) return null;
+  String sanitized = value;
+  if (sanitized.contains(',')) {
+    // If it contains a comma, it's likely European format (e.g., 1.234,56)
+    // Remove dots (thousand separators) and replace comma with dot (decimal separator)
+    sanitized = sanitized.replaceAll('.', '').replaceAll(',', '.');
+  }
+  return double.tryParse(sanitized);
 }

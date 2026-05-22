@@ -128,13 +128,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
       _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
 
-      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
-      _lastVal2 = data.valorContador2 != null
-          ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
-          : null;
-      _lastVal3 = data.valorContador3 != null
-          ? double.tryParse(data.valorContador3!.replaceAll(',', '.'))
-          : null;
+      _lastVal1 = data.v1;
+      _lastVal2 = data.v2;
+      _lastVal3 = data.v3;
 
       _helperBase1 = _buildHelperBase(
         data.valorContador1,

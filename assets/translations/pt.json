@@ -25,6 +25,7 @@
         "menu_tooltip": "Abrir menu principal",
         "add_reading_tooltip": "Registar nova leitura do contador",
         "reading_history_item": "Leitura: {} kWh em {}",
+        "consumption_delta": "Consumo: {}",
         "no_properties": "Não existem propriedades",
         "no_properties_desc": "Não existem propriedades. Adicione uma para poder enviar leituras"
     },
