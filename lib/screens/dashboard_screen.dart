@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
+  // BOLT: Pre-calculated consumption deltas to avoid O(N) calculation in ListView.
+  List<String> _historyDeltas = [];
   // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
   List<String> _historySemantics = [];
   bool _isLoading = true;
@@ -75,11 +77,26 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final deltas = List<String>.filled(historyLength, '');
     final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
       final reverseIdx = historyLength - 1 - i;
       final item = history[i];
+
+      // BOLT: Calculate consumption deltas relative to previous chronological reading.
+      String deltaText = '';
+      if (i < historyLength - 1) {
+        final current = double.tryParse(item.valorContador1.replaceAll(',', '.'));
+        final previous = double.tryParse(history[i + 1].valorContador1.replaceAll(',', '.'));
+        if (current != null && previous != null && current > previous) {
+          final diff = current - previous;
+          deltaText = 'dashboard.consumption_delta'.tr(args: [
+            diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)
+          ]);
+        }
+      }
+      deltas[i] = deltaText;
 
       // BOLT: Extract properties once to minimize redundant property access and list lookups.
       final date = item.date;
@@ -94,6 +111,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
+      if (deltaText.isNotEmpty) buffer.write(', $deltaText');
       if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
       if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
       semantics[i] = buffer.toString();
@@ -111,6 +129,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historyDeltas = deltas;
       _historySemantics = semantics;
       _isLoading = false;
     });
@@ -431,9 +450,20 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 backgroundColor: colorScheme.primaryContainer,
                 child: const Icon(Icons.flash_on),
               ),
-              title: Text(
-                '${item.valorContador1} kWh',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              title: Row(
+                children: [
+                  Text(
+                    '${item.valorContador1} kWh',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (_historyDeltas[index].isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    _ConsumptionDeltaBadge(
+                      delta: _historyDeltas[index],
+                      colorScheme: colorScheme,
+                    ),
+                  ],
+                ],
               ),
               subtitle: Text(formattedDate),
               trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
@@ -501,6 +531,46 @@ class _HistoryTrailing extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: badges,
+    );
+  }
+}
+
+class _ConsumptionDeltaBadge extends StatelessWidget {
+  final String delta;
+  final ColorScheme colorScheme;
+
+  const _ConsumptionDeltaBadge({
+    required this.delta,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.trending_up,
+            size: 14,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            delta,
+            style: TextStyle(
+              color: colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
