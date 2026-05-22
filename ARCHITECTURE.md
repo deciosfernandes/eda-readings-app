@@ -34,6 +34,26 @@ Understanding these terms is critical for working with the EDA API and the appli
 | **Super Vazio** | Horas de Super Vazio | Deep off-peak. Even lower costs during specific night windows. |
 | **Janela de Envio** | Data Aconselhável de Envio | Recommended Submission Window. The date provided by EDA when a reading should be submitted to ensure accurate billing and avoid estimates. |
 
+### 📖 API Reference
+To assist with mapping the Portuguese-named keys returned by the EDA API to their technical roles in the application models.
+
+| Key | Technical Role | Description |
+| :--- | :--- | :--- |
+| `cil` | Identifier | **C**ódigo de **I**dentificação **L**ocal. 10-digit delivery point ID. |
+| `cilToken` | Authentication | Security token required for `PUT` submission requests. |
+| `cilTokenExpires` | Security | Epoch timestamp (milliseconds) when the `cilToken` expires. |
+| `contrato` | Identifier | Electricity Contract Number associated with the CIL. |
+| `data` | Metadata | Date of the most recent reading recorded in the system. |
+| `dataAconselhavelEnvio` | Metadata | Recommended date for the next reading submission. |
+| `tarifa` | Metadata | The active electricity tariff (e.g., Simples, Bi-horária). |
+| `valorContador1` | Data | Current meter reading value for Register 1 (kWh). |
+| `valorMinContador1` | Validation | The minimum allowed value for the next Register 1 submission. |
+| `valorMaxContador1` | Validation | The maximum allowed value for the next Register 1 submission. |
+| `register1` | Metadata | Internal register identifier code for Register 1. |
+| `serial` | Metadata | Meter serial number. |
+| `material` | Metadata | Meter material/type code. |
+| `origem` | Metadata | Origin of the last recorded reading (e.g., Web, App). |
+
 ### Meter Registers (Contadores)
 The application handles up to three registers depending on the user's tariff:
 
@@ -61,11 +81,35 @@ graph TD
     API -->|Confirmation| UI
     UI -->|Updates History| HS
     HS -->|Caches in Memory| MEM[(In-Memory Cache)]
-    HS -->|Persists| FSS[Flutter Secure Storage]
+    HS -->|Persists| FSS[Flutter SecureStorage]
 
     UI -->|Loads Profile| SSS[SecureStorageService]
     SSS -->|Caches State| SSS_MEM[(In-Memory Cache)]
     SSS -->|Persists Credentials| FSS
+```
+
+### Lifecycle & Initialization
+The following diagram illustrates the parallel startup sequence in `main.dart`, where core services are initialized concurrently to minimize blocking the UI.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SS as SecureStorageService
+    participant HS as HistoryService
+    participant A as MyApp
+
+    M->>EL: ensureInitialized()
+    M->>M: Future.wait([...])
+    par Parallel Startup
+        M->>NS: initialize()
+        M->>TS: loadTheme()
+        M->>SS: getAppState()
+        M->>HS: getHistory()
+    end
+    M->>A: runApp()
 ```
 
 ### Navigation Flow
@@ -245,6 +289,7 @@ The **Sentinel** pattern focuses on application security, data protection, and r
 ## 🚀 Development Best Practices
 
 ### ⚡ Performance (BOLT)
+- **Persistent HTTP Client**: Maintain a single, static `http.Client` instance (e.g., in `EDAClient`) to enable TCP connection reuse and eliminate redundant handshake latency across requests.
 - **Aggressive Caching**: Always check in-memory caches before performing disk I/O or platform channel calls.
 - **Loop Optimization**: Hoist expensive object instantiations (like `DateFormat`) out of loops.
 - **UI Responsiveness**: Pre-calculate derived data (like chart spots or formatted strings) during data loading rather than in the `build()` method.
@@ -255,6 +300,7 @@ The **Sentinel** pattern focuses on application security, data protection, and r
 - **Consistent States**: Use themed empty states with icons and clear Calls to Action (CTAs).
 
 ### 🛡️ Security (SENTINEL)
+- **Stable Notification IDs**: Generate stable integer IDs for notifications using `int.parse(profileId) % 0x7FFFFFFF`. This prevents overflow errors on 32-bit platforms (like Android) when using timestamp-based strings as IDs.
 - **Safe Parsing**: When parsing numeric input, always use `double.tryParse` and verify `number.isFinite` and `number >= 0`.
 - **Length Limits**: Enforce `maxLength` on all `TextField` and `TextFormField` components (e.g., 50 for names, 15 for readings).
 - **Safe URI Construction**: Always use structured URI constructors like `Uri.https()` or `Uri.replace(queryParameters: ...)` instead of manual string interpolation to mitigate injection risks.
@@ -277,4 +323,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*
