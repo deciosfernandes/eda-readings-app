@@ -32,3 +32,8 @@
 **Vulnerability:** The development proxy was an "Open Proxy" using wildcard CORS origins, allowing any website to abuse it for scanning or reaching unauthorized paths.
 **Learning:** Development utilities like CORS proxies are often overlooked but can be exploited if they are overly permissive. A wildcard `Access-Control-Allow-Origin` allows malicious sites to interact with the local proxy, and lack of path filtering allows it to be used as a general-purpose proxy to reach any resource.
 **Prevention:** Restrict development proxies to specific, validated origins (e.g., `localhost`). Use `headers.set()` instead of `add()` when forwarding upstream responses to prevent duplicate security headers. Implement path-based filtering to ensure the proxy only services expected API endpoints, transforming it from an open proxy into a restricted reverse proxy.
+
+## 2026-06-12 - Hardening Proxy against Traversal and DoS via Payload Validation
+**Vulnerability:** The development proxy was vulnerable to path traversal via `..` segments and lacked body size limits for chunked transfers, posing a DoS risk.
+**Learning:** Basic path prefix checks (e.g., `startsWith`) can be bypassed if the path is not normalized before validation, as attackers can use `..` segments to reach unauthorized endpoints. Additionally, DoS protection in proxies must account for chunked encoding where `Content-Length` is absent by implementing stream-level byte counters.
+**Prevention:** Always normalize URI paths before performing prefix-based authorization. Implement defense-in-depth for DoS by validating both `Content-Length` headers and enforcing a strict byte limit during stream ingestion using a transformer or mapping.
