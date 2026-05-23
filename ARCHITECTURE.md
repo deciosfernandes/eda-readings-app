@@ -41,6 +41,24 @@ The application handles up to three registers depending on the user's tariff:
 2.  **`valorContador2` (Register 2)**: Used in *Bi-horária* and *Tri-horária* tariffs. Typically maps to the **Off-peak (Vazio)** period.
 3.  **`valorContador3` (Register 3)**: Used exclusively in *Tri-horária* tariffs. Typically maps to the **Super Off-peak (Super Vazio)** period.
 
+## 📖 API Reference
+
+This section maps the localized (Portuguese) keys used by the EDA API to their technical roles and English descriptions within the application.
+
+| API Key (JSON) | Technical Role | Description |
+| :--- | :--- | :--- |
+| `cil` | Identifier | Local Identification Code (10 digits). |
+| `contrato` | Identifier | Electricity Contract Number associated with the CIL. |
+| `cilToken` | Security | Session token required for submitting readings. |
+| `cilTokenExpires` | Security | Expiration timestamp (ms) for the security token. |
+| `data` | Metadata | Date of the most recent reading in the EDA system. |
+| `dataAconselhavelEnvio` | Metadata | Recommended date for the next reading submission. |
+| `valorContador1` | Reading | Value for Counter 1 in kWh (Peak/Intermediate). |
+| `valorMinContador1` | Validation | Minimum allowed value for the next Counter 1 reading. |
+| `valorMaxContador1` | Validation | Maximum allowed value for the next Counter 1 reading. |
+| `register1` | Internal | Hardware register code for Counter 1 submission. |
+| `tarifa` | Metadata | The active tariff name (e.g., Simples, Bi-horária). |
+
 ## 🏗️ State Management
 
 This project deliberately avoids external state management libraries (like Provider, Riverpod, or Bloc) to keep the dependency tree lean and the architecture simple.
@@ -119,6 +137,39 @@ sequenceDiagram
     HS->>FSS: Persist (Encrypted JSON)
     UI->>UI: Show Success SnackBar & Pop
 ```
+
+### Lifecycle & Initialization
+The following sequence diagram illustrates the parallelized application bootstrap process in `main()`, ensuring all core services are ready before the UI is mounted.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SS as SecureStorageService
+    participant HS as HistoryService
+
+    M->>EL: ensureInitialized()
+    M->>M: Future.wait([...])
+    par Initialization
+        M->>NS: initialize()
+        M->>TS: loadTheme()
+        M->>SS: getAppState()
+        M->>HS: getHistory()
+    end
+    NS-->>M: Ready
+    TS-->>M: Ready
+    SS-->>M: Ready
+    HS-->>M: Ready
+    M->>M: runApp(MyApp)
+```
+
+### Stable Notification IDs
+To prevent ID collisions and 32-bit integer overflow (particularly on Android), notification IDs are generated using the following strategy:
+- **Source**: The profile's unique timestamp-based ID (`String`).
+- **Transformation**: `int.parse(profileId) % 0x7FFFFFFF`.
+- **Impact**: Ensures a stable, unique 31-bit integer that fits within standard platform limitations while remaining consistent for a given profile across app sessions.
 
 ## 🛠️ Core Services
 
@@ -277,4 +328,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*
