@@ -66,6 +66,14 @@ void main() async {
       continue;
     }
 
+    // Sentinel: Enforce a 1MB request body limit to prevent Denial of Service (DoS) via large payloads.
+    const maxRequestBodySize = 1024 * 1024; // 1MB
+    if (request.contentLength > maxRequestBodySize) {
+      request.response.statusCode = HttpStatus.requestEntityTooLarge;
+      await request.response.close();
+      continue;
+    }
+
     try {
       // Sentinel: Use Uri.https for safer URI construction, mitigating injection risks.
       final url = Uri.https(
@@ -73,6 +81,15 @@ void main() async {
         request.uri.path,
         request.uri.queryParametersAll,
       );
+
+      // Sentinel: Double-check the normalized path to prevent traversal bypasses.
+      if (!url.path.startsWith('/api/leitura')) {
+        stderr.writeln(
+            'Blocked request to unauthorized normalized path: ${url.path}');
+        request.response.statusCode = HttpStatus.notFound;
+        await request.response.close();
+        continue;
+      }
 
       var proxyRequest = await client.openUrl(request.method, url);
 
@@ -85,18 +102,33 @@ void main() async {
         }
       });
 
-      // Forward request body
-      await proxyRequest.addStream(request);
+      // Forward request body with byte counting for DoS protection
+      int bytesRead = 0;
+      await proxyRequest.addStream(request.map((chunk) {
+        bytesRead += chunk.length;
+        if (bytesRead > maxRequestBodySize) {
+          throw HttpException('Request body too large', uri: url);
+        }
+        return chunk;
+      }));
       var proxyResponse = await proxyRequest.close();
 
       // Forward response headers
       request.response.statusCode = proxyResponse.statusCode;
       proxyResponse.headers.forEach((name, values) {
+        final lowerName = name.toLowerCase();
         // Avoid sending duplicate or restrictive CORS headers from the upstream
-        if (name.toLowerCase() != 'access-control-allow-origin' &&
-            name.toLowerCase() != 'content-security-policy') {
+        if (lowerName != 'access-control-allow-origin' &&
+            lowerName != 'content-security-policy') {
           for (var value in values) {
-            request.response.headers.add(name, value);
+            // Sentinel: Use set() for security headers that should be unique.
+            if (lowerName == 'x-content-type-options' ||
+                lowerName == 'x-frame-options' ||
+                lowerName == 'x-xss-protection') {
+              request.response.headers.set(name, value);
+            } else {
+              request.response.headers.add(name, value);
+            }
           }
         }
       });
@@ -107,7 +139,8 @@ void main() async {
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
       request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      // Sentinel: Use a generic error message to avoid leaking internal details.
+      request.response.write('Internal Server Error');
       await request.response.close();
     }
   }
