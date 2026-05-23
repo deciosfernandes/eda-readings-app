@@ -41,6 +41,25 @@ The application handles up to three registers depending on the user's tariff:
 2.  **`valorContador2` (Register 2)**: Used in *Bi-horária* and *Tri-horária* tariffs. Typically maps to the **Off-peak (Vazio)** period.
 3.  **`valorContador3` (Register 3)**: Used exclusively in *Tri-horária* tariffs. Typically maps to the **Super Off-peak (Super Vazio)** period.
 
+## 📡 API Reference
+
+The EDA API uses Portuguese keys in its responses and payloads. This table maps those keys to their technical roles and descriptions within the application.
+
+| Key | Technical Role | Description |
+| :--- | :--- | :--- |
+| `cil` | Delivery Point ID | Local Identification Code (10 digits). |
+| `contrato` | Contract ID | Electricity contract number. |
+| `cilToken` | Security Token | Session-based token required for `PUT /api/leitura`. |
+| `cilTokenExpires` | Expiry | Unix timestamp for token expiration. |
+| `dataAconselhavelEnvio`| Submission Window | Recommended date for the next manual submission. |
+| `tarifa` | Tariff Type | User's billing plan (Simples, Bi-horária, Tri-horária). |
+| `valorContador1` | Primary Value | Reading for Register 1 (Peak/Intermediate). |
+| `valorMinContador1` | Lower Bound | Minimum valid value for Counter 1 to prevent errors. |
+| `valorMaxContador1` | Upper Bound | Maximum valid value for Counter 1. |
+| `register1` | Register Code | Internal identifier for Counter 1 in submission payloads. |
+| `valorContador2` | Off-peak Value | Reading for Register 2 (Vazio). |
+| `valorContador3` | Super Off-peak | Reading for Register 3 (Super Vazio). |
+
 ## 🏗️ State Management
 
 This project deliberately avoids external state management libraries (like Provider, Riverpod, or Bloc) to keep the dependency tree lean and the architecture simple.
@@ -82,6 +101,38 @@ graph TD
 
     SS -->|Inline| IES_I[Import/Export Logic]
     SS -->|Link| GH[GitHub Issues]
+```
+
+### Lifecycle & Initialization
+The application utilizes a parallel initialization strategy to minimize startup latency. The `main` function concurrently boots all independent services before mounting the root widget.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SSS as SecureStorageService
+    participant HS as HistoryService
+    participant App as MyApp
+
+    M->>M: WidgetsFlutterBinding.ensureInitialized()
+
+    rect rgb(240, 240, 240)
+    Note right of M: Parallel Initialization (Future.wait)
+    M-->>EL: ensureInitialized()
+    M-->>NS: initialize()
+    M-->>TS: loadTheme()
+    M-->>SSS: getAppState()
+    M-->>HS: getHistory()
+    EL-->>M: Ready
+    NS-->>M: Ready (Permissions Handled)
+    TS-->>M: Ready (Theme Loaded)
+    SSS-->>M: Ready (State Cached)
+    HS-->>M: Ready (History Cached)
+    end
+
+    M->>App: runApp(EasyLocalization(MyApp))
 ```
 
 ### Reading Submission Flow
@@ -277,4 +328,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*

@@ -47,5 +47,13 @@ The app is configured to use `http://localhost:8080/api/leitura` as the base URL
 **Style Improvement**: Using Mermaid sequence diagrams to map complex data transformation pipelines (like CSV Import/Export).
 **Impact**: Bridges the "Visual Void" for non-obvious logic flows that span multiple layers (UI -> Utility -> Service). By visualizing the interplay between **BOLT** and **SENTINEL** patterns in these pipelines, we reduce the cognitive load for developers tasked with maintaining data integrity and security in portability features.
 
+### 📡 Mapping Regional "Dark Matter"
+**Style Improvement**: Creating an explicit "API Reference" in `ARCHITECTURE.md` that maps localized (Portuguese) response/payload keys (e.g., `dataAconselhavelEnvio`, `valorContador1`) to English technical descriptions.
+**Impact**: Bridges the "How-To Gap" for international developers and non-native speakers. It formalizes the data contract, ensuring that opaque business logic driven by regional APIs is immediately understandable without reverse-engineering or translation tools.
+
+### 🚀 Codifying Bootstrap Logic
+**Style Improvement**: Documenting parallel initialization sequences (e.g., `main.dart` with `Future.wait`) using Mermaid sequence diagrams.
+**Impact**: Bridges the "Visual Void" for critical application lifecycle events. By explicitly showing the concurrent boot process of singleton services, we clarify the application's readiness state and prevent race condition bugs during onboarding.
+
 ---
-*Last Updated: 2026-05-14*
+*Last Updated: 2026-05-16*
