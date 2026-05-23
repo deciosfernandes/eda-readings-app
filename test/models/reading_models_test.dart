@@ -246,6 +246,24 @@ void main() {
       expect(json['profileId'], 'profile_001');
     });
 
+    test('numeric fields handle various formats', () {
+      final formats = [
+        {'v': '1234.56', 'expected': 1234.56},
+        {'v': '1.234,56', 'expected': 1234.56},
+        {'v': '1234,56', 'expected': 1234.56},
+        {'v': '1000', 'expected': 1000.0},
+        {'v': '', 'expected': 0.0},
+      ];
+
+      for (final format in formats) {
+        final history = LocalReadingHistory.fromJson({
+          'date': '2024-03-15T10:30:00.000Z',
+          'valorContador1': format['v'],
+        });
+        expect(history.v1, format['expected'], reason: 'Failed for ${format['v']}');
+      }
+    });
+
     test('toJson round-trip preserves all values', () {
       final date = DateTime(2024, 6, 1, 9, 0);
       final original = LocalReadingHistory(

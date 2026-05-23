@@ -1,3 +1,13 @@
+/// Robustly handle European numeric formats (comma as decimal, dot as thousand separator).
+double? _parseLocaleDouble(String? value) {
+  if (value == null || value.isEmpty) return null;
+  String normalized = value.trim();
+  if (normalized.contains(',')) {
+    normalized = normalized.replaceAll('.', '').replaceAll(',', '.');
+  }
+  return double.tryParse(normalized);
+}
+
 /// Represents the response from the EDA API containing meter reading details.
 ///
 /// This model encapsulates all metadata and current counter values for a specific
@@ -67,6 +77,17 @@ class ReadingResponse {
   final String? valorMaxContador3;
   /// Internal register code for Counter 3.
   final String? register3;
+
+  // BOLT: Pre-parsed numeric values for O(1) access during validation and rendering.
+  late final double? v1 = _parseLocaleDouble(valorContador1);
+  late final double? min1 = _parseLocaleDouble(valorMinContador1);
+  late final double? max1 = _parseLocaleDouble(valorMaxContador1);
+  late final double? v2 = _parseLocaleDouble(valorContador2);
+  late final double? min2 = _parseLocaleDouble(valorMinContador2);
+  late final double? max2 = _parseLocaleDouble(valorMaxContador2);
+  late final double? v3 = _parseLocaleDouble(valorContador3);
+  late final double? min3 = _parseLocaleDouble(valorMinContador3);
+  late final double? max3 = _parseLocaleDouble(valorMaxContador3);
 
   ReadingResponse({
     required this.cil,
@@ -203,6 +224,11 @@ class LocalReadingHistory {
   final String? valorContador3;
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
+
+  // BOLT: Pre-parsed numeric values to avoid redundant string parsing in UI loops.
+  late final double v1 = _parseLocaleDouble(valorContador1) ?? 0.0;
+  late final double? v2 = _parseLocaleDouble(valorContador2);
+  late final double? v3 = _parseLocaleDouble(valorContador3);
 
   LocalReadingHistory({
     required this.date,

@@ -122,19 +122,15 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       final data = await _client!.getReading();
       final appState = await SecureStorageService().getAppState();
 
-      // BOLT: Pre-calculate labels and parse numeric values once during load.
-      // This eliminates redundant lookups and string parsing in the high-frequency build loop.
+      // BOLT: Pre-calculate labels and leverage pre-parsed numeric values from the model.
+      // This eliminates redundant lookups and expensive string parsing in the high-frequency build loop.
       _label1 = '${data.descContador1 ?? 'reading.counter_1'.tr()} *';
       _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
       _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
 
-      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
-      _lastVal2 = data.valorContador2 != null
-          ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
-          : null;
-      _lastVal3 = data.valorContador3 != null
-          ? double.tryParse(data.valorContador3!.replaceAll(',', '.'))
-          : null;
+      _lastVal1 = data.v1;
+      _lastVal2 = data.v2;
+      _lastVal3 = data.v3;
 
       _helperBase1 = _buildHelperBase(
         data.valorContador1,
@@ -255,10 +251,18 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     }
   }
 
-  String? _validateReading(String? value, String? min, String? max) {
+  String? _validateReading(
+    String? value,
+    double? minVal,
+    double? maxVal,
+    String? minStr,
+    String? maxStr,
+  ) {
     if (value == null || value.isEmpty) {
       return 'login.error_empty'.tr();
     }
+    // BOLT: Parse input value once. We use the pre-parsed min/max values from the model
+    // to avoid redundant string manipulation and parsing on every keystroke.
     final number = double.tryParse(value.replaceAll(',', '.'));
 
     // Sentinel: Security check for finite numbers and non-negative values.
@@ -267,13 +271,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       return 'reading.error_not_number'.tr();
     }
 
-    if (min != null && max != null) {
-      final minVal = double.tryParse(min.replaceAll(',', '.'));
-      final maxVal = double.tryParse(max.replaceAll(',', '.'));
-      if (minVal != null && maxVal != null) {
-        if (number < minVal || number > maxVal) {
-          return 'reading.error_out_of_bounds'.tr(args: [min, max]);
-        }
+    if (minVal != null && maxVal != null) {
+      if (number < minVal || number > maxVal) {
+        return 'reading.error_out_of_bounds'.tr(args: [minStr ?? '', maxStr ?? '']);
       }
     }
     return null;
@@ -462,6 +462,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       const TextInputType.numberWithOptions(decimal: true),
                   validator: (value) => _validateReading(
                     value,
+                    _currentData!.min1,
+                    _currentData!.max1,
                     _currentData!.valorMinContador1,
                     _currentData!.valorMaxContador1,
                   ),
@@ -500,6 +502,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
+                      _currentData!.min2,
+                      _currentData!.max2,
                       _currentData!.valorMinContador2,
                       _currentData!.valorMaxContador2,
                     );
@@ -529,6 +533,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
+                      _currentData!.min3,
+                      _currentData!.max3,
                       _currentData!.valorMinContador3,
                       _currentData!.valorMaxContador3,
                     );
