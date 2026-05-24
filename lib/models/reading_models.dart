@@ -68,6 +68,17 @@ class ReadingResponse {
   /// Internal register code for Counter 3.
   final String? register3;
 
+  // BOLT: Pre-parsed numeric values to avoid repeated string parsing in UI loops.
+  late final double? v1;
+  late final double? v1Min;
+  late final double? v1Max;
+  late final double? v2;
+  late final double? v2Min;
+  late final double? v2Max;
+  late final double? v3;
+  late final double? v3Min;
+  late final double? v3Max;
+
   ReadingResponse({
     required this.cil,
     required this.cilToken,
@@ -94,7 +105,17 @@ class ReadingResponse {
     this.valorMinContador3,
     this.valorMaxContador3,
     this.register3,
-  });
+  }) {
+    v1 = _parseLocaleDouble(valorContador1);
+    v1Min = _parseLocaleDouble(valorMinContador1);
+    v1Max = _parseLocaleDouble(valorMaxContador1);
+    v2 = _parseLocaleDouble(valorContador2);
+    v2Min = _parseLocaleDouble(valorMinContador2);
+    v2Max = _parseLocaleDouble(valorMaxContador2);
+    v3 = _parseLocaleDouble(valorContador3);
+    v3Min = _parseLocaleDouble(valorMinContador3);
+    v3Max = _parseLocaleDouble(valorMaxContador3);
+  }
 
   factory ReadingResponse.fromJson(Map<String, dynamic> json) {
     return ReadingResponse(
@@ -204,13 +225,22 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  // BOLT: Pre-parsed numeric values to avoid repeated string parsing in UI loops.
+  late final double v1;
+  late final double v2;
+  late final double v3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  }) {
+    v1 = _parseLocaleDouble(valorContador1) ?? 0.0;
+    v2 = _parseLocaleDouble(valorContador2) ?? 0.0;
+    v3 = _parseLocaleDouble(valorContador3) ?? 0.0;
+  }
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
@@ -231,4 +261,17 @@ class LocalReadingHistory {
       'profileId': profileId,
     };
   }
+}
+
+/// BOLT: Centralized numeric parsing to handle European formats (comma as decimal separator).
+/// This moves the computational cost of string manipulation out of high-frequency UI loops.
+double? _parseLocaleDouble(String? value) {
+  if (value == null || value.isEmpty) return null;
+  // Replace comma with dot if present to support European numeric strings.
+  // We also remove dots as thousands separators if a comma is present.
+  String normalized = value;
+  if (value.contains(',')) {
+    normalized = value.replaceAll('.', '').replaceAll(',', '.');
+  }
+  return double.tryParse(normalized);
 }

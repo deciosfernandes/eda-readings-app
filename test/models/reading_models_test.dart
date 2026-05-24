@@ -63,6 +63,11 @@ void main() {
       expect(response.valorMinContador1, '1200.00');
       expect(response.valorMaxContador1, '1300.00');
       expect(response.register1, 'REG01');
+      // BOLT: Verify pre-parsed doubles
+      expect(response.v1, 1234.56);
+      expect(response.v1Min, 1200.00);
+      expect(response.v1Max, 1300.00);
+
       expect(response.descContador2, 'Vazio');
       expect(response.valorContador2, '500.00');
       expect(response.valorMinContador2, '480.00');
@@ -86,6 +91,22 @@ void main() {
       expect(response.serial, '');
       expect(response.material, '');
       expect(response.contrato, '');
+    });
+
+    test('fromJson handles comma as decimal separator', () {
+      final json = {
+        'cil': 'PT123',
+        'cilToken': 'tok',
+        'cilTokenExpires': 0,
+        'serial': 'SN',
+        'material': 'MAT',
+        'contrato': 'C',
+        'valorContador1': '1.234,56', // European format
+      };
+
+      final response = ReadingResponse.fromJson(json);
+
+      expect(response.v1, 1234.56);
     });
 
     test('fromJson sets optional fields to null when absent', () {
@@ -209,6 +230,22 @@ void main() {
       expect(history.valorContador2, '500.00');
       expect(history.valorContador3, '200.00');
       expect(history.profileId, 'profile_001');
+
+      // BOLT: Verify pre-parsed doubles
+      expect(history.v1, 1234.56);
+      expect(history.v2, 500.00);
+      expect(history.v3, 200.00);
+    });
+
+    test('fromJson handles comma as decimal separator', () {
+      final json = {
+        'date': '2024-03-15T10:30:00.000Z',
+        'valorContador1': '1.234,56',
+      };
+
+      final history = LocalReadingHistory.fromJson(json);
+
+      expect(history.v1, 1234.56);
     });
 
     test('fromJson sets optional fields to null when absent', () {

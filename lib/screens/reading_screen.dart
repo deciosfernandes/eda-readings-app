@@ -128,13 +128,10 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
       _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
 
-      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
-      _lastVal2 = data.valorContador2 != null
-          ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
-          : null;
-      _lastVal3 = data.valorContador3 != null
-          ? double.tryParse(data.valorContador3!.replaceAll(',', '.'))
-          : null;
+      // BOLT: Use pre-parsed double fields from the model to avoid redundant string processing.
+      _lastVal1 = data.v1;
+      _lastVal2 = data.v2;
+      _lastVal3 = data.v3;
 
       _helperBase1 = _buildHelperBase(
         data.valorContador1,
@@ -255,25 +252,30 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     }
   }
 
-  String? _validateReading(String? value, String? min, String? max) {
+  String? _validateReading(
+    String? value,
+    double? min,
+    double? max,
+    String? minStr,
+    String? maxStr,
+  ) {
     if (value == null || value.isEmpty) {
       return 'login.error_empty'.tr();
     }
-    final number = double.tryParse(value.replaceAll(',', '.'));
+    // BOLT: Use normalized parsing to handle European decimal separators consistently.
+    final number = _parseLocaleDouble(value);
 
     // Sentinel: Security check for finite numbers and non-negative values.
-    // double.tryParse accepts "NaN" and "Infinity" literals which could bypass logic.
     if (number == null || !number.isFinite || number < 0) {
       return 'reading.error_not_number'.tr();
     }
 
     if (min != null && max != null) {
-      final minVal = double.tryParse(min.replaceAll(',', '.'));
-      final maxVal = double.tryParse(max.replaceAll(',', '.'));
-      if (minVal != null && maxVal != null) {
-        if (number < minVal || number > maxVal) {
-          return 'reading.error_out_of_bounds'.tr(args: [min, max]);
-        }
+      if (number < min || number > max) {
+        // BOLT: Use the original API strings for error messages to preserve locale and precision.
+        return 'reading.error_out_of_bounds'.tr(
+          args: [minStr ?? min.toString(), maxStr ?? max.toString()],
+        );
       }
     }
     return null;
@@ -333,6 +335,16 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     return '$lastReadingText$rangeText';
   }
 
+  /// BOLT: Replicate model's parsing logic for real-time UI updates to ensure consistency.
+  double? _parseLocaleDouble(String? value) {
+    if (value == null || value.isEmpty) return null;
+    String normalized = value;
+    if (value.contains(',')) {
+      normalized = value.replaceAll('.', '').replaceAll(',', '.');
+    }
+    return double.tryParse(normalized);
+  }
+
   InputDecoration _buildInputDecoration({
     required String label,
     required double? lastValue,
@@ -341,7 +353,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   }) {
     String consumptionText = '';
     if (lastValue != null && controller.text.isNotEmpty) {
-      final current = double.tryParse(controller.text.replaceAll(',', '.'));
+      // BOLT: Use normalized parsing for real-time consumption calculation.
+      final current = _parseLocaleDouble(controller.text);
       if (current != null && current > lastValue) {
         final diff = current - lastValue;
         consumptionText =
@@ -462,6 +475,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                       const TextInputType.numberWithOptions(decimal: true),
                   validator: (value) => _validateReading(
                     value,
+                    _currentData!.v1Min,
+                    _currentData!.v1Max,
                     _currentData!.valorMinContador1,
                     _currentData!.valorMaxContador1,
                   ),
@@ -500,6 +515,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
+                      _currentData!.v2Min,
+                      _currentData!.v2Max,
                       _currentData!.valorMinContador2,
                       _currentData!.valorMaxContador2,
                     );
@@ -529,6 +546,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
                       value,
+                      _currentData!.v3Min,
+                      _currentData!.v3Max,
                       _currentData!.valorMinContador3,
                       _currentData!.valorMaxContador3,
                     );
