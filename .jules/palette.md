@@ -29,3 +29,7 @@
 ## 2026-05-26 - [Unambiguous selection feedback in horizontal lists]
 **Learning:** For item selectors in horizontal lists (e.g., icon pickers), a simple background color change can be subtle and easily missed, especially in high-brightness environments. Combining an 'AnimatedContainer' for smooth transitions with a 'Stack'-based checkmark overlay ('Icons.check_circle') provides clear, unambiguous, and delightful visual confirmation of the selected state.
 **Action:** Use 'AnimatedContainer' and a checkmark status indicator for all selection components where clarity is paramount.
+
+## 2026-06-01 - [Providing actionable context with consumption deltas]
+**Learning:** Displaying raw meter readings in a history list is informative, but calculating and displaying the difference (delta) between consecutive readings provides immediate actionable context about energy usage trends. Integrating this delta into screen reader semantics ensures that this improved context is accessible to all users without adding visual clutter.
+**Action:** Pre-calculate consumption deltas during data loading and display them as secondary badges while also appending them to the accessibility labels of the list items.
