@@ -1,6 +1,6 @@
 /// Represents the response from the EDA API containing meter reading details.
 ///
-/// This model encapsulates all metadata and current counter values for a specific
+/// **BOLT**: This model encapsulates all metadata and current counter values for a specific
 /// delivery point (CIL), including the security token required for submissions.
 class ReadingResponse {
   /// Local Identification Code (Código de Identificação Local).
@@ -26,7 +26,7 @@ class ReadingResponse {
   final String? data;
 
   /// Recommended date for sending the next reading ("data aconselhável de envio").
-  /// The application uses this to schedule local reminders via the `NotificationService`.
+  /// **PALETTE**: The application uses this to schedule local reminders via the `NotificationService`.
   final String? dataAconselhavelEnvio;
 
   /// Origin of the last recorded reading (e.g., "Web", "App", "Estimativa").
@@ -39,9 +39,9 @@ class ReadingResponse {
   final String? descContador1;
   /// Current/Last value for Counter 1 in kWh as recorded in the system.
   final String? valorContador1;
-  /// Minimum allowed value for the next Counter 1 reading to prevent submission errors.
+  /// **SENTINEL**: Minimum allowed value for the next Counter 1 reading to prevent submission errors.
   final String? valorMinContador1;
-  /// Maximum allowed value for the next Counter 1 reading to prevent submission errors.
+  /// **SENTINEL**: Maximum allowed value for the next Counter 1 reading to prevent submission errors.
   final String? valorMaxContador1;
   /// Internal register code for Counter 1, required for the [SendReadingPayload].
   final String? register1;
@@ -50,9 +50,9 @@ class ReadingResponse {
   final String? descContador2;
   /// Current/Last value for Counter 2 in kWh.
   final String? valorContador2;
-  /// Minimum allowed value for the next Counter 2 reading.
+  /// **SENTINEL**: Minimum allowed value for the next Counter 2 reading.
   final String? valorMinContador2;
-  /// Maximum allowed value for the next Counter 2 reading.
+  /// **SENTINEL**: Maximum allowed value for the next Counter 2 reading.
   final String? valorMaxContador2;
   /// Internal register code for Counter 2.
   final String? register2;
@@ -61,9 +61,9 @@ class ReadingResponse {
   final String? descContador3;
   /// Current/Last value for Counter 3 in kWh.
   final String? valorContador3;
-  /// Minimum allowed value for the next Counter 3 reading.
+  /// **SENTINEL**: Minimum allowed value for the next Counter 3 reading.
   final String? valorMinContador3;
-  /// Maximum allowed value for the next Counter 3 reading.
+  /// **SENTINEL**: Maximum allowed value for the next Counter 3 reading.
   final String? valorMaxContador3;
   /// Internal register code for Counter 3.
   final String? register3;
@@ -128,6 +128,9 @@ class ReadingResponse {
 }
 
 /// Data payload for submitting a new reading to the EDA API.
+///
+/// **SENTINEL**: Ensures that all required metadata and validated counter values
+/// are correctly formatted for submission to the EDA backend.
 class SendReadingPayload {
   /// Local Identification Code (CIL).
   final String cil;

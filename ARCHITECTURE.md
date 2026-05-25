@@ -34,6 +34,37 @@ Understanding these terms is critical for working with the EDA API and the appli
 | **Super Vazio** | Horas de Super Vazio | Deep off-peak. Even lower costs during specific night windows. |
 | **Janela de Envio** | Data Aconselhável de Envio | Recommended Submission Window. The date provided by EDA when a reading should be submitted to ensure accurate billing and avoid estimates. |
 
+### Technical API Reference
+This table maps the Portuguese keys used by the EDA API to their technical roles and English descriptions.
+
+| JSON Key | Technical Role | Description (English) |
+| :--- | :--- | :--- |
+| `cil` | Identifier | Local Identification Code (10 digits). |
+| `contrato` | Identifier | Electricity Contract Number. |
+| `cilToken` | Security | Session-specific submission token. |
+| `cilTokenExpires` | Security | Expiration timestamp (ms) for the token. |
+| `serial` | Metadata | Meter serial number. |
+| `material` | Metadata | Meter material/type code. |
+| `data` | State | Date of the last recorded reading. |
+| `dataAconselhavelEnvio` | Logic | Recommended next submission date. |
+| `origem` | State | Source of the last reading (Web, App, etc.). |
+| `tarifa` | Logic | Active tariff type (Simples, Bi, Tri). |
+| `descContador1` | UI/Metadata | Label for the primary register. |
+| `valorContador1` | Data | Value for the primary register. |
+| `valorMinContador1` | Validation | Minimum allowed value for next reading. |
+| `valorMaxContador1` | Validation | Maximum allowed value for next reading. |
+| `register1` | Payload | Internal EDA register code for Counter 1. |
+| `descContador2` | UI/Metadata | Label for the secondary register. |
+| `valorContador2` | Data | Value for the secondary register. |
+| `valorMinContador2` | Validation | Minimum allowed value for Counter 2. |
+| `valorMaxContador2` | Validation | Maximum allowed value for Counter 2. |
+| `register2` | Payload | Internal register code for Counter 2. |
+| `descContador3` | UI/Metadata | Label for the tertiary register. |
+| `valorContador3` | Data | Value for the tertiary register. |
+| `valorMinContador3` | Validation | Minimum allowed value for Counter 3. |
+| `valorMaxContador3` | Validation | Maximum allowed value for Counter 3. |
+| `register3` | Payload | Internal register code for Counter 3. |
+
 ### Meter Registers (Contadores)
 The application handles up to three registers depending on the user's tariff:
 
@@ -66,6 +97,39 @@ graph TD
     UI -->|Loads Profile| SSS[SecureStorageService]
     SSS -->|Caches State| SSS_MEM[(In-Memory Cache)]
     SSS -->|Persists Credentials| FSS
+```
+
+### Lifecycle & Initialization
+The following sequence diagram illustrates the parallelized application bootstrap sequence.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SSS as SecureStorageService
+    participant HS as HistoryService
+    participant App as MyApp
+
+    M->>M: WidgetsFlutterBinding.ensureInitialized()
+
+    rect rgb(240, 248, 255)
+    note right of M: BOLT: Parallel Initialization
+    M->>EL: ensureInitialized()
+    M->>NS: initialize()
+    M->>TS: loadTheme()
+    M->>SSS: getAppState()
+    M->>HS: getHistory()
+    end
+
+    EL-->>M: Ready
+    NS-->>M: Ready
+    TS-->>M: Ready
+    SSS-->>M: Ready
+    HS-->>M: Ready
+
+    M->>App: runApp()
 ```
 
 ### Navigation Flow
@@ -277,4 +341,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*
