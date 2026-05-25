@@ -204,13 +204,21 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  // BOLT: Pre-parsed numeric values to avoid redundant string manipulation and
+  // parsing in performance-critical paths (e.g., O(N) loops for charts).
+  final double v1;
+  final double? v2;
+  final double? v3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  })  : v1 = _parseLocaleDouble(valorContador1),
+        v2 = valorContador2 != null ? _parseLocaleDouble(valorContador2) : null,
+        v3 = valorContador3 != null ? _parseLocaleDouble(valorContador3) : null;
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
@@ -220,6 +228,10 @@ class LocalReadingHistory {
       valorContador3: json['valorContador3'] as String?,
       profileId: json['profileId'] as String?,
     );
+  }
+
+  static double _parseLocaleDouble(String value) {
+    return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
   }
 
   Map<String, dynamic> toJson() {

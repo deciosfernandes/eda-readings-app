@@ -262,5 +262,31 @@ void main() {
       expect(restored.valorContador3, isNull);
       expect(restored.profileId, original.profileId);
     });
+
+    test('v1, v2, v3 handle both dot and comma as decimal separators', () {
+      final history = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: '1234.56',
+        valorContador2: '500,78',
+        valorContador3: '200',
+      );
+
+      expect(history.v1, 1234.56);
+      expect(history.v2, 500.78);
+      expect(history.v3, 200.0);
+    });
+
+    test('v1, v2, v3 fallback to 0.0 or null on malformed strings', () {
+      final history = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: 'abc',
+        valorContador2: '---',
+        valorContador3: null,
+      );
+
+      expect(history.v1, 0.0);
+      expect(history.v2, 0.0);
+      expect(history.v3, isNull);
+    });
   });
 }
