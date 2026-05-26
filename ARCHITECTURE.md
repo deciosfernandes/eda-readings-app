@@ -41,6 +41,23 @@ The application handles up to three registers depending on the user's tariff:
 2.  **`valorContador2` (Register 2)**: Used in *Bi-horária* and *Tri-horária* tariffs. Typically maps to the **Off-peak (Vazio)** period.
 3.  **`valorContador3` (Register 3)**: Used exclusively in *Tri-horária* tariffs. Typically maps to the **Super Off-peak (Super Vazio)** period.
 
+### API Reference
+This table maps the Portuguese keys used in the EDA API responses and payloads to their technical roles and English descriptions.
+
+| API Key | Type | Technical Role | Description |
+| :--- | :--- | :--- | :--- |
+| `cil` | String | Identifier | Local Identification Code (10 digits). |
+| `contrato` | String | Identifier | Electricity Contract Number. |
+| `cilToken` | String | Security | Stateless authentication token required for reading submission. |
+| `cilTokenExpires` | Integer | Security | Unix timestamp (seconds) when the `cilToken` expires. |
+| `data` | String | Metadata | ISO date of the last reading recorded in the EDA system. |
+| `dataAconselhavelEnvio`| String | UX | Recommended date for the next submission (reminders). |
+| `tarifa` | String | Domain | The active tariff plan (Simples, Bi-horária, Tri-horária). |
+| `valorContador1/2/3` | String | Data | Current counter values in kWh (Portuguese locale: uses comma). |
+| `valorMinContador1/2/3`| String | Validation | Minimum allowed value for the next submission. |
+| `valorMaxContador1/2/3`| String | Validation | Maximum allowed value for the next submission. |
+| `register1/2/3` | String | Protocol | Internal EDA register codes required in the submission payload. |
+
 ## 🏗️ State Management
 
 This project deliberately avoids external state management libraries (like Provider, Riverpod, or Bloc) to keep the dependency tree lean and the architecture simple.
@@ -49,6 +66,41 @@ This project deliberately avoids external state management libraries (like Provi
 1.  **Shared State (Services)**: Global or shared state (history, credentials, theme) is managed by **Singleton Services**. These services maintain in-memory caches and handle persistence.
 2.  **Local State (UI)**: Screen-specific or ephemeral state (form inputs, loading indicators, animation flags) is managed using standard `StatefulWidget` and `setState`.
 3.  **Communication**: UI components call service methods directly to trigger updates. Some services (like `ThemeService`) extend `ChangeNotifier` to allow the UI to react to changes via listeners.
+
+## 🏁 Lifecycle & Initialization
+
+The application follows a **BOLT** initialization pattern, prioritizing speed by parallelizing independent service bootstrap tasks.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SSS as SecureStorageService
+    participant HS as HistoryService
+    participant APP as MyApp
+
+    M->>M: WidgetsFlutterBinding.ensureInitialized()
+
+    Note over M, HS: BOLT: Parallel Bootstrap (Future.wait)
+
+    par
+        M->>EL: ensureInitialized()
+        M->>NS: initialize()
+        M->>TS: loadTheme()
+        M->>SSS: getAppState()
+        M->>HS: getHistory()
+    end
+
+    EL-->>M: Ready
+    NS-->>M: Ready
+    TS-->>M: Ready
+    SSS-->>M: Ready
+    HS-->>M: Ready
+
+    M->>APP: runApp()
+```
 
 ## 🔄 Data Flow
 
@@ -277,4 +329,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*
