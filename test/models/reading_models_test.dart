@@ -262,5 +262,24 @@ void main() {
       expect(restored.valorContador3, isNull);
       expect(restored.profileId, original.profileId);
     });
+
+    test('v1, v2, v3 handle various numeric formats', () {
+      final h1 = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: '1234.56',
+        valorContador2: '500,80',
+        valorContador3: '',
+      );
+      expect(h1.v1, 1234.56);
+      expect(h1.v2, 500.80);
+      expect(h1.v3, isNull);
+
+      final h2 = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: 'invalid',
+      );
+      expect(h2.v1, 0.0);
+      expect(h2.v2, isNull);
+    });
   });
 }
