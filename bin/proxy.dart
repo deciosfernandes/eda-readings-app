@@ -58,10 +58,24 @@ void main() async {
     }
 
     // Sentinel: Restrict proxying to the expected API path to minimize attack surface.
-    if (!request.uri.path.startsWith('/api/leitura')) {
-      stderr
-          .writeln('Blocked request to unauthorized path: ${request.uri.path}');
+    // Use normalizePath and check pathSegments to prevent path traversal bypasses.
+    final normalizedUri = request.uri.normalizePath();
+    final isAuthorizedPath = normalizedUri.path.startsWith('/api/leitura') &&
+        !normalizedUri.pathSegments.any((s) => s == '..' || s == '.');
+
+    if (!isAuthorizedPath) {
+      stderr.writeln(
+          'Blocked request to unauthorized path: ${request.uri.path}');
       request.response.statusCode = HttpStatus.notFound;
+      await request.response.close();
+      continue;
+    }
+
+    // Sentinel: Enforce a 1MB request body limit to mitigate local DoS risks.
+    const int maxPayloadSize = 1024 * 1024;
+    if (request.contentLength > maxPayloadSize) {
+      stderr.writeln('Blocked request with oversized payload: ${request.contentLength} bytes');
+      request.response.statusCode = HttpStatus.requestEntityTooLarge;
       await request.response.close();
       continue;
     }
@@ -70,8 +84,8 @@ void main() async {
       // Sentinel: Use Uri.https for safer URI construction, mitigating injection risks.
       final url = Uri.https(
         'smile.eda.pt',
-        request.uri.path,
-        request.uri.queryParametersAll,
+        normalizedUri.path,
+        normalizedUri.queryParametersAll,
       );
 
       var proxyRequest = await client.openUrl(request.method, url);
@@ -85,8 +99,19 @@ void main() async {
         }
       });
 
+      // Sentinel: Use a transformer to count bytes for chunked transfers where
+      // contentLength might be unknown (-1) or to catch malicious streams.
+      int bytesRead = 0;
+      final limitedStream = request.map((data) {
+        bytesRead += data.length;
+        if (bytesRead > maxPayloadSize) {
+          throw HttpException('Request body exceeds 1MB limit');
+        }
+        return data;
+      });
+
       // Forward request body
-      await proxyRequest.addStream(request);
+      await proxyRequest.addStream(limitedStream);
       var proxyResponse = await proxyRequest.close();
 
       // Forward response headers
@@ -107,7 +132,8 @@ void main() async {
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
       request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      // Sentinel: Mask internal exception details to prevent information leakage.
+      request.response.write('Internal Server Error');
       await request.response.close();
     }
   }

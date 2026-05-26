@@ -32,3 +32,13 @@
 **Vulnerability:** The development proxy was an "Open Proxy" using wildcard CORS origins, allowing any website to abuse it for scanning or reaching unauthorized paths.
 **Learning:** Development utilities like CORS proxies are often overlooked but can be exploited if they are overly permissive. A wildcard `Access-Control-Allow-Origin` allows malicious sites to interact with the local proxy, and lack of path filtering allows it to be used as a general-purpose proxy to reach any resource.
 **Prevention:** Restrict development proxies to specific, validated origins (e.g., `localhost`). Use `headers.set()` instead of `add()` when forwarding upstream responses to prevent duplicate security headers. Implement path-based filtering to ensure the proxy only services expected API endpoints, transforming it from an open proxy into a restricted reverse proxy.
+
+## 2026-06-10 - Hardening Proxy against DoS, Path Traversal, and Info Leakage
+**Vulnerability:** The development proxy lacked request body size limits, was susceptible to path traversal bypasses, and leaked internal exception details.
+**Learning:** Even internal development utilities must be hardened to prevent local exploitation.  alone is insufficient for DoS protection if chunked encoding is used; a stream transformer is required to enforce limits during data ingestion. Path validation must use both  and  checks to reliably block traversal attempts.
+**Prevention:** Enforce mandatory payload size limits on all proxies using both header validation and stream-based byte counting. Always mask internal error details in public/proxy responses and use robust URI normalization for path-based authorization.
+
+## 2026-06-10 - Hardening Proxy against DoS, Path Traversal, and Info Leakage
+**Vulnerability:** The development proxy lacked request body size limits, was susceptible to path traversal bypasses, and leaked internal exception details.
+**Learning:** Even internal development utilities must be hardened to prevent local exploitation. `Content-Length` alone is insufficient for DoS protection if chunked encoding is used; a stream transformer is required to enforce limits during data ingestion. Path validation must use both `normalizePath()` and `pathSegments` checks to reliably block traversal attempts.
+**Prevention:** Enforce mandatory payload size limits on all proxies using both header validation and stream-based byte counting. Always mask internal error details in public/proxy responses and use robust URI normalization for path-based authorization.
