@@ -57,11 +57,22 @@ void main() async {
       continue;
     }
 
-    // Sentinel: Restrict proxying to the expected API path to minimize attack surface.
-    if (!request.uri.path.startsWith('/api/leitura')) {
-      stderr
-          .writeln('Blocked request to unauthorized path: ${request.uri.path}');
+    // Sentinel: Normalize path and restrict proxying to the expected API path to minimize attack surface.
+    // Use normalizePath to prevent path traversal bypasses like /api/leitura/../../foo.
+    final normalizedPath = request.uri.normalizePath().path;
+    if (!normalizedPath.startsWith('/api/leitura')) {
+      stderr.writeln('Blocked request to unauthorized path: $normalizedPath');
       request.response.statusCode = HttpStatus.notFound;
+      await request.response.close();
+      continue;
+    }
+
+    // Sentinel: Enforce a 1MB request body size limit to mitigate DoS via large payloads.
+    const int maxBodySize = 1024 * 1024; // 1MB
+    if (request.contentLength > maxBodySize) {
+      stderr.writeln(
+          'Blocked request with excessive Content-Length: ${request.contentLength}');
+      request.response.statusCode = HttpStatus.requestEntityTooLarge;
       await request.response.close();
       continue;
     }
@@ -85,8 +96,15 @@ void main() async {
         }
       });
 
-      // Forward request body
-      await proxyRequest.addStream(request);
+      // Forward request body with size limit enforcement (for chunked transfers)
+      int bytesReceived = 0;
+      await proxyRequest.addStream(request.map((data) {
+        bytesReceived += data.length;
+        if (bytesReceived > maxBodySize) {
+          throw const HttpException('Payload Too Large');
+        }
+        return data;
+      }));
       var proxyResponse = await proxyRequest.close();
 
       // Forward response headers
@@ -106,8 +124,13 @@ void main() async {
       await request.response.close();
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
-      request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      if (e is HttpException && e.message == 'Payload Too Large') {
+        request.response.statusCode = HttpStatus.requestEntityTooLarge;
+      } else {
+        request.response.statusCode = HttpStatus.internalServerError;
+      }
+      // Sentinel: Mask internal exception details to prevent information leakage.
+      request.response.write('Internal Server Error');
       await request.response.close();
     }
   }
