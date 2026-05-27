@@ -34,6 +34,22 @@ Understanding these terms is critical for working with the EDA API and the appli
 | **Super Vazio** | Horas de Super Vazio | Deep off-peak. Even lower costs during specific night windows. |
 | **Janela de Envio** | Data Aconselhável de Envio | Recommended Submission Window. The date provided by EDA when a reading should be submitted to ensure accurate billing and avoid estimates. |
 
+### API Reference
+The application interacts with the EDA API using Portuguese keys. The following table maps these keys to their English descriptions and technical roles.
+
+| API Key | English Description | Technical Role / Context |
+| :--- | :--- | :--- |
+| `cil` | Local Identification Code | Unique 10-digit ID for the delivery point. Required for all requests. |
+| `cilToken` | Submission Token | Security token obtained via `GET` and required for `PUT` submission. |
+| `cilTokenExpires` | Token Expiry | Unix timestamp (seconds) indicating when the `cilToken` becomes invalid. |
+| `contrato` | Contract Number | The electricity contract number associated with the `cil`. |
+| `dataAconselhavelEnvio` | Recommended Date | Date window for sending the reading. Used for `NotificationService` reminders. |
+| `valorContador[1-3]` | Register Reading | The last recorded meter value for registers 1, 2, or 3. |
+| `valorMinContador[1-3]` | Minimum Bound | The lowest valid value for the next reading (prevents negative consumption). |
+| `valorMaxContador[1-3]` | Maximum Bound | The highest valid value for the next reading (prevents outlier errors). |
+| `register[1-3]` | Register Code | Internal EDA register identifier required for the submission payload. |
+| `tarifa` | Tariff Type | The user's tariff plan (e.g., *Simples*, *Bi-horária*, *Tri-horária*). |
+
 ### Meter Registers (Contadores)
 The application handles up to three registers depending on the user's tariff:
 
@@ -66,6 +82,32 @@ graph TD
     UI -->|Loads Profile| SSS[SecureStorageService]
     SSS -->|Caches State| SSS_MEM[(In-Memory Cache)]
     SSS -->|Persists Credentials| FSS
+```
+
+### Lifecycle & Initialization
+The application uses a parallel initialization strategy in `main.dart` to minimize startup time.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant W as WidgetsBinding
+    participant S as Services (Parallel)
+    participant A as MyApp
+
+    M->>W: ensureInitialized()
+
+    note over M,S: Future.wait([...])
+    par Initialization
+        M->>S: EasyLocalization.ensureInitialized()
+        M->>S: NotificationService.initialize()
+        M->>S: ThemeService.loadTheme()
+        M->>S: SecureStorageService.getAppState()
+        M->>S: HistoryService.getHistory()
+    end
+    S-->>M: All Initialized
+
+    M->>A: runApp(MyApp)
+    A->>A: Build & Load Dashboard
 ```
 
 ### Navigation Flow
@@ -277,4 +319,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*
