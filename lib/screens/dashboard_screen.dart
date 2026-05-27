@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
+  // BOLT: Pre-calculated consumption deltas to avoid repeated string parsing/formatting.
+  List<String?> _historyDeltas = [];
   // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
   List<String> _historySemantics = [];
   bool _isLoading = true;
@@ -75,6 +77,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final deltas = List<String?>.filled(historyLength, null);
     final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
@@ -91,9 +94,26 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       final formattedDate = _historyDateFormat.format(date);
       formattedDates[i] = formattedDate;
 
+      // BOLT: Calculate consumption delta (difference from previous reading in chronological order).
+      // Since _history is newest-first, the "previous" chronological reading is at i + 1.
+      String? deltaText;
+      if (i < historyLength - 1) {
+        final currentVal = double.tryParse(c1.replaceAll(',', '.'));
+        final prevVal = double.tryParse(history[i + 1].valorContador1.replaceAll(',', '.'));
+
+        if (currentVal != null && prevVal != null && currentVal > prevVal) {
+          final diff = currentVal - prevVal;
+          final formattedDiff =
+              diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2);
+          deltaText = 'dashboard.consumption_delta'.tr(args: [formattedDiff]);
+        }
+      }
+      deltas[i] = deltaText;
+
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
+      if (deltaText != null) buffer.write(', $deltaText');
       if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
       if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
       semantics[i] = buffer.toString();
@@ -111,6 +131,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historyDeltas = deltas;
       _historySemantics = semantics;
       _isLoading = false;
     });
@@ -435,7 +456,19 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 '${item.valorContador1} kWh',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text(formattedDate),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(formattedDate),
+                  if (_historyDeltas[index] != null) ...[
+                    const SizedBox(height: 4),
+                    _ConsumptionDeltaBadge(
+                      delta: _historyDeltas[index]!,
+                      colorScheme: colorScheme,
+                    ),
+                  ],
+                ],
+              ),
               trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
             ),
           ),
@@ -471,7 +504,10 @@ class _HistoryTrailing extends StatelessWidget {
   final LocalReadingHistory item;
   final ColorScheme colorScheme;
 
-  const _HistoryTrailing({required this.item, required this.colorScheme});
+  const _HistoryTrailing({
+    required this.item,
+    required this.colorScheme,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -501,6 +537,46 @@ class _HistoryTrailing extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: badges,
+    );
+  }
+}
+
+class _ConsumptionDeltaBadge extends StatelessWidget {
+  final String delta;
+  final ColorScheme colorScheme;
+
+  const _ConsumptionDeltaBadge({
+    required this.delta,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.trending_up,
+            size: 14,
+            color: colorScheme.secondary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            delta,
+            style: TextStyle(
+              color: colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

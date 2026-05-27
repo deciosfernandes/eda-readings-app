@@ -29,3 +29,7 @@
 ## 2026-05-26 - [Unambiguous selection feedback in horizontal lists]
 **Learning:** For item selectors in horizontal lists (e.g., icon pickers), a simple background color change can be subtle and easily missed, especially in high-brightness environments. Combining an 'AnimatedContainer' for smooth transitions with a 'Stack'-based checkmark overlay ('Icons.check_circle') provides clear, unambiguous, and delightful visual confirmation of the selected state.
 **Action:** Use 'AnimatedContainer' and a checkmark status indicator for all selection components where clarity is paramount.
+
+## 2026-05-28 - [Visual Balance for High-Density ListItems]
+**Learning:** Placing secondary metadata (like consumption deltas) in a 'subtitle' Column rather than a 'trailing' widget provides better visual balance in a Flutter 'ListTile' when the trailing space is already high-density (e.g., containing multiple technical badges). This keeps the primary value and its trend together while allowing badges to remain distinct.
+**Action:** Prefer expanding the 'subtitle' with a 'Column' for secondary trends or status indicators when the 'trailing' area is crowded.
