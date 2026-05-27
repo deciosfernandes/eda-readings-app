@@ -33,7 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
-  // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
+  // BOLT: Pre-calculated deltas and accessibility labels to ensure O(1) build performance.
+  List<double?> _historyDeltas = [];
   List<String> _historySemantics = [];
   bool _isLoading = true;
   AppStateData? _appState;
@@ -75,6 +76,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final deltas = List<double?>.filled(historyLength, null);
     final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
@@ -91,17 +93,28 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       final formattedDate = _historyDateFormat.format(date);
       formattedDates[i] = formattedDate;
 
+      // BOLT: Calculate consumption delta with O(1) lookup to previous reading.
+      // Since history is newest-first, the "previous" reading is at index i + 1.
+      if (i + 1 < historyLength) {
+        final prev = history[i + 1];
+        deltas[i] = item.v1 - prev.v1;
+      }
+
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
       if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
       if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
+      if (deltas[i] != null) {
+        final deltaStr = deltas[i]!.toStringAsFixed(deltas[i]!.truncateToDouble() == deltas[i] ? 0 : 2);
+        buffer.write(', ${'dashboard.consumption_delta'.tr(args: [deltaStr])}');
+      }
       semantics[i] = buffer.toString();
 
       // Charts use chronological order (oldest to newest). We use the same 'item'
       // but map it to 'reverseIdx' to eliminate the 'reverseItem' lookup and halving O(N) work.
-      final val = double.tryParse(c1) ?? 0.0;
-      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), val);
+      // BOLT: Use pre-parsed 'v1' to avoid repeated double.tryParse and string replacements.
+      spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), item.v1);
       labels[reverseIdx] = '${date.day}/${date.month}';
     }
 
@@ -111,6 +124,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historyDeltas = deltas;
       _historySemantics = semantics;
       _isLoading = false;
     });
@@ -431,9 +445,19 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 backgroundColor: colorScheme.primaryContainer,
                 child: const Icon(Icons.flash_on),
               ),
-              title: Text(
-                '${item.valorContador1} kWh',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              title: Row(
+                children: [
+                  Text(
+                    '${item.valorContador1} kWh',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  if (_historyDeltas[index] != null)
+                    _ConsumptionDeltaBadge(
+                      delta: _historyDeltas[index]!,
+                      colorScheme: colorScheme,
+                    ),
+                ],
               ),
               subtitle: Text(formattedDate),
               trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
@@ -464,6 +488,46 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 
   @override
   bool get wantKeepAlive => true;
+}
+
+// PALETTE: Small badge to highlight consumption changes between readings.
+class _ConsumptionDeltaBadge extends StatelessWidget {
+  final double delta;
+  final ColorScheme colorScheme;
+
+  const _ConsumptionDeltaBadge({required this.delta, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    final deltaStr = delta.toStringAsFixed(delta.truncateToDouble() == delta ? 0 : 2);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.trending_up,
+            size: 12,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'dashboard.consumption_delta'.tr(args: [deltaStr]),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSecondaryContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // BOLT: Refactor trailing badges into a StatelessWidget to optimize widget reconstruction and reconciliation.

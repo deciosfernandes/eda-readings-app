@@ -204,13 +204,23 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  /// **BOLT**: Pre-parsed numeric values to avoid redundant string parsing and
+  /// locale handling (comma to dot) in high-frequency UI loops like charts.
+  final double v1;
+  /// **BOLT**: Pre-parsed numeric value for Counter 2.
+  final double? v2;
+  /// **BOLT**: Pre-parsed numeric value for Counter 3.
+  final double? v3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  })  : v1 = _parseLocaleDouble(valorContador1),
+        v2 = valorContador2 != null ? _parseLocaleDouble(valorContador2) : null,
+        v3 = valorContador3 != null ? _parseLocaleDouble(valorContador3) : null;
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
@@ -220,6 +230,13 @@ class LocalReadingHistory {
       valorContador3: json['valorContador3'] as String?,
       profileId: json['profileId'] as String?,
     );
+  }
+
+  /// **BOLT**: Helper to handle European decimal separators (commas) at the data
+  /// layer, ensuring consistent double parsing throughout the app.
+  static double _parseLocaleDouble(String value) {
+    if (value.isEmpty) return 0.0;
+    return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
   }
 
   Map<String, dynamic> toJson() {

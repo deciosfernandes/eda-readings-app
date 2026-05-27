@@ -33,3 +33,7 @@
 ## 2026-02-17 - O(1) Collection Views with UnmodifiableListView
 **Learning:** Using `List.from()` to return copies of internal collections from services ensures immutability but incurs O(N) allocation and copy costs. `UnmodifiableListView` provides the same security with O(1) overhead by wrapping the existing list.
 **Action:** Return `UnmodifiableListView` from service getters. Additionally, pass mapped iterables directly to `insertAll` in batch operations to avoid intermediate `.toList()` allocations.
+
+## 2026-02-18 - Centralized Numeric Parsing for O(1) Build Loops
+**Learning:** Performing `double.tryParse` and locale-specific string replacements (comma to dot) inside `ListView.builder` or chart generation loops creates (N)$ overhead on every frame. Moving this logic to the model layer (memoization during deserialization) makes UI builds (1)$ relative to parsing costs.
+**Action:** Always pre-calculate numeric values and consumption deltas at the data layer or during `_loadData` to ensure the UI thread remains responsive during scrolling and animations.

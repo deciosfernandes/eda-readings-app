@@ -206,9 +206,23 @@ void main() {
 
       expect(history.date, DateTime.parse('2024-03-15T10:30:00.000Z'));
       expect(history.valorContador1, '1234.56');
+      expect(history.v1, 1234.56);
       expect(history.valorContador2, '500.00');
+      expect(history.v2, 500.0);
       expect(history.valorContador3, '200.00');
+      expect(history.v3, 200.0);
       expect(history.profileId, 'profile_001');
+    });
+
+    test('handles European comma decimals', () {
+      final json = {
+        'date': '2024-03-15T10:30:00.000Z',
+        'valorContador1': '1234,56',
+        'valorContador2': '500,00',
+      };
+      final history = LocalReadingHistory.fromJson(json);
+      expect(history.v1, 1234.56);
+      expect(history.v2, 500.0);
     });
 
     test('fromJson sets optional fields to null when absent', () {
@@ -223,7 +237,9 @@ void main() {
       final history = LocalReadingHistory.fromJson(json);
 
       expect(history.valorContador2, isNull);
+      expect(history.v2, isNull);
       expect(history.valorContador3, isNull);
+      expect(history.v3, isNull);
       expect(history.profileId, isNull);
     });
 
