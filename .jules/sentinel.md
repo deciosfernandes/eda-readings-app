@@ -32,3 +32,8 @@
 **Vulnerability:** The development proxy was an "Open Proxy" using wildcard CORS origins, allowing any website to abuse it for scanning or reaching unauthorized paths.
 **Learning:** Development utilities like CORS proxies are often overlooked but can be exploited if they are overly permissive. A wildcard `Access-Control-Allow-Origin` allows malicious sites to interact with the local proxy, and lack of path filtering allows it to be used as a general-purpose proxy to reach any resource.
 **Prevention:** Restrict development proxies to specific, validated origins (e.g., `localhost`). Use `headers.set()` instead of `add()` when forwarding upstream responses to prevent duplicate security headers. Implement path-based filtering to ensure the proxy only services expected API endpoints, transforming it from an open proxy into a restricted reverse proxy.
+
+## 2026-05-16 - Preventing Path Traversal and Information Leakage in Development Proxies
+**Vulnerability:** The development proxy was vulnerable to path traversal via `..` segments and leaked detailed internal errors to the client.
+**Learning:** Even when using structured URI builders like `Uri.https`, if the input path is not re-validated after construction, it can resolve to an unauthorized location. Additionally, exposing raw exception messages in a proxy can reveal sensitive information about the upstream architecture or internal proxy logic.
+**Prevention:** Always validate the resolved path of a constructed URI to ensure it still starts with the intended allowed prefix. Replace detailed error responses in development utilities with generic status messages to minimize the information available to a potential attacker.

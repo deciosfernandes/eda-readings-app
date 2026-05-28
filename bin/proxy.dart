@@ -74,6 +74,17 @@ void main() async {
         request.uri.queryParametersAll,
       );
 
+      // Sentinel: Validate the resolved path to prevent path traversal via '..' segments.
+      // Even though we use Uri.https, '..' segments in request.uri.path could resolve
+      // to a path outside of /api/leitura.
+      if (!url.path.startsWith('/api/leitura')) {
+        stderr.writeln(
+            'Blocked request to unauthorized resolved path: ${url.path}');
+        request.response.statusCode = HttpStatus.notFound;
+        await request.response.close();
+        continue;
+      }
+
       var proxyRequest = await client.openUrl(request.method, url);
 
       // Forward headers, omitting host-specific ones
@@ -107,7 +118,8 @@ void main() async {
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
       request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Proxy error: $e');
+      // Sentinel: Use a generic error message to avoid leaking internal details.
+      request.response.write('Internal Server Error');
       await request.response.close();
     }
   }
