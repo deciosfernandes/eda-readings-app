@@ -34,6 +34,30 @@ Understanding these terms is critical for working with the EDA API and the appli
 | **Super Vazio** | Horas de Super Vazio | Deep off-peak. Even lower costs during specific night windows. |
 | **Janela de Envio** | Data Aconselhável de Envio | Recommended Submission Window. The date provided by EDA when a reading should be submitted to ensure accurate billing and avoid estimates. |
 
+## 🔌 API Reference
+
+The application interacts with the EDA API (or the development proxy). The following table maps the Portuguese keys found in the JSON responses to their English descriptions and technical roles within the app.
+
+| JSON Key | Description (English) | Technical Role / Notes |
+| :--- | :--- | :--- |
+| `cil` | Local Identification Code | Unique identifier for the delivery point (10 digits). |
+| `contrato` | Contract Number | Associated contract for billing and authentication. |
+| `cilToken` | Security Token | Required for `PUT` submission of readings. |
+| `cilTokenExpires` | Token Expiry | Unix timestamp (ms) for token validity. |
+| `serial` | Meter Serial Number | Unique identifier for the physical meter. |
+| `material` | Material Code | Internal code for the meter type. |
+| `tarifa` | Active Tariff | "Simples", "Bi-horária", or "Tri-horária". |
+| `data` | Last Reading Date | Timestamp of the most recent reading in EDA system. |
+| `dataAconselhavelEnvio` | Recommended Date | Used by `NotificationService` for local reminders. |
+| `origem` | Reading Origin | e.g., "Web", "App", "Estimativa" (Estimate). |
+| `valorContador1` | Register 1 Value | Current/Last reading for the primary register (kWh). |
+| `descContador1` | Register 1 Label | Display name (e.g., "Ponta", "Cheias", "Simples"). |
+| `valorMinContador1` | Min Allowed Value | Used by `ReadingScreen` for validation. |
+| `valorMaxContador1` | Max Allowed Value | Used by `ReadingScreen` for validation. |
+| `register1` | Register 1 Code | Internal ID required for submission payload. |
+| `valorContador2` | Register 2 Value | Current reading for off-peak (Vazio). |
+| `valorContador3` | Register 3 Value | Current reading for super off-peak (Super Vazio). |
+
 ### Meter Registers (Contadores)
 The application handles up to three registers depending on the user's tariff:
 
@@ -66,6 +90,32 @@ graph TD
     UI -->|Loads Profile| SSS[SecureStorageService]
     SSS -->|Caches State| SSS_MEM[(In-Memory Cache)]
     SSS -->|Persists Credentials| FSS
+```
+
+### Lifecycle & Initialization
+The following sequence diagram illustrates the parallel bootstrap process in `main.dart`, which minimizes startup time by initializing independent services concurrently.
+
+```mermaid
+sequenceDiagram
+    participant M as main()
+    participant EL as EasyLocalization
+    participant NS as NotificationService
+    participant TS as ThemeService
+    participant SSS as SecureStorageService
+    participant HS as HistoryService
+    participant App as MyApp
+
+    M->>M: WidgetsFlutterBinding.ensureInitialized()
+
+    par Parallel Initialization
+        M->>EL: ensureInitialized()
+        M->>NS: initialize()
+        M->>TS: loadTheme()
+        M->>SSS: getAppState()
+        M->>HS: getHistory()
+    end
+
+    M->>App: runApp()
 ```
 
 ### Navigation Flow
@@ -277,4 +327,4 @@ Due to browser security restrictions, direct requests to the EDA API will fail w
 The `EDAClient` is pre-configured to detect the web environment and route requests through `http://localhost:8080`.
 
 ---
-*Last Updated: 2026-05-15*
+*Last Updated: 2026-05-16*
