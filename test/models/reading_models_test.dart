@@ -262,5 +262,40 @@ void main() {
       expect(restored.valorContador3, isNull);
       expect(restored.profileId, original.profileId);
     });
+
+    test('v1, v2, v3 memoize numeric values from strings', () {
+      final history = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: '123.45',
+        valorContador2: '67,89', // Comma separator
+        valorContador3: '0',
+      );
+
+      expect(history.v1, 123.45);
+      expect(history.v2, 67.89);
+      expect(history.v3, 0.0);
+    });
+
+    test('v2, v3 are null when corresponding strings are null', () {
+      final history = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: '100',
+        valorContador2: null,
+        valorContador3: null,
+      );
+
+      expect(history.v1, 100.0);
+      expect(history.v2, isNull);
+      expect(history.v3, isNull);
+    });
+
+    test('v1 defaults to 0.0 if valorContador1 is empty', () {
+      final history = LocalReadingHistory(
+        date: DateTime.now(),
+        valorContador1: '',
+      );
+
+      expect(history.v1, 0.0);
+    });
   });
 }

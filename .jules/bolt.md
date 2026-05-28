@@ -33,3 +33,7 @@
 ## 2026-02-17 - O(1) Collection Views with UnmodifiableListView
 **Learning:** Using `List.from()` to return copies of internal collections from services ensures immutability but incurs O(N) allocation and copy costs. `UnmodifiableListView` provides the same security with O(1) overhead by wrapping the existing list.
 **Action:** Return `UnmodifiableListView` from service getters. Additionally, pass mapped iterables directly to `insertAll` in batch operations to avoid intermediate `.toList()` allocations.
+
+## 2026-05-28 - O(1) Numeric Access via Model Memoization
+**Learning:** Performing string-to-double parsing in UI loops (like chart generation) is expensive and often repeated across frames. Centralizing this parsing in the data model ensures it happens only once during object creation. Furthermore, handling cross-locale decimal formats (comma vs. dot) at the data layer resolves subtle bugs while keeping UI logic clean.
+**Action:** Memoize numeric values as `double` fields in models. Use a private static helper to normalize locale-specific separators during construction. Reference these pre-parsed fields directly in performance-critical UI components like charts and summary cards.

@@ -192,6 +192,8 @@ class SendReadingPayload {
 ///
 /// **BOLT**: These objects are cached in-memory by the `HistoryService` and
 /// indexed by `profileId` to allow O(1) lookups during dashboard rendering.
+/// Memoized numeric fields (`v1`, `v2`, `v3`) provide O(1) access for charts
+/// and calculations, avoiding repeated locale-aware parsing.
 class LocalReadingHistory {
   /// Date and time when the reading was recorded locally.
   final DateTime date;
@@ -204,13 +206,22 @@ class LocalReadingHistory {
   /// ID of the [ContractProfile] this reading belongs to.
   final String? profileId;
 
+  /// BOLT: Memoized numeric value for Counter 1.
+  final double v1;
+  /// BOLT: Memoized numeric value for Counter 2.
+  final double? v2;
+  /// BOLT: Memoized numeric value for Counter 3.
+  final double? v3;
+
   LocalReadingHistory({
     required this.date,
     required this.valorContador1,
     this.valorContador2,
     this.valorContador3,
     this.profileId,
-  });
+  })  : v1 = _parseLocaleDouble(valorContador1) ?? 0.0,
+        v2 = _parseLocaleDouble(valorContador2),
+        v3 = _parseLocaleDouble(valorContador3);
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
     return LocalReadingHistory(
@@ -220,6 +231,13 @@ class LocalReadingHistory {
       valorContador3: json['valorContador3'] as String?,
       profileId: json['profileId'] as String?,
     );
+  }
+
+  /// BOLT: Centralized numeric parsing that handles both dot and comma
+  /// decimal separators to ensure cross-locale reliability and performance.
+  static double? _parseLocaleDouble(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return double.tryParse(value.replaceAll(',', '.'));
   }
 
   Map<String, dynamic> toJson() {
