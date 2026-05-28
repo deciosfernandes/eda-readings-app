@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -130,13 +131,14 @@ class HistoryService {
     await _ensureHistoryLoaded();
 
     // BOLT: Use the profile index for O(1) lookup when a profileId is specified.
-    // Returning a new List to prevent external modification of the internal cache.
+    // Returning an UnmodifiableListView to prevent external modification of the internal
+    // cache while avoiding the O(N) cost of List.from().
     if (profileId != null) {
       final matches = _indexedObjects![profileId];
-      return matches != null ? List.from(matches) : [];
+      return matches != null ? UnmodifiableListView(matches) : const [];
     }
 
-    return List.from(_cachedObjects!);
+    return UnmodifiableListView(_cachedObjects!);
   }
 
   /// Batch adds multiple [readings] to the history.
@@ -147,11 +149,10 @@ class HistoryService {
     if (readings.isEmpty) return;
     await _ensureHistoryLoaded();
 
-    final newMaps = readings.map((r) => r.toJson()).toList();
-
     // BOLT: Batch update all caches and persistent storage.
     _cachedObjects!.insertAll(0, readings);
-    _cachedMaps!.insertAll(0, newMaps);
+    // BOLT: Avoid intermediate list allocation by passing the mapped iterable directly.
+    _cachedMaps!.insertAll(0, readings.map((r) => r.toJson()));
 
     // Group new items by profile to maintain relative order during prepending.
     final groupedByProfile = <String?, List<LocalReadingHistory>>{};
@@ -178,14 +179,15 @@ class HistoryService {
     await _ensureHistoryLoaded();
 
     if (profileIds.isEmpty) {
-      return List.from(_cachedObjects!);
+      return UnmodifiableListView(_cachedObjects!);
     }
 
     // BOLT: Optimize common case where only one profile is requested.
     // Since individual profile buckets are already chronological, we skip sorting.
+    // BOLT: Return an UnmodifiableListView to avoid the O(N) cost of List.from().
     if (profileIds.length == 1) {
       final matches = _indexedObjects![profileIds[0]];
-      return matches != null ? List.from(matches) : [];
+      return matches != null ? UnmodifiableListView(matches) : const [];
     }
 
     // BOLT: Collect from indexed buckets. This is O(M) where M is the number of requested profiles.

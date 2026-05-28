@@ -12,6 +12,7 @@
         "submit": "Entrar",
         "error_empty": "Este campo é obrigatório",
         "error_cil_length": "O CIL deve ter exatamente 10 dígitos",
+        "error_contract_length": "O contrato deve ser um número até 20 dígitos",
         "error_login": "Falha ao entrar. Verifique as suas credenciais.",
         "login_tooltip": "Autenticar e entrar na aplicação"
     },

@@ -49,6 +49,7 @@ class ProfileDialogs {
     final sProfileNameHint = 'login.profile_name_hint'.tr();
     final sClear = 'common.clear'.tr();
     final sErrorCil = 'login.error_cil_length'.tr();
+    final sErrorContract = 'login.error_contract_length'.tr();
     final sCil = 'drawer.cil'.tr();
     final sContract = 'drawer.contract'.tr();
     final sSelectIcon = 'drawer.select_icon'.tr();
@@ -78,20 +79,30 @@ class ProfileDialogs {
               return null;
             }
 
+            String? validateContract(String value) {
+              final contract = value.trim();
+              if (contract.isEmpty) return sErrorEmpty;
+              if (contract.length > 20 || !RegExp(r'^\d+$').hasMatch(contract)) {
+                return sErrorContract;
+              }
+              return null;
+            }
+
             bool isValid() =>
                 nameError == null &&
                 cilError == null &&
                 contractError == null &&
                 nameCtrl.text.trim().isNotEmpty &&
                 cilCtrl.text.trim().length == 10 &&
-                contractCtrl.text.trim().isNotEmpty;
+                contractCtrl.text.trim().isNotEmpty &&
+                contractCtrl.text.trim().length <= 20;
 
             Future<void> handleAdd() async {
               // Force-validate all fields on submit
               setModalState(() {
                 nameError = validateField(nameCtrl.text);
                 cilError = validateCil(cilCtrl.text);
-                contractError = validateField(contractCtrl.text);
+                contractError = validateContract(contractCtrl.text);
               });
 
               if (!isValid()) return;
@@ -351,7 +362,7 @@ class ProfileDialogs {
                     onFocusChange: (hasFocus) {
                       if (!hasFocus) {
                         setModalState(() {
-                          contractError = validateField(contractCtrl.text);
+                          contractError = validateContract(contractCtrl.text);
                         });
                       }
                     },
@@ -386,7 +397,7 @@ class ProfileDialogs {
                       onChanged: (_) {
                         setModalState(() {
                           if (contractError != null) {
-                            contractError = validateField(contractCtrl.text);
+                            contractError = validateContract(contractCtrl.text);
                           }
                           apiError = null;
                         });

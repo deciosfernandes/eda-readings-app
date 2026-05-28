@@ -41,7 +41,7 @@ void main() {
         id: 'id1',
         name: 'Home',
         cil: 'CIL123',
-        contract: 'C001',
+        contract: '1000000001',
       );
 
       expect(profile.iconCodePoint, 0xe318);

@@ -10,7 +10,7 @@ void main() {
         'cilTokenExpires': 1700000000,
         'serial': 'SN001',
         'material': 'MAT01',
-        'contrato': 'C001',
+        'contrato': '1000000001',
       };
 
       final response = ReadingResponse.fromJson(json);
@@ -20,7 +20,7 @@ void main() {
       expect(response.cilTokenExpires, 1700000000);
       expect(response.serial, 'SN001');
       expect(response.material, 'MAT01');
-      expect(response.contrato, 'C001');
+      expect(response.contrato, '1000000001');
     });
 
     test('fromJson maps all optional fields', () {
@@ -30,7 +30,7 @@ void main() {
         'cilTokenExpires': 0,
         'serial': 'SN001',
         'material': 'MAT01',
-        'contrato': 'C001',
+        'contrato': '1000000001',
         'data': '2024-01-15',
         'dataAconselhavelEnvio': '2024-01-20',
         'origem': 'SMART',
