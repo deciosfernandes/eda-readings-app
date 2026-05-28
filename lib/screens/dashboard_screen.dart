@@ -33,6 +33,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
+  // BOLT: Pre-calculated UI strings and deltas to avoid O(N) work in ListView.builder.
+  List<String?> _historyC1Delta = [];
+  List<String?> _historyC2Delta = [];
+  List<String?> _historyC3Delta = [];
   // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
   List<String> _historySemantics = [];
   bool _isLoading = true;
@@ -75,11 +79,14 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final c1Deltas = List<String?>.filled(historyLength, null);
+    final c2Deltas = List<String?>.filled(historyLength, null);
+    final c3Deltas = List<String?>.filled(historyLength, null);
     final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
-      final reverseIdx = historyLength - 1 - i;
       final item = history[i];
+      final nextChronological = i + 1 < historyLength ? history[i + 1] : null;
 
       // BOLT: Extract properties once to minimize redundant property access and list lookups.
       final date = item.date;
@@ -91,16 +98,52 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       final formattedDate = _historyDateFormat.format(date);
       formattedDates[i] = formattedDate;
 
+      // Calculate deltas comparing with the previous chronological reading (which is i+1 in newest-first list).
+      if (nextChronological != null) {
+        final current = double.tryParse(c1.replaceAll(',', '.'));
+        final prev = double.tryParse(nextChronological.valorContador1.replaceAll(',', '.'));
+        if (current != null && prev != null && current > prev) {
+          final diff = current - prev;
+          c1Deltas[i] = '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
+        }
+      }
+
+      if (c2?.isNotEmpty == true && nextChronological?.valorContador2?.isNotEmpty == true) {
+        final current = double.tryParse(c2!.replaceAll(',', '.'));
+        final prev = double.tryParse(nextChronological!.valorContador2!.replaceAll(',', '.'));
+        if (current != null && prev != null && current > prev) {
+          final diff = current - prev;
+          c2Deltas[i] = '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
+        }
+      }
+
+      if (c3?.isNotEmpty == true && nextChronological?.valorContador3?.isNotEmpty == true) {
+        final current = double.tryParse(c3!.replaceAll(',', '.'));
+        final prev = double.tryParse(nextChronological!.valorContador3!.replaceAll(',', '.'));
+        if (current != null && prev != null && current > prev) {
+          final diff = current - prev;
+          c3Deltas[i] = '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
+        }
+      }
+
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
-      if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
-      if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
+      if (c1Deltas[i] != null) buffer.write(' (${c1Deltas[i]})');
+      if (c2?.isNotEmpty == true) {
+        buffer.write(', C2: $c2');
+        if (c2Deltas[i] != null) buffer.write(' (${c2Deltas[i]})');
+      }
+      if (c3?.isNotEmpty == true) {
+        buffer.write(', C3: $c3');
+        if (c3Deltas[i] != null) buffer.write(' (${c3Deltas[i]})');
+      }
       semantics[i] = buffer.toString();
 
       // Charts use chronological order (oldest to newest). We use the same 'item'
       // but map it to 'reverseIdx' to eliminate the 'reverseItem' lookup and halving O(N) work.
-      final val = double.tryParse(c1) ?? 0.0;
+      final reverseIdx = historyLength - 1 - i;
+      final val = double.tryParse(c1.replaceAll(',', '.')) ?? 0.0;
       spots[reverseIdx] = FlSpot(reverseIdx.toDouble(), val);
       labels[reverseIdx] = '${date.day}/${date.month}';
     }
@@ -111,6 +154,9 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historyC1Delta = c1Deltas;
+      _historyC2Delta = c2Deltas;
+      _historyC3Delta = c3Deltas;
       _historySemantics = semantics;
       _isLoading = false;
     });
@@ -412,9 +458,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       itemCount: _history.length,
       itemBuilder: (context, index) {
+        // BOLT: Use pre-calculated display strings and semantics for O(1) build performance.
         final item = _history[index];
-        // BOLT: Use pre-calculated formatted date to avoid redundant processing.
         final formattedDate = _historyFormattedDates[index];
+        final c1Delta = _historyC1Delta[index];
 
         return Card(
           elevation: 1,
@@ -423,7 +470,6 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
           child: Semantics(
-            // BOLT: Use pre-calculated semantics label for O(1) build performance.
             label: _historySemantics[index],
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -432,11 +478,16 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 child: const Icon(Icons.flash_on),
               ),
               title: Text(
-                '${item.valorContador1} kWh',
+                '${item.valorContador1} kWh${c1Delta != null ? ' ($c1Delta)' : ''}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(formattedDate),
-              trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
+              trailing: _HistoryTrailing(
+                item: item,
+                colorScheme: colorScheme,
+                c2Delta: _historyC2Delta[index],
+                c3Delta: _historyC3Delta[index],
+              ),
             ),
           ),
         );
@@ -470,8 +521,15 @@ class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
 class _HistoryTrailing extends StatelessWidget {
   final LocalReadingHistory item;
   final ColorScheme colorScheme;
+  final String? c2Delta;
+  final String? c3Delta;
 
-  const _HistoryTrailing({required this.item, required this.colorScheme});
+  const _HistoryTrailing({
+    required this.item,
+    required this.colorScheme,
+    this.c2Delta,
+    this.c3Delta,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -481,6 +539,7 @@ class _HistoryTrailing extends StatelessWidget {
       badges.add(_HistoryBadge(
         label: 'C2',
         value: item.valorContador2!,
+        delta: c2Delta,
         colorScheme: colorScheme,
       ));
     }
@@ -491,6 +550,7 @@ class _HistoryTrailing extends StatelessWidget {
       badges.add(_HistoryBadge(
         label: 'C3',
         value: item.valorContador3!,
+        delta: c3Delta,
         colorScheme: colorScheme,
       ));
     }
@@ -508,11 +568,13 @@ class _HistoryTrailing extends StatelessWidget {
 class _HistoryBadge extends StatelessWidget {
   final String label;
   final String value;
+  final String? delta;
   final ColorScheme colorScheme;
 
   const _HistoryBadge({
     required this.label,
     required this.value,
+    this.delta,
     required this.colorScheme,
   });
 
@@ -525,7 +587,7 @@ class _HistoryBadge extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Text(
-        '$label: $value',
+        '$label: $value${delta != null ? ' ($delta)' : ''}',
         style: TextStyle(
           color: colorScheme.onSecondaryContainer,
           fontWeight: FontWeight.w600,
