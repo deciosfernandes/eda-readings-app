@@ -25,6 +25,7 @@
         "menu_tooltip": "Open main menu",
         "add_reading_tooltip": "Record new meter reading",
         "reading_history_item": "Reading: {} kWh on {}",
+        "consumption_delta": "+{} kWh",
         "no_properties": "No properties",
         "no_properties_desc": "No properties. Add a property to send readings"
     },

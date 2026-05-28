@@ -33,6 +33,8 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   List<FlSpot> _chartSpots = [];
   List<String> _chartLabels = [];
   List<String> _historyFormattedDates = [];
+  // PALETTE: Pre-calculated consumption deltas for history items.
+  List<String?> _historyDeltas = [];
   // BOLT: Pre-calculated accessibility labels to avoid O(N) tr() and StringBuffer calls during scrolling.
   List<String> _historySemantics = [];
   bool _isLoading = true;
@@ -75,6 +77,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
     final spots = List<FlSpot>.filled(historyLength, const FlSpot(0, 0));
     final labels = List<String>.filled(historyLength, '');
     final formattedDates = List<String>.filled(historyLength, '');
+    final deltas = List<String?>.filled(historyLength, null);
     final semantics = List<String>.filled(historyLength, '');
 
     for (int i = 0; i < historyLength; i++) {
@@ -91,9 +94,26 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       final formattedDate = _historyDateFormat.format(date);
       formattedDates[i] = formattedDate;
 
+      // PALETTE: Calculate consumption delta (current - previous chronologically).
+      // Since history is newest-first, previous reading is at i + 1.
+      String? deltaText;
+      if (i < historyLength - 1) {
+        final prevItem = history[i + 1];
+        final current = double.tryParse(c1.replaceAll(',', '.'));
+        final previous = double.tryParse(prevItem.valorContador1.replaceAll(',', '.'));
+        if (current != null && previous != null && current > previous) {
+          final diff = current - previous;
+          deltaText = 'dashboard.consumption_delta'.tr(args: [
+            diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)
+          ]);
+        }
+      }
+      deltas[i] = deltaText;
+
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
       buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
+      if (deltaText != null) buffer.write(', $deltaText');
       if (c2?.isNotEmpty == true) buffer.write(', C2: $c2');
       if (c3?.isNotEmpty == true) buffer.write(', C3: $c3');
       semantics[i] = buffer.toString();
@@ -111,6 +131,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       _chartSpots = spots;
       _chartLabels = labels;
       _historyFormattedDates = formattedDates;
+      _historyDeltas = deltas;
       _historySemantics = semantics;
       _isLoading = false;
     });
@@ -435,7 +456,19 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 '${item.valorContador1} kWh',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text(formattedDate),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(formattedDate),
+                  if (_historyDeltas[index] != null) ...[
+                    const SizedBox(height: 4),
+                    _ConsumptionDeltaBadge(
+                      label: _historyDeltas[index]!,
+                      colorScheme: colorScheme,
+                    ),
+                  ],
+                ],
+              ),
               trailing: _HistoryTrailing(item: item, colorScheme: colorScheme),
             ),
           ),
@@ -501,6 +534,46 @@ class _HistoryTrailing extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: badges,
+    );
+  }
+}
+
+class _ConsumptionDeltaBadge extends StatelessWidget {
+  final String label;
+  final ColorScheme colorScheme;
+
+  const _ConsumptionDeltaBadge({
+    required this.label,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.trending_up,
+            size: 14,
+            color: colorScheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.w500,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

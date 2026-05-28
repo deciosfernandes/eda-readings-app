@@ -263,4 +263,32 @@ void main() {
       expect(restored.profileId, original.profileId);
     });
   });
+
+  group('Numeric Parsing (Dashboard Delta Logic)', () {
+    double? parse(String s) => double.tryParse(s.replaceAll(',', '.'));
+
+    test('parses standard dot decimal', () {
+      expect(parse('123.45'), 123.45);
+    });
+
+    test('parses European comma decimal', () {
+      expect(parse('123,45'), 123.45);
+    });
+
+    test('parses integers', () {
+      expect(parse('123'), 123.0);
+    });
+
+    test('returns null for invalid strings', () {
+      expect(parse('abc'), isNull);
+      expect(parse(''), isNull);
+    });
+
+    test('calculates delta correctly with mixed formats', () {
+      final current = parse('1000,50'); // 1000.5
+      final previous = parse('900.25');  // 900.25
+
+      expect(current! - previous!, 100.25);
+    });
+  });
 }
