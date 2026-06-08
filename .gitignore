@@ -48,3 +48,5 @@ app.*.map.json
 /android/key.properties
 /android/*.jks
 /android/*.keystore
+# Added by code-review-graph
+.code-review-graph/

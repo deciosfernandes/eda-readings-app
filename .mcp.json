@@ -19,6 +19,16 @@
         "CLAUDE_FLOW_MEMORY_BACKEND": "hybrid"
       },
       "autoStart": false
+    },
+    "code-review-graph": {
+      "command": "C:\\Users\\Decio\\AppData\\Local\\Programs\\Python\\Python312\\python.EXE",
+      "args": [
+        "-m",
+        "code_review_graph",
+        "serve"
+      ],
+      "cwd": "C:\\Users\\Decio\\Documents\\Solvit\\eda-readings-app",
+      "type": "stdio"
     }
   }
 }
