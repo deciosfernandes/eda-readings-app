@@ -61,6 +61,7 @@ class ProfileDialogs {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
+        isDismissible: false,
         backgroundColor: Colors.transparent,
         builder: (context) => StatefulBuilder(
           builder: (context, setModalState) {
@@ -191,7 +192,20 @@ class ProfileDialogs {
               }
             }
 
-            return Container(
+            // SENTINEL: Set flag before pop so onFocusChange skips setModalState
+            // during exit animation/teardown. Covers all dismiss paths.
+            bool isClosing = false;
+            void doClose() {
+              isClosing = true;
+              Navigator.pop(context);
+            }
+
+            return PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, _) {
+                if (!didPop && !isLoading) doClose();
+              },
+              child: Container(
               decoration: BoxDecoration(
                 color: theme.scaffoldBackgroundColor,
                 borderRadius: const BorderRadius.vertical(
@@ -224,7 +238,7 @@ class ProfileDialogs {
                               ? null
                               : () {
                                   HapticFeedback.selectionClick();
-                                  Navigator.pop(context);
+                                  doClose();
                                 },
                         ),
                       ],
@@ -283,7 +297,7 @@ class ProfileDialogs {
                     const SizedBox(height: 16),
                     Focus(
                       onFocusChange: (hasFocus) {
-                        if (!hasFocus && context.mounted) {
+                        if (!hasFocus && !isClosing && context.mounted) {
                           setModalState(() {
                             nameError = validateField(nameCtrl.text);
                           });
@@ -329,7 +343,7 @@ class ProfileDialogs {
                     const SizedBox(height: 16),
                     Focus(
                       onFocusChange: (hasFocus) {
-                        if (!hasFocus && context.mounted) {
+                        if (!hasFocus && !isClosing && context.mounted) {
                           setModalState(() {
                             cilError = validateCil(cilCtrl.text);
                           });
@@ -377,7 +391,7 @@ class ProfileDialogs {
                     const SizedBox(height: 16),
                     Focus(
                       onFocusChange: (hasFocus) {
-                        if (!hasFocus && context.mounted) {
+                        if (!hasFocus && !isClosing && context.mounted) {
                           setModalState(() {
                             contractError = validateContract(contractCtrl.text);
                           });
@@ -532,6 +546,7 @@ class ProfileDialogs {
                   ],
                 ),
               ),
+            ),
             );
           },
         ),
