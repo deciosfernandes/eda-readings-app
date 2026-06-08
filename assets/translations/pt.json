@@ -104,10 +104,20 @@
         "title": "Definições",
         "section_appearance": "Aparência",
         "section_data": "Dados",
+        "section_reminders": "Lembretes",
         "theme_label": "Tema da Aplicação",
         "theme_light": "Claro",
         "theme_dark": "Escuro",
         "theme_system": "Seguir Sistema"
+    },
+    "reminders": {
+        "none": "Sem lembrete definido",
+        "scheduled_for": "Agendado para {}",
+        "set": "Definir Lembrete",
+        "edit": "Editar Lembrete",
+        "removed": "Lembrete removido",
+        "past_error": "Escolha uma data e hora no futuro.",
+        "enable_hint": "Ativar lembrete para esta propriedade"
     },
     "import_export": {
         "title": "Importar / Exportar",

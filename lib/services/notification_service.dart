@@ -68,20 +68,15 @@ class NotificationService {
     String? title,
     String? body,
   }) async {
-    // Set time to 9:00 AM on the target date
-    final scheduledDateTime = DateTime(
-      scheduledDate.year,
-      scheduledDate.month,
-      scheduledDate.day,
-      9, 0, 0,
-    );
-
-    if (scheduledDateTime.isBefore(DateTime.now())) {
+    // PALETTE: Use the full scheduledDate (date + time) passed by the caller,
+    // allowing users to choose any time rather than being forced to 09:00.
+    // Callers that want 09:00 should pass a DateTime with hour=9, minute=0.
+    if (scheduledDate.isBefore(DateTime.now())) {
       // If the date is already past or today, we don't schedule it for the past
       return;
     }
 
-    final tz.TZDateTime tzDate = tz.TZDateTime.from(scheduledDateTime, tz.local);
+    final tz.TZDateTime tzDate = tz.TZDateTime.from(scheduledDate, tz.local);
 
     await _notificationsPlugin.zonedSchedule(
       id,
@@ -103,4 +98,8 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
+
+  Future<void> cancel(int id) => _notificationsPlugin.cancel(id);
+
+  Future<void> cancelAll() => _notificationsPlugin.cancelAll();
 }

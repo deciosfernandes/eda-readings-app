@@ -10,12 +10,15 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api/eda_client.dart';
 import '../models/reading_models.dart';
 import '../models/user_profile.dart';
 import '../services/history_service.dart';
+import '../services/notification_service.dart';
 import '../services/secure_storage_service.dart';
 import '../services/theme_service.dart';
 import '../utils/csv_helper.dart';
+import '../utils/profile_icons.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -294,6 +297,123 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
 
+  // PALETTE: Opens date + time pickers for a per-profile reminder.
+  // Best-effort pre-fills with the API-advised date at 09:00; falls back
+  // to tomorrow if the API call fails or returns no date.
+  Future<void> _pickReminder(ContractProfile profile) async {
+    DateTime defaultDate = DateTime.now().add(const Duration(days: 1));
+    try {
+      final client = EDAClient(
+        clientNumber: profile.cil,
+        contractNumber: profile.contract,
+      );
+      final readingData = await client.getReading();
+      if (readingData.dataAconselhavelEnvio != null) {
+        final advised = DateTime.tryParse(readingData.dataAconselhavelEnvio!);
+        if (advised != null && advised.isAfter(DateTime.now())) {
+          defaultDate = advised;
+        }
+      }
+    } catch (_) {
+      // Network optional — use fallback date silently.
+    }
+
+    if (!mounted) return;
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: defaultDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (pickedTime == null || !mounted) return;
+
+    final chosen = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    if (chosen.isBefore(DateTime.now())) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('reminders.past_error'.tr()),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await NotificationService().scheduleReadingReminder(
+        id: profile.notificationId,
+        profileName: profile.name,
+        scheduledDate: chosen,
+        title: 'notification.title'.tr(),
+        body: 'notification.message'.tr(
+          args: [
+            profile.name,
+            DateFormat.yMMMMd(context.locale.languageCode).add_jm().format(chosen),
+          ],
+        ),
+      );
+
+      profile.reminderEnabled = true;
+      profile.reminderDateTime = chosen.toIso8601String();
+      await SecureStorageService().saveAppState(_appState!);
+
+      if (!mounted) return;
+      HapticFeedback.lightImpact();
+      final displayDate =
+          DateFormat.yMMMMd(context.locale.languageCode).add_jm().format(chosen);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('notification.scheduled'.tr(args: [displayDate])),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('notification.error_schedule'.tr()),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeReminder(ContractProfile profile) async {
+    await NotificationService().cancel(profile.notificationId);
+    profile.reminderEnabled = false;
+    profile.reminderDateTime = null;
+    await SecureStorageService().saveAppState(_appState!);
+    if (!mounted) return;
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('reminders.removed'.tr())),
+    );
+    setState(() {});
+  }
+
   String _themeModeLabel(ThemeMode mode) {
     switch (mode) {
       case ThemeMode.light:
@@ -437,7 +557,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   });
                 },
                 secondary: Icon(
-                  IconData(profile.iconCodePoint, fontFamily: 'MaterialIcons'),
+                  profileIconFromCodePoint(profile.iconCodePoint),
                 ),
                 title: Text(profile.name),
                 subtitle: Text('CIL: ${profile.cil}'),
@@ -498,6 +618,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
+          const Divider(height: 1),
+
+          // ── Reminders ─────────────────────────────────────────────────────
+          _SectionHeader(
+            title: 'settings.section_reminders'.tr(),
+            colorScheme: colorScheme,
+          ),
+          if (profiles.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Text(
+                'import_export.no_properties'.tr(),
+                style: textTheme.bodyLarge,
+              ),
+            )
+          else
+            ...profiles.map((profile) {
+              final hasReminder =
+                  profile.reminderEnabled && profile.reminderDateTime != null;
+              String subtitle;
+              if (hasReminder) {
+                final dt = DateTime.tryParse(profile.reminderDateTime!);
+                subtitle = dt != null
+                    ? 'reminders.scheduled_for'.tr(
+                        args: [
+                          DateFormat.yMMMMd(context.locale.languageCode)
+                              .add_jm()
+                              .format(dt),
+                        ],
+                      )
+                    : 'reminders.none'.tr();
+              } else {
+                subtitle = 'reminders.none'.tr();
+              }
+              return ListTile(
+                leading: Icon(profileIconFromCodePoint(profile.iconCodePoint)),
+                title: Text(profile.name),
+                subtitle: Text(subtitle),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // PALETTE: Edit button only when a reminder is active.
+                    if (hasReminder)
+                      Semantics(
+                        label: 'reminders.edit'.tr(),
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.edit_calendar_outlined),
+                          tooltip: 'reminders.edit'.tr(),
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            _pickReminder(profile);
+                          },
+                        ),
+                      ),
+                    Semantics(
+                      label: 'reminders.enable_hint'.tr(),
+                      child: Switch(
+                        value: hasReminder,
+                        onChanged: (enabled) {
+                          HapticFeedback.selectionClick();
+                          if (enabled) {
+                            _pickReminder(profile);
+                          } else {
+                            _removeReminder(profile);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           const Divider(height: 1),
 
           // ── About ─────────────────────────────────────────────────────────

@@ -154,13 +154,30 @@ class ProfileDialogs {
               if (readingData.dataAconselhavelEnvio != null &&
                   context.mounted) {
                 final newProfile = appState.profiles.last;
-                final stableId = int.parse(newProfile.id) % 0x7FFFFFFF;
-                await ReminderDialog.show(
+                final scheduled = await ReminderDialog.show(
                   context,
                   name,
                   readingData.dataAconselhavelEnvio!,
-                  notificationId: stableId,
+                  notificationId: newProfile.notificationId,
                 );
+                if (scheduled) {
+                  // PALETTE: Persist reminder state so Settings reflects it.
+                  final advisedDate = DateTime.tryParse(
+                    readingData.dataAconselhavelEnvio!,
+                  );
+                  if (advisedDate != null) {
+                    newProfile.reminderEnabled = true;
+                    newProfile.reminderDateTime = DateTime(
+                      advisedDate.year,
+                      advisedDate.month,
+                      advisedDate.day,
+                      9,
+                      0,
+                      0,
+                    ).toIso8601String();
+                    await SecureStorageService().saveAppState(appState);
+                  }
+                }
               }
             } catch (e) {
               setModalState(() {

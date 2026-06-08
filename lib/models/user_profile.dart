@@ -24,13 +24,26 @@ class ContractProfile {
   String contract;
   int iconCodePoint;
 
+  // PALETTE: Persisted reminder state so users can manage reminders from
+  // Settings without deleting/re-adding the profile.
+  bool reminderEnabled;
+
+  // ISO-8601 string (date + time) of the scheduled reminder, null when none.
+  String? reminderDateTime;
+
   ContractProfile({
     required this.id,
     required this.name,
     required this.cil,
     required this.contract,
     this.iconCodePoint = 0xe318, // Icons.home
+    this.reminderEnabled = false,
+    this.reminderDateTime,
   });
+
+  // BOLT: Centralise notification-id derivation; avoids duplicating
+  // the `int.parse(id) % 0x7FFFFFFF` expressions across callers.
+  int get notificationId => (int.tryParse(id) ?? 0) % 0x7FFFFFFF;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -38,6 +51,8 @@ class ContractProfile {
         'cil': cil,
         'contract': contract,
         'iconCodePoint': iconCodePoint,
+        'reminderEnabled': reminderEnabled,
+        if (reminderDateTime != null) 'reminderDateTime': reminderDateTime,
       };
 
   factory ContractProfile.fromJson(Map<String, dynamic> json) =>
@@ -47,6 +62,8 @@ class ContractProfile {
         cil: json['cil'] as String? ?? '',
         contract: json['contract'] as String? ?? '',
         iconCodePoint: json['iconCodePoint'] as int? ?? 0xe318,
+        reminderEnabled: json['reminderEnabled'] as bool? ?? false,
+        reminderDateTime: json['reminderDateTime'] as String?,
       );
 }
 

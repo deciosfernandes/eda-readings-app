@@ -14,6 +14,7 @@ import '../models/user_profile.dart';
 import '../services/history_service.dart';
 import '../services/secure_storage_service.dart';
 import '../utils/csv_helper.dart';
+import '../utils/profile_icons.dart';
 
 class ImportExportScreen extends StatefulWidget {
   const ImportExportScreen({super.key});
@@ -348,7 +349,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                       });
                     },
                     secondary: Icon(
-                      IconData(profile.iconCodePoint, fontFamily: 'MaterialIcons'),
+                      profileIconFromCodePoint(profile.iconCodePoint),
                     ),
                     title: Text(profile.name),
                     subtitle: Text('CIL: ${profile.cil}'),

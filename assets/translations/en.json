@@ -103,10 +103,20 @@
         "title": "Settings",
         "section_appearance": "Appearance",
         "section_data": "Data",
+        "section_reminders": "Reminders",
         "theme_label": "App Theme",
         "theme_light": "Light",
         "theme_dark": "Dark",
         "theme_system": "Follow System"
+    },
+    "reminders": {
+        "none": "No reminder set",
+        "scheduled_for": "Scheduled for {}",
+        "set": "Set Reminder",
+        "edit": "Edit Reminder",
+        "removed": "Reminder removed",
+        "past_error": "Please choose a date and time in the future.",
+        "enable_hint": "Enable reminder for this property"
     },
     "import_export": {
         "title": "Import / Export",

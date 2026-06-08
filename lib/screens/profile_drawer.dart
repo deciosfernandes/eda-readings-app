@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
+import '../services/notification_service.dart';
 import '../services/secure_storage_service.dart';
+import '../utils/profile_icons.dart';
 import 'profile_dialogs.dart';
 
 class ProfileDrawer extends StatefulWidget {
@@ -128,7 +130,11 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm == true && mounted) {
+      final profile = widget.appState.profiles[index];
+      // BOLT: Use the centralised notificationId getter (avoids duplicating
+      // the `int.parse(id) % 0x7FFFFFFF` derivation).
+      await NotificationService().cancel(profile.notificationId);
       widget.appState.profiles.removeAt(index);
       if (widget.appState.profiles.isEmpty) {
         widget.appState.activeProfileIndex = 0;
@@ -271,7 +277,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                   selected: isActive,
                   button: true,
                   child: ListTile(
-                    leading: Icon(IconData(profile.iconCodePoint, fontFamily: 'MaterialIcons')),
+                    leading: Icon(profileIconFromCodePoint(profile.iconCodePoint)),
                     title: Text(profile.name),
                     subtitle: Text('CIL: ${profile.cil}'),
                     selected: isActive,

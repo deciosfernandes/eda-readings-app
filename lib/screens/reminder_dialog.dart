@@ -15,13 +15,14 @@ class ReminderDialog extends StatelessWidget {
     required this.notificationId,
   });
 
-  static Future<void> show(
+  // Returns true when a reminder was successfully scheduled, false otherwise.
+  static Future<bool> show(
     BuildContext context,
     String profileName,
     String dateString, {
     required int notificationId,
   }) async {
-    return showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => ReminderDialog(
         profileName: profileName,
@@ -29,6 +30,7 @@ class ReminderDialog extends StatelessWidget {
         notificationId: notificationId,
       ),
     );
+    return result == true;
   }
 
   @override
@@ -46,17 +48,27 @@ class ReminderDialog extends StatelessWidget {
       content: Text('notification.message'.tr(args: [profileName, displayDate])),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, false),
           child: Text('common.cancel'.tr()),
         ),
         FilledButton(
           onPressed: () async {
             if (parsedDate != null) {
+              // PALETTE: Default to 09:00 on the advised date; SettingsScreen
+              // lets users pick a custom time if they prefer.
+              final scheduledAt = DateTime(
+                parsedDate.year,
+                parsedDate.month,
+                parsedDate.day,
+                9,
+                0,
+                0,
+              );
               try {
                 await NotificationService().scheduleReadingReminder(
                   id: notificationId,
                   profileName: profileName,
-                  scheduledDate: parsedDate,
+                  scheduledDate: scheduledAt,
                   title: 'notification.title'.tr(),
                   body: 'notification.message'
                       .tr(args: [profileName, displayDate]),
@@ -81,6 +93,8 @@ class ReminderDialog extends StatelessWidget {
                     ),
                   );
                 }
+                if (context.mounted) Navigator.pop(context, true);
+                return;
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +106,7 @@ class ReminderDialog extends StatelessWidget {
                 }
               }
             }
-            if (context.mounted) Navigator.pop(context);
+            if (context.mounted) Navigator.pop(context, false);
           },
           child: Text('common.ok'.tr()),
         ),
