@@ -57,6 +57,13 @@ class ProfileDialogs {
     final sIconOption = 'drawer.icon_option'.tr();
     final sAdd = 'drawer.add'.tr();
 
+    // SENTINEL: Capture result for post-close async work. No async must run
+    // inside the builder after Navigator.pop because pop resolves the
+    // showModalBottomSheet Future → finally disposes controllers → close
+    // animation still rebuilds the sheet → disposed-controller crash.
+    String? pendingProfileName;
+    String? pendingAdvisedDate;
+
     try {
       await showModalBottomSheet<void>(
         context: context,
@@ -137,57 +144,17 @@ class ProfileDialogs {
 
                 HapticFeedback.lightImpact();
 
+                // SENTINEL: Store result BEFORE popping so the outer function
+                // can run snackbar/reminder/onSuccess after the sheet fully
+                // closes. Do NOT await anything after this pop — the
+                // showModalBottomSheet Future resolves on pop and the finally
+                // block would dispose the controllers while the close animation
+                // is still rebuilding the sheet.
+                pendingProfileName = name;
+                pendingAdvisedDate = readingData.dataAconselhavelEnvio;
+
                 if (context.mounted) {
                   Navigator.pop(context);
-                }
-                if (parentContext.mounted) {
-                  ScaffoldMessenger.of(parentContext).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Icon(Icons.check_circle, color: Colors.white),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(sAddSuccess)),
-                        ],
-                      ),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-
-                if (readingData.dataAconselhavelEnvio != null &&
-                    parentContext.mounted) {
-                  final newProfile = appState.profiles.last;
-                  final scheduled = await ReminderDialog.show(
-                    parentContext,
-                    name,
-                    readingData.dataAconselhavelEnvio!,
-                    notificationId: newProfile.notificationId,
-                  );
-                  if (scheduled) {
-                    // PALETTE: Persist reminder state so Settings reflects it.
-                    final advisedDate = DateTime.tryParse(
-                      readingData.dataAconselhavelEnvio!,
-                    );
-                    if (advisedDate != null) {
-                      newProfile.reminderEnabled = true;
-                      newProfile.reminderDateTime = DateTime(
-                        advisedDate.year,
-                        advisedDate.month,
-                        advisedDate.day,
-                        9,
-                        0,
-                        0,
-                      ).toIso8601String();
-                      await SecureStorageService().saveAppState(appState);
-                    }
-                  }
-                }
-                // SENTINEL: Guard onSuccess (which calls setState on the parent
-                // Dashboard) — the parent may have been disposed during the
-                // reminder-dialog await above.
-                if (parentContext.mounted) {
-                  onSuccess();
                 }
               } catch (e) {
                 setModalState(() {
@@ -562,6 +529,56 @@ class ProfileDialogs {
       cilCtrl.dispose();
       contractCtrl.dispose();
       scrollController.dispose();
+    }
+
+    // SENTINEL: Post-close async work — runs after the sheet has fully closed
+    // and controllers have been disposed. Safe to await here.
+    if (pendingProfileName != null && parentContext.mounted) {
+      ScaffoldMessenger.of(parentContext).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text(sAddSuccess)),
+            ],
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      if (pendingAdvisedDate != null && parentContext.mounted) {
+        final newProfile = appState.profiles.last;
+        final scheduled = await ReminderDialog.show(
+          parentContext,
+          pendingProfileName!,
+          pendingAdvisedDate!,
+          notificationId: newProfile.notificationId,
+        );
+        if (scheduled) {
+          // PALETTE: Persist reminder state so Settings reflects it.
+          final advisedDate = DateTime.tryParse(pendingAdvisedDate!);
+          if (advisedDate != null) {
+            newProfile.reminderEnabled = true;
+            newProfile.reminderDateTime = DateTime(
+              advisedDate.year,
+              advisedDate.month,
+              advisedDate.day,
+              9,
+              0,
+              0,
+            ).toIso8601String();
+            await SecureStorageService().saveAppState(appState);
+          }
+        }
+      }
+
+      // SENTINEL: Guard onSuccess (which calls setState on the parent
+      // Dashboard) — the parent may have been disposed during the
+      // reminder-dialog await above.
+      if (parentContext.mounted) {
+        onSuccess();
+      }
     }
   }
 }

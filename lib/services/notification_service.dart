@@ -35,8 +35,8 @@ class NotificationService {
     // that reading reminders fire at the user's chosen wall-clock time, not UTC.
     tz.initializeTimeZones();
     try {
-      final String localTz = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(localTz));
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
     } catch (e) {
       // Fallback: tz.local stays UTC. Reminders may fire at the wrong hour on
       // this device but the app will not crash.
