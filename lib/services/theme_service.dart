@@ -22,10 +22,13 @@ class ThemeService extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
 
   /// Loads the persisted theme mode from disk.
+  ///
+  /// [forceRefresh] forces a new `SharedPreferences.getInstance()` call. This
+  /// is a no-op in production (the platform returns the same cached instance)
+  /// but is used in tests to pick up fresh `setMockInitialValues()` values when
+  /// the singleton's `_prefs` is already set.
   Future<void> loadTheme({bool forceRefresh = false}) async {
-    // BOLT: Persistently load the user's theme preference from SharedPreferences
-    // to ensure the UI matches their previous choice immediately upon startup.
-    if (forceRefresh) _prefs = await SharedPreferences.getInstance();
+    if (forceRefresh) _prefs = null;
     _prefs ??= await SharedPreferences.getInstance();
     final index = _prefs!.getInt(_key);
     if (index != null && index >= 0 && index < ThemeMode.values.length) {
@@ -37,15 +40,30 @@ class ThemeService extends ChangeNotifier {
   }
 
   /// Updates the application's theme mode and persists the change.
+  ///
+  /// **BOLT**: Notifies listeners immediately for instant UI feedback, then
+  /// persists asynchronously. On persistence failure the in-memory state is
+  /// reverted so the next launch restores the correct theme.
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode == mode) return;
     _themeMode = mode;
-
-    // BOLT: Call notifyListeners() immediately for instant UI feedback,
-    // then asynchronously persist the change to avoid blocking the main thread.
+    // BOLT: Notify immediately for instant UI feedback.
     notifyListeners();
 
-    _prefs ??= await SharedPreferences.getInstance();
-    await _prefs!.setInt(_key, mode.index);
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs!.setInt(_key, mode.index);
+    } catch (e) {
+      // SENTINEL: Revert in-memory state on persistence failure so the next
+      // launch does not silently load a different theme than was shown.
+      debugPrint('ThemeService: failed to persist theme: $e');
+      final savedIndex = _prefs?.getInt(_key);
+      _themeMode = (savedIndex != null &&
+              savedIndex >= 0 &&
+              savedIndex < ThemeMode.values.length)
+          ? ThemeMode.values[savedIndex]
+          : ThemeMode.system;
+      notifyListeners();
+    }
   }
 }

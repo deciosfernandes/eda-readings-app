@@ -33,6 +33,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Set<String> _selectedProfileIds = {};
   bool _isExporting = false;
   bool _isImporting = false;
+  // SENTINEL: Re-entrancy guard for the reminder picker (prevents stacking
+  // date-picker dialogs when Switch/edit button are tapped rapidly).
+  bool _isPickingReminder = false;
 
   @override
   void initState() {
@@ -213,6 +216,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Best-effort pre-fills with the API-advised date at 09:00; falls back
   // to tomorrow if the API call fails or returns no date.
   Future<void> _pickReminder(ContractProfile profile) async {
+    // SENTINEL: Guard against re-entrant calls (e.g. rapid Switch toggles or
+    // multiple edit-button taps stacking date pickers + network calls).
+    if (_isPickingReminder) return;
+    if (mounted) setState(() => _isPickingReminder = true);
+    try {
+      await _doPickReminder(profile);
+    } finally {
+      if (mounted) setState(() => _isPickingReminder = false);
+    }
+  }
+
+  Future<void> _doPickReminder(ContractProfile profile) async {
     // Try to get the API advised date as the default suggestion.
     DateTime defaultDate = DateTime.now().add(const Duration(days: 1));
     try {
@@ -282,6 +297,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       profile.reminderEnabled = true;
       profile.reminderDateTime = chosen.toIso8601String();
+      // SENTINEL: Guard against _appState being null after the long async chain.
+      if (_appState == null || !mounted) return;
       await SecureStorageService().saveAppState(_appState!);
 
       if (!mounted) return;
@@ -578,24 +595,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: IconButton(
                           icon: const Icon(Icons.edit_calendar_outlined),
                           tooltip: 'reminders.edit'.tr(),
-                          onPressed: () {
-                            HapticFeedback.selectionClick();
-                            _pickReminder(profile);
-                          },
+                          // SENTINEL: _pickReminder is guarded by _isPickingReminder;
+                          // disable the button while a pick is in progress.
+                          onPressed: _isPickingReminder
+                              ? null
+                              : () {
+                                  HapticFeedback.selectionClick();
+                                  _pickReminder(profile);
+                                },
                         ),
                       ),
                     Semantics(
                       label: 'reminders.enable_hint'.tr(),
                       child: Switch(
                         value: hasReminder,
-                        onChanged: (enabled) {
-                          HapticFeedback.selectionClick();
-                          if (enabled) {
-                            _pickReminder(profile);
-                          } else {
-                            _removeReminder(profile);
-                          }
-                        },
+                        // SENTINEL: Disable switch while a picker flow is in progress
+                        // to prevent stacked date-picker dialogs.
+                        onChanged: _isPickingReminder
+                            ? null
+                            : (enabled) {
+                                HapticFeedback.selectionClick();
+                                if (enabled) {
+                                  _pickReminder(profile);
+                                } else {
+                                  _removeReminder(profile);
+                                }
+                              },
                       ),
                     ),
                   ],

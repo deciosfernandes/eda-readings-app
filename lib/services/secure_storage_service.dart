@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_profile.dart';
 
@@ -32,23 +33,33 @@ class SecureStorageService {
     // BOLT: Return cached state if available to improve performance.
     if (cachedState != null) return cachedState!;
 
-    // SENTINEL: Guard the storage read — PlatformException thrown when the
-    // Android Keystore cannot decrypt ciphertext (e.g. after a signing-key
-    // change via Play App Signing or a fresh install over a different cert).
-    // Delete the corrupt entry so subsequent writes succeed.
     try {
       final stateStr = await _storage.read(key: keyAppState);
       if (stateStr != null) {
         cachedState = AppStateData.fromJsonString(stateStr);
         return cachedState!;
       }
-    } catch (e) {
-      // SENTINEL: Corrupt or undecryptable storage — clear it and fall back.
+    } on PlatformException catch (e) {
+      // SENTINEL: Undecryptable storage (corrupt keystore entry, e.g. signing-key
+      // change via Play App Signing). Delete so future writes succeed.
+      debugPrint('SecureStorageService: undecryptable storage, clearing. $e');
       try {
         await _storage.delete(key: keyAppState);
       } catch (_) {
         // Best-effort delete; ignore secondary failures.
       }
+    } on FormatException catch (e) {
+      // SENTINEL: Corrupt or schema-changed JSON. Delete so future writes succeed.
+      debugPrint('SecureStorageService: corrupt app state JSON, clearing. $e');
+      try {
+        await _storage.delete(key: keyAppState);
+      } catch (_) {
+        // Best-effort delete; ignore secondary failures.
+      }
+    } catch (e) {
+      // Transient error (e.g. keystore temporarily unavailable). Do NOT delete
+      // — the data may still be intact. Fall through to the default below.
+      debugPrint('SecureStorageService: transient read error, using default. $e');
     }
 
     cachedState = AppStateData(
@@ -60,15 +71,26 @@ class SecureStorageService {
   }
 
   /// Persists the [data] to secure storage and updates the in-memory cache.
+  ///
+  /// **SENTINEL**: Writes to storage FIRST so that a write failure does not
+  /// leave the cache ahead of disk (no phantom saves).
+  /// **SENTINEL**: Caches a decoded copy so the caller's mutable object cannot
+  /// silently mutate the in-memory state.
   Future<void> saveAppState(AppStateData data) async {
-    // BOLT: Update cache when saving to storage.
-    cachedState = data;
-    await _storage.write(key: keyAppState, value: data.toJsonString());
+    final jsonString = data.toJsonString();
+    // BOLT/SENTINEL: Persist first; only update cache when the write succeeds.
+    await _storage.write(key: keyAppState, value: jsonString);
+    // SENTINEL: Store a decoded copy, not the caller's reference, so external
+    // mutations to `data` do not silently affect the cached state.
+    cachedState = AppStateData.fromJsonString(jsonString);
   }
 
   Future<void> clearAppState() async {
     // BOLT: Invalidate cache when clearing storage.
     cachedState = null;
+    // BOLT: Also clear tutorial-flag caches so they are re-read after a reset.
+    _cachedHasSeenTutorial = null;
+    _cachedHasSeenReadingTutorial = null;
     await _storage.delete(key: keyAppState);
   }
 
@@ -90,11 +112,23 @@ class SecureStorageService {
   Future<Map<String, String>?> getCredentials() async {
     final state = await getAppState();
     if (state.profiles.isNotEmpty) {
-      // Return currently active profile
-      if (state.activeProfileIndex >= 0 && state.activeProfileIndex < state.profiles.length) {
-        final active = state.profiles[state.activeProfileIndex];
-        return {'cil': active.cil, 'contract': active.contract};
+      // BOLT/SENTINEL: Clamp the index in case it fell out of range (e.g. after
+      // deleting the active profile without updating the index).
+      final clampedIndex = state.activeProfileIndex.clamp(
+        0,
+        state.profiles.length - 1,
+      );
+      if (state.activeProfileIndex != clampedIndex) {
+        // Silently repair the stale index.
+        state.activeProfileIndex = clampedIndex;
+        try {
+          await saveAppState(state);
+        } catch (_) {
+          // Best-effort repair; do not block credential retrieval.
+        }
       }
+      final active = state.profiles[clampedIndex];
+      return {'cil': active.cil, 'contract': active.contract};
     }
     return null;
   }

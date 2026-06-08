@@ -41,9 +41,11 @@ class ContractProfile {
     this.reminderDateTime,
   });
 
-  // BOLT: Centralise notification-id derivation; avoids duplicating
-  // the `int.parse(id) % 0x7FFFFFFF` expressions across callers.
-  int get notificationId => (int.tryParse(id) ?? 0) % 0x7FFFFFFF;
+  // BOLT: Derive a stable, non-colliding notification ID from the profile id
+  // string. Using String.hashCode (deterministic for the same content in Dart)
+  // rather than int.tryParse() ?? 0 avoids the collision where all non-numeric
+  // ids map to the same notification slot.
+  int get notificationId => id.hashCode.abs() % 0x7FFFFFFF;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -61,8 +63,11 @@ class ContractProfile {
         name: json['name'] as String? ?? '',
         cil: json['cil'] as String? ?? '',
         contract: json['contract'] as String? ?? '',
-        iconCodePoint: json['iconCodePoint'] as int? ?? 0xe318,
-        reminderEnabled: json['reminderEnabled'] as bool? ?? false,
+        // SENTINEL: JSON numbers may decode as double on some platforms; coerce safely.
+        iconCodePoint: (json['iconCodePoint'] as num?)?.toInt() ?? 0xe318,
+        // SENTINEL: Accept both bool and string-encoded bool (legacy storage).
+        reminderEnabled: json['reminderEnabled'] == true ||
+            json['reminderEnabled'] == 'true',
         reminderDateTime: json['reminderDateTime'] as String?,
       );
 }
@@ -85,21 +90,32 @@ class AppStateData {
       };
 
   factory AppStateData.fromJson(Map<String, dynamic> json) {
-    var profilesList = json['profiles'] as List? ?? [];
-    List<ContractProfile> loadedProfiles = profilesList
-        .map((p) => ContractProfile.fromJson(p as Map<String, dynamic>))
-        .toList();
+    final profilesList = json['profiles'] as List? ?? [];
+    // SENTINEL: Parse profiles defensively — a single malformed entry must not
+    // prevent the rest of the state from loading (and must not propagate up to
+    // SecureStorageService where it would wipe the entire app state).
+    final List<ContractProfile> loadedProfiles = [];
+    for (final p in profilesList) {
+      try {
+        loadedProfiles.add(
+          ContractProfile.fromJson(p as Map<String, dynamic>),
+        );
+      } catch (_) {
+        // Skip malformed entries rather than propagating; visible in debugPrint
+        // if needed.
+      }
+    }
 
     return AppStateData(
-      userProfile: json['userProfile'] != null 
-          ? UserProfile.fromJson(json['userProfile'] as Map<String, dynamic>) 
+      userProfile: json['userProfile'] != null
+          ? UserProfile.fromJson(json['userProfile'] as Map<String, dynamic>)
           : UserProfile(name: 'User', picturePath: ''),
       profiles: loadedProfiles,
-      activeProfileIndex: json['activeProfileIndex'] as int? ?? 0,
+      activeProfileIndex: (json['activeProfileIndex'] as num?)?.toInt() ?? 0,
     );
   }
 
   String toJsonString() => jsonEncode(toJson());
   factory AppStateData.fromJsonString(String jsonString) =>
-      AppStateData.fromJson(jsonDecode(jsonString));
+      AppStateData.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
 }

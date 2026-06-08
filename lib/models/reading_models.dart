@@ -34,7 +34,7 @@ class ReadingResponse {
 
   /// The active electricity tariff (e.g., "Simples", "Bi-horária", "Tri-horária").
   final String? tarifa;
-  
+
   /// Description for Counter 1 (e.g., "Ponta", "Cheias", or "Simples").
   final String? descContador1;
   /// Current/Last value for Counter 1 in kWh as recorded in the system.
@@ -45,7 +45,7 @@ class ReadingResponse {
   final String? valorMaxContador1;
   /// Internal register code for Counter 1, required for the [SendReadingPayload].
   final String? register1;
-  
+
   /// Description for Counter 2 (e.g., "Vazio" / Off-peak).
   final String? descContador2;
   /// Current/Last value for Counter 2 in kWh.
@@ -56,7 +56,7 @@ class ReadingResponse {
   final String? valorMaxContador2;
   /// Internal register code for Counter 2.
   final String? register2;
-  
+
   /// Description for Counter 3 (e.g., "Super Vazio").
   final String? descContador3;
   /// Current/Last value for Counter 3 in kWh.
@@ -97,32 +97,36 @@ class ReadingResponse {
   });
 
   factory ReadingResponse.fromJson(Map<String, dynamic> json) {
+    // SENTINEL: Coerce cilTokenExpires safely — the API may return it as a
+    // JSON number that Dart decodes as double; casting directly to int throws.
+    final int tokenExpires = (json['cilTokenExpires'] as num?)?.toInt() ?? 0;
+
     return ReadingResponse(
-      cil: json['cil'] ?? '',
-      cilToken: json['cilToken'] ?? '',
-      cilTokenExpires: json['cilTokenExpires'] ?? 0,
-      serial: json['serial'] ?? '',
-      material: json['material'] ?? '',
-      contrato: json['contrato'] ?? '',
-      data: json['data'],
-      dataAconselhavelEnvio: json['dataAconselhavelEnvio'],
-      origem: json['origem'],
-      tarifa: json['tarifa'],
-      descContador1: json['descContador1'],
-      valorContador1: json['valorContador1'],
-      valorMinContador1: json['valorMinContador1'],
-      valorMaxContador1: json['valorMaxContador1'],
-      register1: json['register1'],
-      descContador2: json['descContador2'],
-      valorContador2: json['valorContador2'],
-      valorMinContador2: json['valorMinContador2'],
-      valorMaxContador2: json['valorMaxContador2'],
-      register2: json['register2'],
-      descContador3: json['descContador3'],
-      valorContador3: json['valorContador3'],
-      valorMinContador3: json['valorMinContador3'],
-      valorMaxContador3: json['valorMaxContador3'],
-      register3: json['register3'],
+      cil: json['cil'] as String? ?? '',
+      cilToken: json['cilToken'] as String? ?? '',
+      cilTokenExpires: tokenExpires,
+      serial: json['serial'] as String? ?? '',
+      material: json['material'] as String? ?? '',
+      contrato: json['contrato'] as String? ?? '',
+      data: json['data'] as String?,
+      dataAconselhavelEnvio: json['dataAconselhavelEnvio'] as String?,
+      origem: json['origem'] as String?,
+      tarifa: json['tarifa'] as String?,
+      descContador1: json['descContador1'] as String?,
+      valorContador1: json['valorContador1'] as String?,
+      valorMinContador1: json['valorMinContador1'] as String?,
+      valorMaxContador1: json['valorMaxContador1'] as String?,
+      register1: json['register1'] as String?,
+      descContador2: json['descContador2'] as String?,
+      valorContador2: json['valorContador2'] as String?,
+      valorMinContador2: json['valorMinContador2'] as String?,
+      valorMaxContador2: json['valorMaxContador2'] as String?,
+      register2: json['register2'] as String?,
+      descContador3: json['descContador3'] as String?,
+      valorContador3: json['valorContador3'] as String?,
+      valorMinContador3: json['valorMinContador3'] as String?,
+      valorMaxContador3: json['valorMaxContador3'] as String?,
+      register3: json['register3'] as String?,
     );
   }
 }
@@ -176,6 +180,9 @@ class SendReadingPayload {
       'valorContador1': valorContador1,
       'register1': register1,
     };
+    // SENTINEL: Only include counter 2/3 when both value AND register are present;
+    // the API requires both fields or neither. If one side is missing, omit the
+    // pair rather than sending an incomplete payload.
     if (valorContador2 != null && register2 != null) {
       data['valorContador2'] = valorContador2;
       data['register2'] = register2;
@@ -213,8 +220,19 @@ class LocalReadingHistory {
   });
 
   factory LocalReadingHistory.fromJson(Map<String, dynamic> json) {
+    // SENTINEL: Guard the date parse — a null, missing, or malformed date would
+    // throw in the original code, silently skipping the history entry. Use a
+    // safe fallback (epoch) so the entry is preserved and the issue is visible.
+    final rawDate = json['date'];
+    DateTime parsedDate;
+    if (rawDate is String) {
+      parsedDate = DateTime.tryParse(rawDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    } else {
+      parsedDate = DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
     return LocalReadingHistory(
-      date: DateTime.parse(json['date'] as String),
+      date: parsedDate,
       valorContador1: json['valorContador1'] as String? ?? '0',
       valorContador2: json['valorContador2'] as String?,
       valorContador3: json['valorContador3'] as String?,

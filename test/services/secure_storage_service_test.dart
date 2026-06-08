@@ -196,7 +196,9 @@ void main() {
       expect(credentials['contract'], 'C2');
     });
 
-    test('returns null when activeProfileIndex is out of range', () async {
+    test('repairs out-of-range activeProfileIndex and returns clamped profile', () async {
+      // SENTINEL: getCredentials now clamps a stale index to the valid range
+      // rather than silently returning null, so the user is not locked out.
       await service.saveAppState(AppStateData(
         userProfile: UserProfile(name: 'User', picturePath: ''),
         profiles: [
@@ -206,7 +208,10 @@ void main() {
       ));
 
       final credentials = await service.getCredentials();
-      expect(credentials, isNull);
+      expect(credentials, isNotNull);
+      // Clamped to index 0, the only available profile.
+      expect(credentials!['cil'], 'CIL1');
+      expect(credentials['contract'], 'C1');
     });
   });
 

@@ -13,8 +13,11 @@
 ///
 /// **SENTINEL**: To protect users from malicious data, this class implements
 /// CSV Formula Injection protection. Any field starting with a trigger character
-/// is prepended with a single quote (') to ensure it is treated as literal text
-/// by spreadsheet applications like Excel or Google Sheets.
+/// is prefixed with a marker that [unescapeField] strips on import.
+///
+/// **SENTINEL**: Embedded newlines (\n, \r) are normalised to a space before
+/// writing so that the per-line import reader can never split a quoted field
+/// across multiple input lines.
 class CsvHelper {
   /// SENTINEL: Characters that trigger CSV Formula Injection in spreadsheet software.
   /// Prepending a single quote (') to fields starting with these characters prevents
@@ -22,9 +25,17 @@ class CsvHelper {
   static const _triggerChars = {'=', '+', '-', '@', '\t', '\r', '\n', '\''};
 
   /// SENTINEL: Protects against CSV formula injection by prepending a single quote.
-  /// Trigger characters include =, +, -, @, \t, \r, \n, and '.
+  ///
+  /// Also normalises embedded CR/LF to a space so that the line-based import
+  /// reader never accidentally splits a quoted field across rows.
   static String escapeField(String value) {
     if (value.isEmpty) return '';
+
+    // SENTINEL: Normalise embedded newlines BEFORE the injection check so that
+    // a value like "hello\nworld" cannot break the line-splitter during import.
+    // Values that legitimately require multiline representation are extremely
+    // unlikely in this domain (kWh readings, dates, profile names).
+    value = value.replaceAll('\r\n', ' ').replaceAll('\r', ' ').replaceAll('\n', ' ');
 
     // SENTINEL: Detect trigger characters even if preceded by whitespace to prevent bypasses.
     // We check both the original first character and the first non-whitespace character.
@@ -37,8 +48,14 @@ class CsvHelper {
     return value.replaceAll('"', '""');
   }
 
-  /// Strip the escape prefix added by [escapeField] during import.
-  /// Handles both the new single quote prefix and legacy tab prefix.
+  /// Strip the injection-protection prefix added by [escapeField] during import.
+  ///
+  /// A leading single quote is the injection-protection marker added by this
+  /// class. A leading tab is the legacy marker from older app versions.
+  ///
+  /// Note: a legitimate field that starts with a single quote will have been
+  /// double-prefixed by [escapeField] (because `'` is a trigger char), so one
+  /// prefix is stripped here and the original leading quote is preserved.
   static String unescapeField(String value) {
     if (value.isEmpty) return value;
     if (value.startsWith("'") || value.startsWith('\t')) {
@@ -53,6 +70,9 @@ class CsvHelper {
   }
 
   /// Parses a single CSV line into a list of fields, handling quotes and escaped quotes.
+  ///
+  /// Follows RFC-4180: fields may be enclosed in double-quotes; a double-quote
+  /// inside a quoted field is represented as two consecutive double-quotes.
   static List<String> parseCsvLine(String line) {
     final result = <String>[];
     final buffer = StringBuffer();
@@ -62,6 +82,7 @@ class CsvHelper {
       final char = line[i];
       if (char == '"') {
         if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
+          // Escaped double-quote inside a quoted field.
           buffer.write('"');
           i++;
         } else {

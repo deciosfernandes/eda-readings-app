@@ -46,6 +46,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
 
   Future<void> _exportReadings() async {
     if (_selectedProfileIds.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('import_export.no_selection'.tr())),
       );

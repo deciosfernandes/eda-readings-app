@@ -184,6 +184,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     final hasSeen = await storage.hasSeenReadingTutorial();
     if (!hasSeen && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // SENTINEL: Re-check mounted inside the callback — the screen may have
+        // been popped between the mounted check above and this frame firing.
+        if (!mounted) return;
         ShowcaseView.getNamed(
           'reading',
         ).startShowCase([_input1Key, _submitButtonKey]);
@@ -193,6 +196,12 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   }
 
   Future<void> _submitReading() async {
+    // SENTINEL: Re-entrancy guard — if a submission is already in flight (e.g.
+    // triggered by keyboard "done" during the confirm-dialog await), bail out.
+    if (_isSubmitting) return;
+    // SENTINEL: The form may be absent when the screen is in error-state (the
+    // error Scaffold does not include the Form). Avoid the null-assertion crash.
+    if (_formKey.currentState == null) return;
     if (!_formKey.currentState!.validate()) return;
     if (_currentData == null || _client == null) return;
 

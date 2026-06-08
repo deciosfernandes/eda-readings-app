@@ -49,7 +49,16 @@ class CsvIoService {
 
     int importCount = 0;
     final newReadings = <LocalReadingHistory>[];
-    final profileNameToId = {for (final p in profiles) p.name: p.id};
+
+    // BOLT/SENTINEL: Key by id (not by name) for the id lookup later.
+    // For name-to-id resolution (CSV stores names), use first-match to be
+    // deterministic when two profiles share the same display name — avoids
+    // silently attributing all readings to whichever profile happened to come
+    // last when the map was built.
+    final profileNameToId = <String, String>{};
+    for (final p in profiles) {
+      profileNameToId.putIfAbsent(p.name, () => p.id);
+    }
 
     for (int i = 1; i < lines.length; i++) {
       final line = lines[i].trim();

@@ -183,7 +183,12 @@ class ProfileDialogs {
                     }
                   }
                 }
-                onSuccess();
+                // SENTINEL: Guard onSuccess (which calls setState on the parent
+                // Dashboard) — the parent may have been disposed during the
+                // reminder-dialog await above.
+                if (parentContext.mounted) {
+                  onSuccess();
+                }
               } catch (e) {
                 setModalState(() {
                   isLoading = false;

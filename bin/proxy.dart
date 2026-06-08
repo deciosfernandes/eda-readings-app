@@ -22,10 +22,11 @@ void main() async {
   client.connectionTimeout = const Duration(seconds: 15);
 
   await for (HttpRequest request in server) {
-    // Sentinel: Implement Origin validation to prevent unauthorized cross-origin access.
-    // This proxy is for local development; only allow localhost/127.0.0.1.
+    // SENTINEL: Require an explicit browser Origin header; requests with no
+    // Origin (curl, native clients) are not allowed through — this is a
+    // browser-only CORS proxy, not a general-purpose proxy.
     final origin = request.headers.value('origin');
-    bool isAuthorized = true;
+    bool isAuthorized = false;
     if (origin != null) {
       try {
         final uri = Uri.parse(origin);
@@ -36,15 +37,15 @@ void main() async {
     }
 
     if (!isAuthorized) {
-      stderr.writeln('Blocked request from unauthorized origin: $origin');
+      stderr.writeln('Blocked request from unauthorized origin: ${origin ?? "(no origin)"}');
       request.response.statusCode = HttpStatus.forbidden;
       await request.response.close();
       continue;
     }
 
-    // Add CORS headers, mirroring the origin if valid or defaulting to localhost for non-browser requests
+    // Add CORS headers, echoing only the validated origin (never raw input).
     request.response.headers
-        .set('Access-Control-Allow-Origin', origin ?? 'http://localhost');
+        .set('Access-Control-Allow-Origin', origin!);
     request.response.headers.set(
         'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     request.response.headers
@@ -75,8 +76,6 @@ void main() async {
       );
 
       // Sentinel: Validate the resolved path to prevent path traversal via '..' segments.
-      // Even though we use Uri.https, '..' segments in request.uri.path could resolve
-      // to a path outside of /api/leitura.
       if (!url.path.startsWith('/api/leitura')) {
         stderr.writeln(
             'Blocked request to unauthorized resolved path: ${url.path}');
@@ -87,9 +86,14 @@ void main() async {
 
       var proxyRequest = await client.openUrl(request.method, url);
 
-      // Forward headers, omitting host-specific ones
+      // SENTINEL: Forward only safe headers; strip host-specific, origin, referer,
+      // and credential-bearing headers (Authorization, Cookie) so browser-session
+      // credentials are never forwarded to the upstream EDA server.
+      const stripHeaders = {
+        'host', 'origin', 'referer', 'authorization', 'cookie',
+      };
       request.headers.forEach((name, values) {
-        if (name != 'host' && name != 'origin' && name != 'referer') {
+        if (!stripHeaders.contains(name.toLowerCase())) {
           for (var value in values) {
             proxyRequest.headers.add(name, value);
           }
@@ -112,15 +116,29 @@ void main() async {
         }
       });
 
-      // Forward response body
-      await request.response.addStream(proxyResponse);
-      await request.response.close();
+      // Forward response body; guard against client disconnect mid-stream.
+      try {
+        await request.response.addStream(proxyResponse);
+        await request.response.close();
+      } catch (_) {
+        // Client disconnected mid-response; response headers are already sent
+        // so we cannot set an error status. Just close silently.
+        try {
+          await request.response.close();
+        } catch (_) {
+          // Already closed; ignore.
+        }
+      }
     } catch (e) {
       stderr.writeln('Error proxying request: $e');
-      request.response.statusCode = HttpStatus.internalServerError;
-      // Sentinel: Use a generic error message to avoid leaking internal details.
-      request.response.write('Internal Server Error');
-      await request.response.close();
+      try {
+        request.response.statusCode = HttpStatus.internalServerError;
+        // Sentinel: Use a generic error message to avoid leaking internal details.
+        request.response.write('Internal Server Error');
+        await request.response.close();
+      } catch (_) {
+        // Response may already be partially committed; ignore.
+      }
     }
   }
 }

@@ -15,8 +15,10 @@ void main() {
       expect(CsvHelper.escapeField('-50'), "'-50");
       expect(CsvHelper.escapeField('@hint'), "'@hint");
       expect(CsvHelper.escapeField('\tTab'), "'\tTab");
-      expect(CsvHelper.escapeField('\rCR'), "'\rCR");
-      expect(CsvHelper.escapeField('\nLF'), "'\nLF");
+      // \r and \n are normalised to space (prevents line-splitter breakage);
+      // formula injection is still blocked via the trimLeft check below.
+      expect(CsvHelper.escapeField('\rCR'), ' CR');
+      expect(CsvHelper.escapeField('\nLF'), ' LF');
       expect(CsvHelper.escapeField("'Quote"), "''Quote");
     });
 
@@ -24,7 +26,9 @@ void main() {
       expect(CsvHelper.escapeField(' =SUM(A1:B2)'), "' =SUM(A1:B2)");
       expect(CsvHelper.escapeField('  +123'), "'  +123");
       expect(CsvHelper.escapeField('\t-50'), "'\t-50");
-      expect(CsvHelper.escapeField(' \n@hint'), "' \n@hint");
+      // \n is normalised to space; the trailing @hint is still injection-protected
+      // via trimLeft detection (space, space, @hint → trimmed[0] = '@').
+      expect(CsvHelper.escapeField(' \n@hint'), "'  @hint");
     });
 
     test('escapeField should handle combined quotes and formula injection', () {

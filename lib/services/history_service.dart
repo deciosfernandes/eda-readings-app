@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -113,8 +112,15 @@ class HistoryService {
           // Skip malformed entries
         }
       }
+      // BOLT: Ensure index buckets are newest-first (addReadings may batch-insert
+      // out-of-order entries; sorting here makes all read paths consistent).
+      for (final bucket in _indexedObjects!.values) {
+        bucket.sort((a, b) => b.date.compareTo(a.date));
+      }
       // BOLT: Always complete — even on error — so callers are never suspended.
       _loadCompleter!.complete();
+      // Reset so clearCache() followed by a new load works correctly.
+      _loadCompleter = null;
     }
   }
 
@@ -122,53 +128,70 @@ class HistoryService {
   ///
   /// **BOLT**: The reading is prepended to the in-memory cache to ensure it
   /// appears immediately on the dashboard without a full reload.
+  ///
+  /// **SENTINEL**: Writes to storage FIRST so that a write failure does not
+  /// leave the caches ahead of disk (no phantom history entries).
   Future<void> addReading(LocalReadingHistory reading) async {
     await _ensureHistoryLoaded();
 
-    // BOLT: Maintain O(1) write performance and keep all in-memory caches in sync.
+    // SENTINEL: Build the new map list and persist BEFORE mutating in-memory
+    // caches. If the write throws, the exception propagates and caches remain
+    // unchanged — no desync between memory and disk.
+    final newMaps = [reading.toJson(), ..._cachedMaps!];
+    await _secureStorage.write(
+      key: keyHistory,
+      value: json.encode(newMaps),
+    );
+
+    // BOLT: Only update caches after the write succeeded.
+    _cachedMaps = newMaps;
     _cachedObjects!.insert(0, reading);
     _indexedObjects!
         .putIfAbsent(reading.profileId, () => [])
         .insert(0, reading);
-
-    // BOLT: Update raw map cache and persist using single-level JSON encoding.
-    _cachedMaps!.insert(0, reading.toJson());
-    await _secureStorage.write(
-      key: keyHistory,
-      value: json.encode(_cachedMaps),
-    );
   }
 
   /// Retrieves the reading history, optionally filtered by [profileId].
   ///
   /// **BOLT**: Uses a profile-indexed map to achieve O(1) lookup when a
   /// specific profile is requested.
+  ///
+  /// Returns a snapshot list so the caller cannot trigger a
+  /// ConcurrentModificationError against the live internal buckets.
   Future<List<LocalReadingHistory>> getHistory({String? profileId}) async {
     await _ensureHistoryLoaded();
 
     // BOLT: Use the profile index for O(1) lookup when a profileId is specified.
-    // Returning an UnmodifiableListView to prevent external modification of the internal
-    // cache while avoiding the O(N) cost of List.from().
+    // Return List.unmodifiable (a snapshot) to prevent callers from mutating
+    // the internal cache or causing ConcurrentModificationError.
     if (profileId != null) {
       final matches = _indexedObjects![profileId];
-      return matches != null ? UnmodifiableListView(matches) : const [];
+      return matches != null ? List.unmodifiable(matches) : const [];
     }
 
-    return UnmodifiableListView(_cachedObjects!);
+    return List.unmodifiable(_cachedObjects!);
   }
 
   /// Batch adds multiple [readings] to the history.
   ///
   /// **BOLT**: Performs a single atomic update to the persistent storage after
   /// updating all in-memory caches to minimize I/O overhead during large imports.
+  ///
+  /// **SENTINEL**: Writes to storage FIRST (rollback-safe ordering).
   Future<void> addReadings(List<LocalReadingHistory> readings) async {
     if (readings.isEmpty) return;
     await _ensureHistoryLoaded();
 
-    // BOLT: Batch update all caches and persistent storage.
+    // SENTINEL: Persist FIRST; only mutate caches on success.
+    final newMaps = [...readings.map((r) => r.toJson()), ..._cachedMaps!];
+    await _secureStorage.write(
+      key: keyHistory,
+      value: json.encode(newMaps),
+    );
+
+    // BOLT: Update all caches after the write succeeded.
+    _cachedMaps = newMaps;
     _cachedObjects!.insertAll(0, readings);
-    // BOLT: Avoid intermediate list allocation by passing the mapped iterable directly.
-    _cachedMaps!.insertAll(0, readings.map((r) => r.toJson()));
 
     // Group new items by profile to maintain relative order during prepending.
     final groupedByProfile = <String?, List<LocalReadingHistory>>{};
@@ -182,11 +205,10 @@ class HistoryService {
       _indexedObjects!.putIfAbsent(pId, () => []).insertAll(0, items);
     });
 
-    // BOLT: Persist data using single-level JSON encoding.
-    await _secureStorage.write(
-      key: keyHistory,
-      value: json.encode(_cachedMaps),
-    );
+    // Re-sort affected buckets so they stay newest-first regardless of import order.
+    for (final pId in groupedByProfile.keys) {
+      _indexedObjects![pId]?.sort((a, b) => b.date.compareTo(a.date));
+    }
   }
 
   Future<List<LocalReadingHistory>> getHistoryForProfiles(
@@ -195,15 +217,15 @@ class HistoryService {
     await _ensureHistoryLoaded();
 
     if (profileIds.isEmpty) {
-      return UnmodifiableListView(_cachedObjects!);
+      return List.unmodifiable(_cachedObjects!);
     }
 
     // BOLT: Optimize common case where only one profile is requested.
-    // Since individual profile buckets are already chronological, we skip sorting.
-    // BOLT: Return an UnmodifiableListView to avoid the O(N) cost of List.from().
+    // Individual profile buckets are already newest-first (sorted in _ensureHistoryLoaded
+    // and kept sorted by addReading/addReadings).
     if (profileIds.length == 1) {
       final matches = _indexedObjects![profileIds[0]];
-      return matches != null ? UnmodifiableListView(matches) : const [];
+      return matches != null ? List.unmodifiable(matches) : const [];
     }
 
     // BOLT: Collect from indexed buckets. This is O(M) where M is the number of requested profiles.

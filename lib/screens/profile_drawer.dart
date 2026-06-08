@@ -41,54 +41,63 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
     final controller = TextEditingController(
       text: widget.appState.userProfile.name,
     );
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text('drawer.edit_user_name'.tr()),
-            content: TextField(
-              controller: controller,
-              maxLength: 50,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              onChanged: (value) => setDialogState(() {}),
-              onSubmitted: (value) {
-                if (value.isNotEmpty) {
-                  Navigator.pop(context, value);
-                }
-              },
-              decoration: InputDecoration(
-                labelText: 'drawer.name_label'.tr(),
-                suffixIcon: controller.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'common.clear'.tr(),
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          controller.clear();
-                          setDialogState(() {});
-                        },
-                      )
-                    : null,
+    // BOLT: Ensure the controller is disposed in all exit paths (including when
+    // the dialog is cancelled or the widget is disposed mid-await).
+    String? result;
+    try {
+      result = await showDialog<String>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('drawer.edit_user_name'.tr()),
+              content: TextField(
+                controller: controller,
+                maxLength: 50,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                onChanged: (value) => setDialogState(() {}),
+                onSubmitted: (value) {
+                  if (value.isNotEmpty) {
+                    Navigator.pop(context, value);
+                  }
+                },
+                decoration: InputDecoration(
+                  labelText: 'drawer.name_label'.tr(),
+                  suffixIcon: controller.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          tooltip: 'common.clear'.tr(),
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            controller.clear();
+                            setDialogState(() {});
+                          },
+                        )
+                      : null,
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('common.cancel'.tr()),
-              ),
-              FilledButton(
-                onPressed: controller.text.isEmpty
-                    ? null
-                    : () => Navigator.pop(context, controller.text),
-                child: Text('common.save'.tr()),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('common.cancel'.tr()),
+                ),
+                FilledButton(
+                  onPressed: controller.text.isEmpty
+                      ? null
+                      : () => Navigator.pop(context, controller.text),
+                  child: Text('common.save'.tr()),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      // BOLT: Dispose the controller regardless of whether the dialog was
+      // confirmed, cancelled, or the widget was disposed during the await.
+      controller.dispose();
+    }
 
     if (result != null && result.isNotEmpty && mounted) {
       HapticFeedback.lightImpact();
