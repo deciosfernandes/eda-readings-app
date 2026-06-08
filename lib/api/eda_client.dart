@@ -62,15 +62,19 @@ class EDAClient {
   /// Throws an [Exception] if the request fails or returns a non-200 status code.
   Future<ReadingResponse> getReading() async {
     // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
-    final uri = _baseUri.replace(queryParameters: {
-      'cil': clientNumber,
-      'contrato': contractNumber,
-    });
+    final uri = _baseUri.replace(
+      queryParameters: {'cil': clientNumber, 'contrato': contractNumber},
+    );
 
     final response = await _client.get(uri).timeout(_timeout);
 
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      final dynamic data;
+      try {
+        data = json.decode(response.body);
+      } on FormatException catch (e) {
+        throw Exception('Failed to parse EDA response as JSON: ${e.message}');
+      }
       return ReadingResponse.fromJson(data);
     } else {
       throw Exception(
@@ -86,9 +90,7 @@ class EDAClient {
   /// Throws an [Exception] if the submission fails.
   Future<void> sendReading(SendReadingPayload payload) async {
     // Sentinel: Use replace(queryParameters: ...) for safer URI construction.
-    final uri = _baseUri.replace(queryParameters: {
-      'cil': clientNumber,
-    });
+    final uri = _baseUri.replace(queryParameters: {'cil': clientNumber});
 
     final response = await _client
         .put(

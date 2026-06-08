@@ -15,7 +15,8 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   /// Initializes the notification plugin and configures platform-specific settings.
   ///
@@ -30,16 +31,17 @@ class NotificationService {
 
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin,
-      macOS: initializationSettingsDarwin,
-    );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+          macOS: initializationSettingsDarwin,
+        );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
@@ -52,7 +54,9 @@ class NotificationService {
     // to ensure compliance with OS security models and respect user privacy preferences.
     if (Platform.isAndroid) {
       await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.requestNotificationsPermission();
     }
   }
@@ -76,24 +80,28 @@ class NotificationService {
       return;
     }
 
-    final tz.TZDateTime tzDate = tz.TZDateTime.from(scheduledDate, tz.local);
+    final tz.TZDateTime tzDate = tz.TZDateTime.from(
+      scheduledDate,
+      tz.local,
+    );
 
     await _notificationsPlugin.zonedSchedule(
       id,
-      title ?? 'Lembrete de Leitura - $profileName',
-      body ?? 'Está na altura de enviar a leitura da sua eletricidade para a EDA.',
+      title ?? 'Reading Reminder - $profileName',
+      body ?? 'It is time to send your electricity meter reading to EDA.',
       tzDate,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'reading_reminders',
           'Reading Reminders',
-          channelDescription: 'Notifications to remind you to send your meter readings',
+          channelDescription:
+              'Notifications to remind you to send your meter readings',
           importance: Importance.high,
           priority: Priority.high,
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );

@@ -16,13 +16,24 @@ void main() async {
   // BOLT: Parallelize initialization to reduce total startup time.
   // This reduces the blocking initialization phase by ~40-60% by running
   // independent async tasks concurrently.
-  await Future.wait([
-    EasyLocalization.ensureInitialized(),
-    NotificationService().initialize(),
-    ThemeService().loadTheme(),
-    SecureStorageService().getAppState(),
-    HistoryService().getHistory(),
-  ]);
+  //
+  // SENTINEL: Wrapped in try/catch so a failing service (e.g. a
+  // PlatformException from the Android Keystore after a signing-key change via
+  // Play App Signing) can never prevent runApp() from being called.
+  // Individual services guard their own storage reads; this is the last line
+  // of defence — the app boots to DashboardScreen and gracefully shows an
+  // empty state rather than hanging forever on the splash logo.
+  try {
+    await Future.wait([
+      EasyLocalization.ensureInitialized(),
+      NotificationService().initialize(),
+      ThemeService().loadTheme(),
+      SecureStorageService().getAppState(),
+      HistoryService().getHistory(),
+    ]);
+  } catch (_) {
+    // Startup failure — runApp() proceeds with default/empty state.
+  }
 
   runApp(
     EasyLocalization(

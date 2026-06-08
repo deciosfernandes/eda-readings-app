@@ -28,6 +28,7 @@ class ProfileDialogs {
     final cilCtrl = TextEditingController();
     final contractCtrl = TextEditingController();
     final scrollController = ScrollController();
+    final parentContext = context;
     int selectedIconCode = Icons.home.codePoint;
 
     // Validation error state (null = no error)
@@ -82,7 +83,8 @@ class ProfileDialogs {
             String? validateContract(String value) {
               final contract = value.trim();
               if (contract.isEmpty) return sErrorEmpty;
-              if (contract.length > 20 || !RegExp(r'^\d+$').hasMatch(contract)) {
+              if (contract.length > 20 ||
+                  !RegExp(r'^\d+$').hasMatch(contract)) {
                 return sErrorContract;
               }
               return null;
@@ -107,85 +109,87 @@ class ProfileDialogs {
 
               if (!isValid()) return;
 
-            setModalState(() => isLoading = true);
+              setModalState(() => isLoading = true);
 
-            final name = nameCtrl.text.trim();
-            final cil = cilCtrl.text.trim();
-            final contract = contractCtrl.text.trim();
+              final name = nameCtrl.text.trim();
+              final cil = cilCtrl.text.trim();
+              final contract = contractCtrl.text.trim();
 
-            try {
-              final client = EDAClient(
-                clientNumber: cil,
-                contractNumber: contract,
-              );
-              final readingData = await client.getReading();
+              try {
+                final client = EDAClient(
+                  clientNumber: cil,
+                  contractNumber: contract,
+                );
+                final readingData = await client.getReading();
 
-              appState.profiles.add(
-                ContractProfile(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  name: name,
-                  cil: cil,
-                  contract: contract,
-                  iconCodePoint: selectedIconCode,
-                ),
-              );
-              appState.activeProfileIndex = appState.profiles.length - 1;
-              await SecureStorageService().saveAppState(appState);
-
-              HapticFeedback.lightImpact();
-
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: Colors.white),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(sAddSuccess)),
-                      ],
-                    ),
-                    backgroundColor: Colors.green,
+                appState.profiles.add(
+                  ContractProfile(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    name: name,
+                    cil: cil,
+                    contract: contract,
+                    iconCodePoint: selectedIconCode,
                   ),
                 );
-              }
-              onSuccess();
+                appState.activeProfileIndex = appState.profiles.length - 1;
+                await SecureStorageService().saveAppState(appState);
 
-              if (readingData.dataAconselhavelEnvio != null &&
-                  context.mounted) {
-                final newProfile = appState.profiles.last;
-                final scheduled = await ReminderDialog.show(
-                  context,
-                  name,
-                  readingData.dataAconselhavelEnvio!,
-                  notificationId: newProfile.notificationId,
-                );
-                if (scheduled) {
-                  // PALETTE: Persist reminder state so Settings reflects it.
-                  final advisedDate = DateTime.tryParse(
-                    readingData.dataAconselhavelEnvio!,
+                HapticFeedback.lightImpact();
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+                if (parentContext.mounted) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.white),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(sAddSuccess)),
+                        ],
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
                   );
-                  if (advisedDate != null) {
-                    newProfile.reminderEnabled = true;
-                    newProfile.reminderDateTime = DateTime(
-                      advisedDate.year,
-                      advisedDate.month,
-                      advisedDate.day,
-                      9,
-                      0,
-                      0,
-                    ).toIso8601String();
-                    await SecureStorageService().saveAppState(appState);
+                }
+
+                if (readingData.dataAconselhavelEnvio != null &&
+                    parentContext.mounted) {
+                  final newProfile = appState.profiles.last;
+                  final scheduled = await ReminderDialog.show(
+                    parentContext,
+                    name,
+                    readingData.dataAconselhavelEnvio!,
+                    notificationId: newProfile.notificationId,
+                  );
+                  if (scheduled) {
+                    // PALETTE: Persist reminder state so Settings reflects it.
+                    final advisedDate = DateTime.tryParse(
+                      readingData.dataAconselhavelEnvio!,
+                    );
+                    if (advisedDate != null) {
+                      newProfile.reminderEnabled = true;
+                      newProfile.reminderDateTime = DateTime(
+                        advisedDate.year,
+                        advisedDate.month,
+                        advisedDate.day,
+                        9,
+                        0,
+                        0,
+                      ).toIso8601String();
+                      await SecureStorageService().saveAppState(appState);
+                    }
                   }
                 }
+                onSuccess();
+              } catch (e) {
+                setModalState(() {
+                  isLoading = false;
+                  apiError = sErrorLogin;
+                });
               }
-            } catch (e) {
-              setModalState(() {
-                isLoading = false;
-                apiError = sErrorLogin;
-              });
             }
-          }
 
             return Container(
               decoration: BoxDecoration(
@@ -210,16 +214,10 @@ class ProfileDialogs {
                       children: [
                         Semantics(
                           header: true,
-                          child: Text(
-                            sTitle,
-                            style: textTheme.titleLarge,
-                          ),
+                          child: Text(sTitle, style: textTheme.titleLarge),
                         ),
                         IconButton(
-                          icon: Icon(
-                            Icons.close,
-                            semanticLabel: sCancel,
-                          ),
+                          icon: Icon(Icons.close, semanticLabel: sCancel),
                           tooltip: sCancel,
                           isSelected: false,
                           onPressed: isLoading
@@ -229,310 +227,315 @@ class ProfileDialogs {
                                   Navigator.pop(context);
                                 },
                         ),
-                    ],
-                  ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    child: apiError == null
-                        ? const SizedBox.shrink()
-                        : Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.errorContainer,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  color: colorScheme.onErrorContainer,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    apiError!,
-                                    style: TextStyle(
-                                      color: colorScheme.onErrorContainer,
+                      ],
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      child: apiError == null
+                          ? const SizedBox.shrink()
+                          : Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.errorContainer,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    color: colorScheme.onErrorContainer,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      apiError!,
+                                      style: TextStyle(
+                                        color: colorScheme.onErrorContainer,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.close,
-                                    size: 16,
-                                    color: colorScheme.onErrorContainer,
-                                    semanticLabel: sClose,
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: colorScheme.onErrorContainer,
+                                      semanticLabel: sClose,
+                                    ),
+                                    tooltip: sClose,
+                                    isSelected: false,
+                                    onPressed: () {
+                                      HapticFeedback.selectionClick();
+                                      setModalState(() => apiError = null);
+                                    },
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
                                   ),
-                                  tooltip: sClose,
+                                ],
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    Focus(
+                      onFocusChange: (hasFocus) {
+                        if (!hasFocus && context.mounted) {
+                          setModalState(() {
+                            nameError = validateField(nameCtrl.text);
+                          });
+                        }
+                      },
+                      child: TextField(
+                        controller: nameCtrl,
+                        enabled: !isLoading,
+                        maxLength: 50,
+                        autofocus: true,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          labelText: '$sProfileName *',
+                          hintText: sProfileNameHint,
+                          prefixIcon: const Icon(Icons.label_outline),
+                          errorText: nameError,
+                          suffixIcon: nameCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    semanticLabel: sClear,
+                                  ),
+                                  tooltip: sClear,
                                   isSelected: false,
                                   onPressed: () {
                                     HapticFeedback.selectionClick();
-                                    setModalState(() => apiError = null);
+                                    nameCtrl.clear();
+                                    setModalState(() {});
                                   },
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                  Focus(
-                    onFocusChange: (hasFocus) {
-                      if (!hasFocus) {
-                        setModalState(() {
-                          nameError = validateField(nameCtrl.text);
-                        });
-                      }
-                    },
-                    child: TextField(
-                      controller: nameCtrl,
-                      enabled: !isLoading,
-                      maxLength: 50,
-                      autofocus: true,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: '$sProfileName *',
-                        hintText: sProfileNameHint,
-                        prefixIcon: const Icon(Icons.label_outline),
-                        errorText: nameError,
-                        suffixIcon: nameCtrl.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.clear,
-                                  semanticLabel: sClear,
-                                ),
-                                tooltip: sClear,
-                                isSelected: false,
-                                onPressed: () {
-                                  HapticFeedback.selectionClick();
-                                  nameCtrl.clear();
-                                  setModalState(() {});
-                                },
-                              )
-                            : null,
-                      ),
-                      onChanged: (_) {
-                        setModalState(() {
-                          if (nameError != null) {
-                            nameError = validateField(nameCtrl.text);
-                          }
-                          apiError = null;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Focus(
-                    onFocusChange: (hasFocus) {
-                      if (!hasFocus) {
-                        setModalState(() {
-                            cilError = validateCil(cilCtrl.text);
-                        });
-                      }
-                    },
-                    child: TextField(
-                      controller: cilCtrl,
-                      enabled: !isLoading,
-                        maxLength: 10,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.next,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        labelText: '$sCil *',
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                        errorText: cilError,
-                        suffixIcon: cilCtrl.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.clear,
-                                  semanticLabel: sClear,
-                                ),
-                                tooltip: sClear,
-                                isSelected: false,
-                                onPressed: () {
-                                  HapticFeedback.selectionClick();
-                                  cilCtrl.clear();
-                                  setModalState(() {});
-                                },
-                              )
-                            : null,
-                      ),
-                      onChanged: (_) {
-                        setModalState(() {
-                          if (cilError != null) {
-                            cilError = validateCil(cilCtrl.text);
-                          }
-                          apiError = null;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Focus(
-                    onFocusChange: (hasFocus) {
-                      if (!hasFocus) {
-                        setModalState(() {
-                          contractError = validateContract(contractCtrl.text);
-                        });
-                      }
-                    },
-                    child: TextField(
-                      controller: contractCtrl,
-                      enabled: !isLoading,
-                      maxLength: 20,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => handleAdd(),
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        labelText: '$sContract *',
-                        prefixIcon: const Icon(Icons.description_outlined),
-                        errorText: contractError,
-                        suffixIcon: contractCtrl.text.isNotEmpty
-                            ? IconButton(
-                                icon: Icon(
-                                  Icons.clear,
-                                  semanticLabel: sClear,
-                                ),
-                                tooltip: sClear,
-                                isSelected: false,
-                                onPressed: () {
-                                  HapticFeedback.selectionClick();
-                                  contractCtrl.clear();
-                                  setModalState(() {});
-                                },
-                              )
-                            : null,
-                      ),
-                      onChanged: (_) {
-                        setModalState(() {
-                          if (contractError != null) {
-                            contractError = validateContract(contractCtrl.text);
-                          }
-                          apiError = null;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Semantics(
-                    header: true,
-                    child: Text(
-                      sSelectIcon,
-                      style: textTheme.titleMedium,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Scrollbar(
-                    controller: scrollController,
-                    thumbVisibility: true,
-                    child: SizedBox(
-                      height: 80,
-                      child: ListView.builder(
-                        controller: scrollController,
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(bottom: 16),
-                        itemCount: _availableIcons.length,
-                        itemBuilder: (context, index) {
-                          final icon = _availableIcons[index];
-                          final isSelected = selectedIconCode == icon.codePoint;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: Semantics(
-                              label: sIconOption,
-                              selected: isSelected,
-                              button: true,
-                              child: InkWell(
-                                onTap: isLoading
-                                    ? null
-                                    : () {
-                                        HapticFeedback.selectionClick();
-                                        setModalState(
-                                          () => selectedIconCode = icon.codePoint,
-                                        );
-                                      },
-                                mouseCursor: SystemMouseCursors.click,
-                                borderRadius: BorderRadius.circular(12),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: 60,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? colorScheme.primaryContainer
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? colorScheme.primary
-                                          : theme.dividerColor,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Icon(
-                                        icon,
-                                        color: isSelected
-                                            ? colorScheme.primary
-                                            : null,
-                                      ),
-                                      if (isSelected)
-                                        Positioned(
-                                          top: 4,
-                                          right: 4,
-                                          child: Icon(
-                                            Icons.check_circle,
-                                            size: 16,
-                                            color: colorScheme.primary,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
+                                )
+                              : null,
+                        ),
+                        onChanged: (_) {
+                          setModalState(() {
+                            if (nameError != null) {
+                              nameError = validateField(nameCtrl.text);
+                            }
+                            apiError = null;
+                          });
                         },
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  FilledButton.icon(
-                    onPressed: isLoading ? null : handleAdd,
-                    icon: isLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.add),
-                    label: Text(sAdd),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 16),
+                    Focus(
+                      onFocusChange: (hasFocus) {
+                        if (!hasFocus && context.mounted) {
+                          setModalState(() {
+                            cilError = validateCil(cilCtrl.text);
+                          });
+                        }
+                      },
+                      child: TextField(
+                        controller: cilCtrl,
+                        enabled: !isLoading,
+                        maxLength: 10,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: '$sCil *',
+                          prefixIcon: const Icon(Icons.badge_outlined),
+                          errorText: cilError,
+                          suffixIcon: cilCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    semanticLabel: sClear,
+                                  ),
+                                  tooltip: sClear,
+                                  isSelected: false,
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    cilCtrl.clear();
+                                    setModalState(() {});
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (_) {
+                          setModalState(() {
+                            if (cilError != null) {
+                              cilError = validateCil(cilCtrl.text);
+                            }
+                            apiError = null;
+                          });
+                        },
                       ),
-                      enabledMouseCursor: SystemMouseCursors.click,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Focus(
+                      onFocusChange: (hasFocus) {
+                        if (!hasFocus && context.mounted) {
+                          setModalState(() {
+                            contractError = validateContract(contractCtrl.text);
+                          });
+                        }
+                      },
+                      child: TextField(
+                        controller: contractCtrl,
+                        enabled: !isLoading,
+                        maxLength: 20,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => handleAdd(),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: '$sContract *',
+                          prefixIcon: const Icon(Icons.description_outlined),
+                          errorText: contractError,
+                          suffixIcon: contractCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    semanticLabel: sClear,
+                                  ),
+                                  tooltip: sClear,
+                                  isSelected: false,
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    contractCtrl.clear();
+                                    setModalState(() {});
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (_) {
+                          setModalState(() {
+                            if (contractError != null) {
+                              contractError = validateContract(
+                                contractCtrl.text,
+                              );
+                            }
+                            apiError = null;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Semantics(
+                      header: true,
+                      child: Text(sSelectIcon, style: textTheme.titleMedium),
+                    ),
+                    const SizedBox(height: 12),
+                    Scrollbar(
+                      controller: scrollController,
+                      thumbVisibility: true,
+                      child: SizedBox(
+                        height: 80,
+                        child: ListView.builder(
+                          controller: scrollController,
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(bottom: 16),
+                          itemCount: _availableIcons.length,
+                          itemBuilder: (context, index) {
+                            final icon = _availableIcons[index];
+                            final isSelected =
+                                selectedIconCode == icon.codePoint;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Semantics(
+                                label: sIconOption,
+                                selected: isSelected,
+                                button: true,
+                                child: InkWell(
+                                  onTap: isLoading
+                                      ? null
+                                      : () {
+                                          HapticFeedback.selectionClick();
+                                          setModalState(
+                                            () => selectedIconCode =
+                                                icon.codePoint,
+                                          );
+                                        },
+                                  mouseCursor: SystemMouseCursors.click,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 60,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? colorScheme.primaryContainer
+                                          : Colors.transparent,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? colorScheme.primary
+                                            : theme.dividerColor,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Icon(
+                                          icon,
+                                          color: isSelected
+                                              ? colorScheme.primary
+                                              : null,
+                                        ),
+                                        if (isSelected)
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: Icon(
+                                              Icons.check_circle,
+                                              size: 16,
+                                              color: colorScheme.primary,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    FilledButton.icon(
+                      onPressed: isLoading ? null : handleAdd,
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.add),
+                      label: Text(sAdd),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledMouseCursor: SystemMouseCursors.click,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
-    );
+            );
+          },
+        ),
+      );
     } finally {
       // BOLT: Ensure all controllers are disposed to prevent memory leaks.
       nameCtrl.dispose();

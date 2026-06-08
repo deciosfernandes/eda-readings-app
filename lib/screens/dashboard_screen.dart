@@ -52,8 +52,14 @@ class _DashboardScreenState extends State<_DashboardScreen> {
   void initState() {
     super.initState();
     _historyDateFormat = DateFormat.yMMMd().add_jm();
-    ShowcaseView.register();
+    ShowcaseView.register(scope: 'dashboard');
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    ShowcaseView.getNamed('dashboard').unregister();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -69,8 +75,9 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       activeProfileId = state.profiles[state.activeProfileIndex].id;
     }
 
-    final history =
-        await HistoryService().getHistory(profileId: activeProfileId);
+    final history = await HistoryService().getHistory(
+      profileId: activeProfileId,
+    );
 
     // BOLT: Consolidate data transformations into a single pass to reduce iteration
     // overhead and object allocations. We pre-calculate all display strings and
@@ -101,34 +108,47 @@ class _DashboardScreenState extends State<_DashboardScreen> {
       // Calculate deltas comparing with the previous chronological reading (which is i+1 in newest-first list).
       if (nextChronological != null) {
         final current = double.tryParse(c1.replaceAll(',', '.'));
-        final prev = double.tryParse(nextChronological.valorContador1.replaceAll(',', '.'));
+        final prev = double.tryParse(
+          nextChronological.valorContador1.replaceAll(',', '.'),
+        );
         if (current != null && prev != null && current > prev) {
           final diff = current - prev;
-          c1Deltas[i] = '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
+          c1Deltas[i] =
+              '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
         }
       }
 
-      if (c2?.isNotEmpty == true && nextChronological?.valorContador2?.isNotEmpty == true) {
+      if (c2?.isNotEmpty == true &&
+          nextChronological?.valorContador2?.isNotEmpty == true) {
         final current = double.tryParse(c2!.replaceAll(',', '.'));
-        final prev = double.tryParse(nextChronological!.valorContador2!.replaceAll(',', '.'));
+        final prev = double.tryParse(
+          nextChronological!.valorContador2!.replaceAll(',', '.'),
+        );
         if (current != null && prev != null && current > prev) {
           final diff = current - prev;
-          c2Deltas[i] = '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
+          c2Deltas[i] =
+              '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
         }
       }
 
-      if (c3?.isNotEmpty == true && nextChronological?.valorContador3?.isNotEmpty == true) {
+      if (c3?.isNotEmpty == true &&
+          nextChronological?.valorContador3?.isNotEmpty == true) {
         final current = double.tryParse(c3!.replaceAll(',', '.'));
-        final prev = double.tryParse(nextChronological!.valorContador3!.replaceAll(',', '.'));
+        final prev = double.tryParse(
+          nextChronological!.valorContador3!.replaceAll(',', '.'),
+        );
         if (current != null && prev != null && current > prev) {
           final diff = current - prev;
-          c3Deltas[i] = '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
+          c3Deltas[i] =
+              '+${diff.toStringAsFixed(diff.truncateToDouble() == diff ? 0 : 2)}';
         }
       }
 
       // BOLT: Move accessibility label generation out of the build loop.
       final buffer = StringBuffer();
-      buffer.write('dashboard.reading_history_item'.tr(args: [c1, formattedDate]));
+      buffer.write(
+        'dashboard.reading_history_item'.tr(args: [c1, formattedDate]),
+      );
       if (c1Deltas[i] != null) buffer.write(' (${c1Deltas[i]})');
       if (c2?.isNotEmpty == true) {
         buffer.write(', C2: $c2');
@@ -163,8 +183,13 @@ class _DashboardScreenState extends State<_DashboardScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final hasSeen = await SecureStorageService().hasSeenTutorial();
-      if (!hasSeen && mounted && state.profiles.isNotEmpty) {
-        ShowcaseView.get().startShowCase([_drawerKey, _tabsKey, _addReadingKey]);
+      if (!hasSeen &&
+          mounted &&
+          state.profiles.isNotEmpty &&
+          (ModalRoute.of(context)?.isCurrent ?? true)) {
+        ShowcaseView.getNamed(
+          'dashboard',
+        ).startShowCase([_drawerKey, _tabsKey, _addReadingKey]);
         await SecureStorageService().setSeenTutorial(true);
       }
     });
@@ -216,7 +241,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               disposeOnTap: true,
               onTargetClick: () {
                 Scaffold.of(context).openDrawer();
-                ShowcaseView.get().dismiss();
+                ShowcaseView.getNamed('dashboard').dismiss();
               },
               child: IconButton(
                 tooltip: 'dashboard.menu_tooltip'.tr(),
@@ -265,44 +290,42 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               ),
             )
           : _history.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.history,
-                          size: 64,
-                          color: primaryWithAlpha05,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'dashboard.no_history'.tr(),
-                          textAlign: TextAlign.center,
-                          style: textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 24),
-                        FilledButton.icon(
-                          onPressed: () async {
-                            HapticFeedback.lightImpact();
-                            final result =
-                                await Navigator.pushNamed(context, '/reading');
-                            if (result == true) {
-                              _loadData();
-                            }
-                          },
-                          icon: const Icon(Icons.add),
-                          label: Text('dashboard.add_reading'.tr()),
-                          style: FilledButton.styleFrom(
-                            enabledMouseCursor: SystemMouseCursors.click,
-                          ),
-                        ),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.history, size: 64, color: primaryWithAlpha05),
+                    const SizedBox(height: 16),
+                    Text(
+                      'dashboard.no_history'.tr(),
+                      textAlign: TextAlign.center,
+                      style: textTheme.titleLarge,
                     ),
-                  ),
-                )
-              : _buildContent(colorScheme, primaryWithAlpha01, primaryWithAlpha02),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        final result = await Navigator.pushNamed(
+                          context,
+                          '/reading',
+                        );
+                        if (result == true) {
+                          _loadData();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: Text('dashboard.add_reading'.tr()),
+                      style: FilledButton.styleFrom(
+                        enabledMouseCursor: SystemMouseCursors.click,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : _buildContent(colorScheme, primaryWithAlpha01, primaryWithAlpha02),
       floatingActionButton: hasProfiles
           ? Showcase(
               key: _addReadingKey,
@@ -311,7 +334,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               disposeOnTap: true,
               onTargetClick: () {
                 HapticFeedback.lightImpact();
-                ShowcaseView.get().dismiss();
+                ShowcaseView.getNamed('dashboard').dismiss();
                 Navigator.pushNamed(context, '/reading').then((result) {
                   if (result == true) {
                     _loadData();
@@ -323,8 +346,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
                 child: FloatingActionButton.extended(
                   onPressed: () async {
                     HapticFeedback.lightImpact();
-                    final result =
-                        await Navigator.pushNamed(context, '/reading');
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/reading',
+                    );
                     if (result == true) {
                       _loadData();
                     }
@@ -355,7 +380,7 @@ class _DashboardScreenState extends State<_DashboardScreen> {
               description: 'tutorial.views_desc'.tr(),
               disposeOnTap: true,
               onTargetClick: () {
-                ShowcaseView.get().completed(_tabsKey); // or next()
+                ShowcaseView.getNamed('dashboard').completed(_tabsKey);
               },
               child: TabBar(
                 indicatorColor: colorScheme.primary,
@@ -376,12 +401,14 @@ class _DashboardScreenState extends State<_DashboardScreen> {
             ),
           ),
           Expanded(
-            child: TabBarView(children: [
-              _KeepAliveWrapper(
-                child: _buildChartTab(colorScheme, primaryWithAlpha02),
-              ),
-              _KeepAliveWrapper(child: _buildHistoryTab(colorScheme)),
-            ]),
+            child: TabBarView(
+              children: [
+                _KeepAliveWrapper(
+                  child: _buildChartTab(colorScheme, primaryWithAlpha02),
+                ),
+                _KeepAliveWrapper(child: _buildHistoryTab(colorScheme)),
+              ],
+            ),
           ),
         ],
       ),
@@ -472,7 +499,10 @@ class _DashboardScreenState extends State<_DashboardScreen> {
           child: Semantics(
             label: _historySemantics[index],
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
               leading: CircleAvatar(
                 backgroundColor: colorScheme.primaryContainer,
                 child: const Icon(Icons.flash_on),
@@ -536,23 +566,27 @@ class _HistoryTrailing extends StatelessWidget {
     final badges = <Widget>[];
 
     if (item.valorContador2?.isNotEmpty == true) {
-      badges.add(_HistoryBadge(
-        label: 'C2',
-        value: item.valorContador2!,
-        delta: c2Delta,
-        colorScheme: colorScheme,
-      ));
+      badges.add(
+        _HistoryBadge(
+          label: 'C2',
+          value: item.valorContador2!,
+          delta: c2Delta,
+          colorScheme: colorScheme,
+        ),
+      );
     }
     if (item.valorContador3?.isNotEmpty == true) {
       if (badges.isNotEmpty) {
         badges.add(const SizedBox(height: 4));
       }
-      badges.add(_HistoryBadge(
-        label: 'C3',
-        value: item.valorContador3!,
-        delta: c3Delta,
-        colorScheme: colorScheme,
-      ));
+      badges.add(
+        _HistoryBadge(
+          label: 'C3',
+          value: item.valorContador3!,
+          delta: c3Delta,
+          colorScheme: colorScheme,
+        ),
+      );
     }
 
     if (badges.isEmpty) return const SizedBox.shrink();

@@ -129,6 +129,7 @@
         "export_error": "Falha ao exportar leituras.",
         "import_error": "Falha ao importar leituras.",
         "import_success": "Importadas {} leituras com sucesso.",
+        "file_too_large": "Ficheiro demasiado grande. O tamanho máximo é 1MB.",
         "share_subject": "Exportação de Leituras EDA",
         "csv_header": "Propriedade,Data,Contador 1,Contador 2,Contador 3"
     }

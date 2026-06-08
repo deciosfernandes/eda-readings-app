@@ -11,13 +11,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api/eda_client.dart';
-import '../models/reading_models.dart';
 import '../models/user_profile.dart';
+import '../services/csv_io_service.dart';
 import '../services/history_service.dart';
 import '../services/notification_service.dart';
 import '../services/secure_storage_service.dart';
 import '../services/theme_service.dart';
-import '../utils/csv_helper.dart';
 import '../utils/profile_icons.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -67,36 +66,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   );
 
   Future<void> _launchURL() async {
-    if (!await launchUrl(_githubIssuesUri, mode: LaunchMode.externalApplication)) {
+    if (!await launchUrl(
+      _githubIssuesUri,
+      mode: LaunchMode.externalApplication,
+    )) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('about.github_issue'.tr())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('about.github_issue'.tr())));
       }
     }
-  }
-
-  String _buildCsv(
-    List<LocalReadingHistory> readings,
-    Map<String, String> profileNames,
-  ) {
-    final buffer = StringBuffer();
-    buffer.writeln('import_export.csv_header'.tr());
-    // BOLT: Instantiate DateFormat once outside the loop to avoid redundant allocations.
-    final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
-
-    for (final r in readings) {
-      final profileName = r.profileId != null ? (profileNames[r.profileId] ?? '') : '';
-      final date = dateFormat.format(r.date);
-      buffer.writeln(CsvHelper.toCsvRow([
-        profileName,
-        date,
-        r.valorContador1,
-        r.valorContador2 ?? '',
-        r.valorContador3 ?? '',
-      ]));
-    }
-    return buffer.toString();
   }
 
   Future<void> _exportReadings() async {
@@ -111,27 +90,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _isExporting = true);
 
     try {
-      final readings = await HistoryService()
-          .getHistoryForProfiles(_selectedProfileIds.toList());
+      final readings = await HistoryService().getHistoryForProfiles(
+        _selectedProfileIds.toList(),
+      );
 
-      final profileNames = {
-        for (final p in _appState!.profiles) p.id: p.name,
-      };
+      final profileNames = {for (final p in _appState!.profiles) p.id: p.name};
 
-      final csv = _buildCsv(readings, profileNames);
+      final csv = CsvIoService.buildCsv(readings, profileNames);
 
       if (kIsWeb) {
-        await Share.share(
-          csv,
-          subject: 'import_export.share_subject'.tr(),
+        await SharePlus.instance.share(
+          ShareParams(text: csv, subject: 'import_export.share_subject'.tr()),
         );
       } else {
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/eda_readings_export.csv');
         await file.writeAsString(csv);
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'import_export.share_subject'.tr(),
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path)],
+            subject: 'import_export.share_subject'.tr(),
+          ),
         );
       }
     } catch (e) {
@@ -158,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       if (result == null || result.files.isEmpty) {
-        setState(() => _isImporting = false);
+        if (mounted) setState(() => _isImporting = false);
         return;
       }
 
@@ -169,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('File too large. Maximum size is 1MB.'),
+              content: Text('import_export.file_too_large'.tr()),
               backgroundColor: Colors.red,
             ),
           );
@@ -190,79 +169,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         throw Exception('Could not read file');
       }
 
-      final lines = const LineSplitter().convert(content);
-      if (lines.isEmpty) throw Exception('Empty file');
+      final importResult = CsvIoService.parseCsvImport(
+        content,
+        _appState?.profiles ?? <ContractProfile>[],
+      );
 
-      int importCount = 0;
-      final newReadings = <LocalReadingHistory>[];
-
-      // BOLT: Create a lookup map to avoid O(N) list scans inside the loop.
-      // This achieves O(1) profile lookup by name during import.
-      final profileNameToId = {
-        for (final p in _appState?.profiles ?? <ContractProfile>[]) p.name: p.id
-      };
-
-      for (int i = 1; i < lines.length; i++) {
-        final line = lines[i].trim();
-        if (line.isEmpty) continue;
-
-        final fields = CsvHelper.parseCsvLine(line);
-        if (fields.length < 5) continue;
-
-        // Sentinel: Security hardening for CSV import.
-        // Enforce length limits and validate numeric formats to prevent malformed data injection.
-        final rawName = CsvHelper.unescapeField(fields[0]);
-        final profileName = rawName.length > 50 ? rawName.substring(0, 50) : rawName;
-        final rawDate = CsvHelper.unescapeField(fields[1]);
-        final dateStr = rawDate.length > 30 ? rawDate.substring(0, 30) : rawDate;
-        final rawC1 = CsvHelper.unescapeField(fields[2]);
-        final c1 = rawC1.length > 15 ? rawC1.substring(0, 15) : rawC1;
-        final rawC2 = CsvHelper.unescapeField(fields[3]);
-        final c2Raw = rawC2.length > 15 ? rawC2.substring(0, 15) : rawC2;
-        final c2 = c2Raw.isEmpty ? null : c2Raw;
-        final rawC3 = CsvHelper.unescapeField(fields[4]);
-        final c3Raw = rawC3.length > 15 ? rawC3.substring(0, 15) : rawC3;
-        final c3 = c3Raw.isEmpty ? null : c3Raw;
-
-        // Sentinel: Validate that readings are finite non-negative numbers if present.
-        final n1 = double.tryParse(c1.replaceAll(',', '.'));
-        if (n1 == null || !n1.isFinite || n1 < 0) continue;
-
-        if (c2 != null) {
-          final n2 = double.tryParse(c2.replaceAll(',', '.'));
-          if (n2 == null || !n2.isFinite || n2 < 0) continue;
-        }
-
-        if (c3 != null) {
-          final n3 = double.tryParse(c3.replaceAll(',', '.'));
-          if (n3 == null || !n3.isFinite || n3 < 0) continue;
-        }
-
-        DateTime date;
-        try {
-          date = DateTime.parse(dateStr.replaceFirst(' ', 'T'));
-        } catch (_) {
-          continue;
-        }
-
-        if (c1.isEmpty) continue;
-
-        // BOLT: Use O(1) map lookup instead of O(N) where() filter.
-        final matchingProfileId = profileNameToId[profileName];
-
-        newReadings.add(
-          LocalReadingHistory(
-            date: date,
-            valorContador1: c1,
-            valorContador2: c2,
-            valorContador3: c3,
-            profileId: matchingProfileId,
-          ),
-        );
-        importCount++;
-      }
-
-      await HistoryService().addReadings(newReadings);
+      await HistoryService().addReadings(importResult.readings);
 
       if (!mounted) return;
       HapticFeedback.lightImpact();
@@ -274,8 +186,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'import_export.import_success'
-                      .tr(args: [importCount.toString()]),
+                  'import_export.import_success'.tr(
+                    args: [importResult.importCount.toString()],
+                  ),
                 ),
               ),
             ],
@@ -296,11 +209,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-
   // PALETTE: Opens date + time pickers for a per-profile reminder.
   // Best-effort pre-fills with the API-advised date at 09:00; falls back
   // to tomorrow if the API call fails or returns no date.
   Future<void> _pickReminder(ContractProfile profile) async {
+    // Try to get the API advised date as the default suggestion.
     DateTime defaultDate = DateTime.now().add(const Duration(days: 1));
     try {
       final client = EDAClient(
@@ -428,9 +341,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('settings.title'.tr())
-      ),
+      appBar: AppBar(title: Text('settings.title'.tr())),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildContent(),
@@ -526,7 +437,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _selectedProfileIds = profiles.map((p) => p.id).toSet();
                       });
                     },
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: Text('common.select_all'.tr()),
                   ),
                   TextButton(
@@ -536,7 +449,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _selectedProfileIds.clear();
                       });
                     },
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: Text('common.deselect_all'.tr()),
                   ),
                 ],
@@ -579,9 +494,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.upload),
                       label: Text('import_export.export'.tr()),
@@ -603,9 +516,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.download),
                       label: Text('import_export.import'.tr()),
@@ -694,10 +605,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1),
 
           // ── About ─────────────────────────────────────────────────────────
-          _SectionHeader(
-            title: 'about.title'.tr(),
-            colorScheme: colorScheme,
-          ),
+          _SectionHeader(title: 'about.title'.tr(), colorScheme: colorScheme),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Row(
@@ -727,10 +635,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            child: Text(
-              '© 2026 Décio Fernandes',
-              style: textTheme.bodySmall,
-            ),
+            child: Text('© 2026 Décio Fernandes', style: textTheme.bodySmall),
           ),
         ],
       ),

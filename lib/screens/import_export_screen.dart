@@ -9,11 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../models/reading_models.dart';
 import '../models/user_profile.dart';
+import '../services/csv_io_service.dart';
 import '../services/history_service.dart';
 import '../services/secure_storage_service.dart';
-import '../utils/csv_helper.dart';
 import '../utils/profile_icons.dart';
 
 class ImportExportScreen extends StatefulWidget {
@@ -45,27 +44,6 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     });
   }
 
-  String _buildCsv(List<LocalReadingHistory> readings, Map<String, String> profileNames) {
-    final buffer = StringBuffer();
-    buffer.writeln('import_export.csv_header'.tr());
-    // BOLT: Reuse DateFormat instance to avoid redundant object creation in the loop.
-    // This avoids O(N) object allocations, improving performance for large exports.
-    final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
-
-    for (final r in readings) {
-      final profileName = r.profileId != null ? (profileNames[r.profileId] ?? '') : '';
-      final date = dateFormat.format(r.date);
-      buffer.writeln(CsvHelper.toCsvRow([
-        profileName,
-        date,
-        r.valorContador1,
-        r.valorContador2 ?? '',
-        r.valorContador3 ?? '',
-      ]));
-    }
-    return buffer.toString();
-  }
-
   Future<void> _exportReadings() async {
     if (_selectedProfileIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -77,26 +55,27 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
     setState(() => _isExporting = true);
 
     try {
-      final readings = await HistoryService().getHistoryForProfiles(_selectedProfileIds.toList());
+      final readings = await HistoryService().getHistoryForProfiles(
+        _selectedProfileIds.toList(),
+      );
 
-      final profileNames = {
-        for (final p in _appState!.profiles) p.id: p.name,
-      };
+      final profileNames = {for (final p in _appState!.profiles) p.id: p.name};
 
-      final csv = _buildCsv(readings, profileNames);
+      final csv = CsvIoService.buildCsv(readings, profileNames);
 
       if (kIsWeb) {
-        await Share.share(
-          csv,
-          subject: 'import_export.share_subject'.tr(),
+        await SharePlus.instance.share(
+          ShareParams(text: csv, subject: 'import_export.share_subject'.tr()),
         );
       } else {
         final dir = await getTemporaryDirectory();
         final file = File('${dir.path}/eda_readings_export.csv');
         await file.writeAsString(csv);
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'import_export.share_subject'.tr(),
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path)],
+            subject: 'import_export.share_subject'.tr(),
+          ),
         );
       }
     } catch (e) {
@@ -123,7 +102,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       );
 
       if (result == null || result.files.isEmpty) {
-        setState(() => _isImporting = false);
+        if (mounted) setState(() => _isImporting = false);
         return;
       }
 
@@ -134,7 +113,7 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('File too large. Maximum size is 1MB.'),
+              content: Text('import_export.file_too_large'.tr()),
               backgroundColor: Colors.red,
             ),
           );
@@ -155,78 +134,12 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
         throw Exception('Could not read file');
       }
 
-      final lines = const LineSplitter().convert(content);
-      if (lines.isEmpty) throw Exception('Empty file');
+      final importResult = CsvIoService.parseCsvImport(
+        content,
+        _appState?.profiles ?? <ContractProfile>[],
+      );
 
-      int importCount = 0;
-      final newReadings = <LocalReadingHistory>[];
-
-      // BOLT: Create a lookup map to avoid O(N) list scans inside the loop.
-      // This achieves O(1) profile lookup by name during import.
-      final profileNameToId = {
-        for (final p in _appState?.profiles ?? <ContractProfile>[]) p.name: p.id
-      };
-
-      // Skip header line
-      for (int i = 1; i < lines.length; i++) {
-        final line = lines[i].trim();
-        if (line.isEmpty) continue;
-
-        final fields = CsvHelper.parseCsvLine(line);
-        if (fields.length < 5) continue;
-
-        // Sentinel: Security hardening for CSV import.
-        // Enforce length limits and validate numeric formats to prevent malformed data injection.
-        final rawName = CsvHelper.unescapeField(fields[0]);
-        final profileName = rawName.length > 50 ? rawName.substring(0, 50) : rawName;
-        final rawDate = CsvHelper.unescapeField(fields[1]);
-        final dateStr = rawDate.length > 30 ? rawDate.substring(0, 30) : rawDate;
-        final rawC1 = CsvHelper.unescapeField(fields[2]);
-        final c1 = rawC1.length > 15 ? rawC1.substring(0, 15) : rawC1;
-        final rawC2 = CsvHelper.unescapeField(fields[3]);
-        final c2Raw = rawC2.length > 15 ? rawC2.substring(0, 15) : rawC2;
-        final c2 = c2Raw.isEmpty ? null : c2Raw;
-        final rawC3 = CsvHelper.unescapeField(fields[4]);
-        final c3Raw = rawC3.length > 15 ? rawC3.substring(0, 15) : rawC3;
-        final c3 = c3Raw.isEmpty ? null : c3Raw;
-
-        // Sentinel: Validate that readings are finite non-negative numbers if present.
-        final n1 = double.tryParse(c1.replaceAll(',', '.'));
-        if (n1 == null || !n1.isFinite || n1 < 0) continue;
-
-        if (c2 != null) {
-          final n2 = double.tryParse(c2.replaceAll(',', '.'));
-          if (n2 == null || !n2.isFinite || n2 < 0) continue;
-        }
-
-        if (c3 != null) {
-          final n3 = double.tryParse(c3.replaceAll(',', '.'));
-          if (n3 == null || !n3.isFinite || n3 < 0) continue;
-        }
-
-        DateTime date;
-        try {
-          date = DateTime.parse(dateStr.replaceFirst(' ', 'T'));
-        } catch (_) {
-          continue;
-        }
-
-        if (c1.isEmpty) continue;
-
-        // BOLT: Use O(1) map lookup instead of O(N) where() filter.
-        final matchingProfileId = profileNameToId[profileName];
-
-        newReadings.add(LocalReadingHistory(
-          date: date,
-          valorContador1: c1,
-          valorContador2: c2,
-          valorContador3: c3,
-          profileId: matchingProfileId,
-        ));
-        importCount++;
-      }
-
-      await HistoryService().addReadings(newReadings);
+      await HistoryService().addReadings(importResult.readings);
 
       if (!mounted) return;
       HapticFeedback.lightImpact();
@@ -238,8 +151,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'import_export.import_success'
-                      .tr(args: [importCount.toString()]),
+                  'import_export.import_success'.tr(
+                    args: [importResult.importCount.toString()],
+                  ),
                 ),
               ),
             ],
@@ -259,7 +173,6 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
       if (mounted) setState(() => _isImporting = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +211,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                         _selectedProfileIds = profiles.map((p) => p.id).toSet();
                       });
                     },
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: Text('common.select_all'.tr()),
                   ),
                   TextButton(
@@ -308,7 +223,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                         _selectedProfileIds.clear();
                       });
                     },
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: Text('common.deselect_all'.tr()),
                   ),
                 ],
@@ -363,7 +280,9 @@ class _ImportExportScreenState extends State<ImportExportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   FilledButton.icon(
-                    onPressed: (_isExporting || _selectedProfileIds.isEmpty) ? null : _exportReadings,
+                    onPressed: (_isExporting || _selectedProfileIds.isEmpty)
+                        ? null
+                        : _exportReadings,
                     icon: _isExporting
                         ? const SizedBox(
                             width: 18,

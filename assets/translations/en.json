@@ -73,6 +73,7 @@
         "change_picture": "Change profile picture",
         "edit_name_tooltip": "Edit name",
         "remove_profile_tooltip": "Remove property",
+        "select_icon": "Select Icon",
         "icon_option": "Property icon option"
     },
     "tutorial": {
@@ -128,6 +129,7 @@
         "export_error": "Failed to export readings.",
         "import_error": "Failed to import readings.",
         "import_success": "Successfully imported {} readings.",
+        "file_too_large": "File too large. Maximum size is 1MB.",
         "share_subject": "EDA Readings Export",
         "csv_header": "Property,Date,Counter 1,Counter 2,Counter 3"
     }

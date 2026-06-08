@@ -30,16 +30,17 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
   Future<void> _pickImage() async {
     HapticFeedback.selectionClick();
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    if (image != null && mounted) {
       widget.appState.userProfile.picturePath = image.path;
       await SecureStorageService().saveAppState(widget.appState);
-      widget.onProfileChanged(); // trigger rebuild
+      if (mounted) widget.onProfileChanged();
     }
   }
 
   Future<void> _editUserName() async {
-    final controller =
-        TextEditingController(text: widget.appState.userProfile.name);
+    final controller = TextEditingController(
+      text: widget.appState.userProfile.name,
+    );
     final result = await showDialog<String>(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -89,11 +90,11 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
       ),
     );
 
-    if (result != null && result.isNotEmpty) {
+    if (result != null && result.isNotEmpty && mounted) {
       HapticFeedback.lightImpact();
       widget.appState.userProfile.name = result;
       await SecureStorageService().saveAppState(widget.appState);
-      widget.onProfileChanged(); // trigger rebuild
+      if (mounted) widget.onProfileChanged();
     }
   }
 
@@ -140,11 +141,13 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
         widget.appState.activeProfileIndex = 0;
       } else if (index <= widget.appState.activeProfileIndex) {
         widget.appState.activeProfileIndex =
-            (widget.appState.activeProfileIndex - 1)
-                .clamp(0, widget.appState.profiles.length - 1);
+            (widget.appState.activeProfileIndex - 1).clamp(
+              0,
+              widget.appState.profiles.length - 1,
+            );
       }
       await SecureStorageService().saveAppState(widget.appState);
-      widget.onProfileChanged();
+      if (mounted) widget.onProfileChanged();
     }
   }
 
@@ -153,7 +156,16 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
     return Drawer(
       child: Column(
         children: [
-          DrawerHeader(
+          // PALETTE: Container replaces DrawerHeader for full edge-to-edge gradient control
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 160.0),
+            padding: EdgeInsets.fromLTRB(
+              16.0,
+              MediaQuery.of(context).padding.top + 16.0,
+              16.0,
+              16.0,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -166,6 +178,7 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
@@ -182,13 +195,42 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                             CircleAvatar(
                               radius: 40,
                               backgroundColor: Colors.white24,
-                              backgroundImage: widget.appState.userProfile.picturePath.isNotEmpty
+                              backgroundImage:
+                                  widget
+                                      .appState
+                                      .userProfile
+                                      .picturePath
+                                      .isNotEmpty
                                   ? (kIsWeb
-                                      ? NetworkImage(widget.appState.userProfile.picturePath)
-                                      : FileImage(File(widget.appState.userProfile.picturePath)) as ImageProvider)
+                                        ? NetworkImage(
+                                            widget
+                                                .appState
+                                                .userProfile
+                                                .picturePath,
+                                          )
+                                        : FileImage(
+                                                File(
+                                                  widget
+                                                      .appState
+                                                      .userProfile
+                                                      .picturePath,
+                                                ),
+                                              )
+                                              as ImageProvider)
                                   : null,
-                              child: widget.appState.userProfile.picturePath.isEmpty
-                                  ? Icon(Icons.person, size: 40, color: Theme.of(context).colorScheme.onSecondary)
+                              child:
+                                  widget
+                                      .appState
+                                      .userProfile
+                                      .picturePath
+                                      .isEmpty
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSecondary,
+                                    )
                                   : null,
                             ),
                             Positioned(
@@ -200,14 +242,18 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                                   color: Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Theme.of(context).colorScheme.surface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
                                     width: 2,
                                   ),
                                 ),
                                 child: Icon(
                                   Icons.camera_alt,
                                   size: 14,
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
                                 ),
                               ),
                             ),
@@ -224,7 +270,10 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                   child: Tooltip(
                     message: 'drawer.edit_name_tooltip'.tr(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -241,7 +290,9 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                           Icon(
                             Icons.edit,
                             size: 16,
-                            color: Theme.of(context).colorScheme.onSecondary.withValues(alpha: 0.7),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSecondary.withValues(alpha: 0.7),
                             semanticLabel: 'drawer.edit_name_tooltip'.tr(),
                           ),
                         ],
@@ -254,7 +305,8 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: widget.appState.profiles.length + 1, // +1 for "Add" button
+              itemCount:
+                  widget.appState.profiles.length + 1, // +1 for "Add" button
               itemBuilder: (context, index) {
                 if (index == widget.appState.profiles.length) {
                   return ListTile(
@@ -273,11 +325,14 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                 final isActive = index == widget.appState.activeProfileIndex;
 
                 return Semantics(
-                  label: '${profile.name}, CIL: ${profile.cil}${isActive ? ' (${'common.ok'.tr()})' : ''}',
+                  label:
+                      '${profile.name}, CIL: ${profile.cil}${isActive ? ' (${'common.ok'.tr()})' : ''}',
                   selected: isActive,
                   button: true,
                   child: ListTile(
-                    leading: Icon(profileIconFromCodePoint(profile.iconCodePoint)),
+                    leading: Icon(
+                      profileIconFromCodePoint(profile.iconCodePoint),
+                    ),
                     title: Text(profile.name),
                     subtitle: Text('CIL: ${profile.cil}'),
                     selected: isActive,
@@ -294,7 +349,9 @@ class _ProfileDrawerState extends State<ProfileDrawer> {
                     onTap: () async {
                       HapticFeedback.selectionClick();
                       widget.appState.activeProfileIndex = index;
-                      await SecureStorageService().saveAppState(widget.appState);
+                      await SecureStorageService().saveAppState(
+                        widget.appState,
+                      );
                       widget.onProfileChanged();
                       if (!context.mounted) return;
                       Navigator.pop(context);

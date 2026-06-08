@@ -32,15 +32,25 @@ class SecureStorageService {
     // BOLT: Return cached state if available to improve performance.
     if (cachedState != null) return cachedState!;
 
-    final stateStr = await _storage.read(key: keyAppState);
-    if (stateStr != null) {
-      try {
+    // SENTINEL: Guard the storage read — PlatformException thrown when the
+    // Android Keystore cannot decrypt ciphertext (e.g. after a signing-key
+    // change via Play App Signing or a fresh install over a different cert).
+    // Delete the corrupt entry so subsequent writes succeed.
+    try {
+      final stateStr = await _storage.read(key: keyAppState);
+      if (stateStr != null) {
         cachedState = AppStateData.fromJsonString(stateStr);
         return cachedState!;
-      } catch (e) {
-        // Fallback to default
+      }
+    } catch (e) {
+      // SENTINEL: Corrupt or undecryptable storage — clear it and fall back.
+      try {
+        await _storage.delete(key: keyAppState);
+      } catch (_) {
+        // Best-effort delete; ignore secondary failures.
       }
     }
+
     cachedState = AppStateData(
       userProfile: UserProfile(name: 'User', picturePath: ''),
       profiles: [],

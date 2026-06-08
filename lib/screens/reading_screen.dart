@@ -71,7 +71,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
   @override
   void initState() {
     super.initState();
-    ShowcaseView.register();
+    ShowcaseView.register(scope: 'reading');
 
     // BOLT: Initialize static UI strings early so they are available even if loading fails.
     _appBarTitle = 'reading.title'.tr();
@@ -100,6 +100,7 @@ class _ReadingScreenState extends State<_ReadingScreen> {
 
   @override
   void dispose() {
+    ShowcaseView.getNamed('reading').unregister();
     _c1Controller.dispose();
     _c2Controller.dispose();
     _c3Controller.dispose();
@@ -128,7 +129,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       _label2 = data.descContador2 ?? 'reading.counter_2'.tr();
       _label3 = data.descContador3 ?? 'reading.counter_3'.tr();
 
-      _lastVal1 = double.tryParse((data.valorContador1 ?? '0').replaceAll(',', '.'));
+      _lastVal1 = double.tryParse(
+        (data.valorContador1 ?? '0').replaceAll(',', '.'),
+      );
       _lastVal2 = data.valorContador2 != null
           ? double.tryParse(data.valorContador2!.replaceAll(',', '.'))
           : null;
@@ -155,7 +158,12 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       setState(() {
         _currentData = data;
         _activeProfileId = appState.profiles.isNotEmpty
-            ? appState.profiles[appState.activeProfileIndex].id
+            ? appState
+                  .profiles[appState.activeProfileIndex.clamp(
+                    0,
+                    appState.profiles.length - 1,
+                  )]
+                  .id
             : null;
         _isLoading = false;
       });
@@ -176,7 +184,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     final hasSeen = await storage.hasSeenReadingTutorial();
     if (!hasSeen && mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ShowcaseView.get().startShowCase([_input1Key, _submitButtonKey]);
+        ShowcaseView.getNamed(
+          'reading',
+        ).startShowCase([_input1Key, _submitButtonKey]);
         storage.setSeenReadingTutorial(true);
       });
     }
@@ -194,8 +204,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
 
     try {
       // Re-fetch if token expired
-      if (DateTime.fromMillisecondsSinceEpoch(_currentData!.cilTokenExpires)
-          .isBefore(DateTime.now())) {
+      if (DateTime.fromMillisecondsSinceEpoch(
+        _currentData!.cilTokenExpires,
+      ).isBefore(DateTime.now())) {
         final refreshed = await _client!.getReading();
         if (!mounted) return;
         setState(() => _currentData = refreshed);
@@ -209,9 +220,13 @@ class _ReadingScreenState extends State<_ReadingScreen> {
         material: _currentData!.material,
         valorContador1: _c1Controller.text.trim(),
         register1: _currentData!.register1 ?? '',
-        valorContador2: _c2Controller.text.isEmpty ? null : _c2Controller.text.trim(),
+        valorContador2: _c2Controller.text.isEmpty
+            ? null
+            : _c2Controller.text.trim(),
         register2: _currentData!.register2,
-        valorContador3: _c3Controller.text.isEmpty ? null : _c3Controller.text.trim(),
+        valorContador3: _c3Controller.text.isEmpty
+            ? null
+            : _c3Controller.text.trim(),
         register3: _currentData!.register3,
       );
 
@@ -219,13 +234,19 @@ class _ReadingScreenState extends State<_ReadingScreen> {
       await _client!.sendReading(payload);
 
       // Save locally
-      await HistoryService().addReading(LocalReadingHistory(
-        date: DateTime.now(),
-        valorContador1: _c1Controller.text.trim(),
-        valorContador2: _c2Controller.text.trim().isEmpty ? null : _c2Controller.text.trim(),
-        valorContador3: _c3Controller.text.trim().isEmpty ? null : _c3Controller.text.trim(),
-        profileId: _activeProfileId,
-      ));
+      await HistoryService().addReading(
+        LocalReadingHistory(
+          date: DateTime.now(),
+          valorContador1: _c1Controller.text.trim(),
+          valorContador2: _c2Controller.text.trim().isEmpty
+              ? null
+              : _c2Controller.text.trim(),
+          valorContador3: _c3Controller.text.trim().isEmpty
+              ? null
+              : _c3Controller.text.trim(),
+          profileId: _activeProfileId,
+        ),
+      );
 
       if (!mounted) return;
       HapticFeedback.lightImpact();
@@ -241,7 +262,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.of(context).pop(true); // Return true to indicate success to Dashboard
+      Navigator.of(
+        context,
+      ).pop(true); // Return true to indicate success to Dashboard
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.vibrate();
@@ -290,11 +313,20 @@ class _ReadingScreenState extends State<_ReadingScreen> {
           children: [
             Text('reading.confirm_message'.tr()),
             const SizedBox(height: 16),
-            _buildConfirmRow(_currentData!.descContador1 ?? 'reading.counter_1'.tr(), _c1Controller.text),
+            _buildConfirmRow(
+              _currentData!.descContador1 ?? 'reading.counter_1'.tr(),
+              _c1Controller.text,
+            ),
             if (_c2Controller.text.isNotEmpty)
-              _buildConfirmRow(_currentData!.descContador2 ?? 'reading.counter_2'.tr(), _c2Controller.text),
+              _buildConfirmRow(
+                _currentData!.descContador2 ?? 'reading.counter_2'.tr(),
+                _c2Controller.text,
+              ),
             if (_c3Controller.text.isNotEmpty)
-              _buildConfirmRow(_currentData!.descContador3 ?? 'reading.counter_3'.tr(), _c3Controller.text),
+              _buildConfirmRow(
+                _currentData!.descContador3 ?? 'reading.counter_3'.tr(),
+                _c3Controller.text,
+              ),
           ],
         ),
         actions: [
@@ -325,7 +357,11 @@ class _ReadingScreenState extends State<_ReadingScreen> {
     );
   }
 
-  String _buildHelperBase(String? lastValue, String? minValue, String? maxValue) {
+  String _buildHelperBase(
+    String? lastValue,
+    String? minValue,
+    String? maxValue,
+  ) {
     final lastReadingText = 'reading.last_reading'.tr(args: [lastValue ?? '0']);
     final rangeText = (minValue != null && maxValue != null)
         ? ' • ${'reading.min_max_helper'.tr(args: [minValue, maxValue])}'
@@ -439,7 +475,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                   enabled: !_isSubmitting,
                   maxLength: 15,
                   autofocus: true,
-                  textInputAction: (_currentData!.descContador2 != null &&
+                  textInputAction:
+                      (_currentData!.descContador2 != null &&
                           _currentData!.descContador2!.isNotEmpty)
                       ? TextInputAction.next
                       : TextInputAction.done,
@@ -458,8 +495,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     helperBase: _helperBase1,
                     controller: _c1Controller,
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) => _validateReading(
                     value,
                     _currentData!.valorMinContador1,
@@ -475,7 +513,8 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                   focusNode: _f2FocusNode,
                   enabled: !_isSubmitting,
                   maxLength: 15,
-                  textInputAction: (_currentData!.descContador3 != null &&
+                  textInputAction:
+                      (_currentData!.descContador3 != null &&
                           _currentData!.descContador3!.isNotEmpty)
                       ? TextInputAction.next
                       : TextInputAction.done,
@@ -494,8 +533,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     helperBase: _helperBase2,
                     controller: _c2Controller,
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(
@@ -523,8 +563,9 @@ class _ReadingScreenState extends State<_ReadingScreen> {
                     helperBase: _helperBase3,
                     controller: _c3Controller,
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return null; // Optional
                     return _validateReading(

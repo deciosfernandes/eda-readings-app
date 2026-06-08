@@ -57,49 +57,65 @@ class HistoryService {
     _cachedObjects = [];
     _indexedObjects = {};
 
-    // SENTINEL: Use encrypted storage for reading history to prevent data leakage.
-    final secureData = await _secureStorage.read(key: keyHistory);
+    // SENTINEL/BOLT: Guard the entire storage read in try/finally so the
+    // Completer always resolves. PlatformException from the Android Keystore
+    // (e.g. signing-key change after a Play Store re-sign) would otherwise
+    // leave _loadCompleter hanging forever → permanent splash freeze.
+    try {
+      // SENTINEL: Use encrypted storage for reading history to prevent data leakage.
+      final secureData = await _secureStorage.read(key: keyHistory);
 
-    if (secureData != null) {
-      try {
-        final List<dynamic> decoded = json.decode(secureData);
-        // BOLT: Support both legacy double-encoded (List<String>) and optimized single-encoded (List<Map>) formats.
-        if (decoded.isNotEmpty && decoded.first is String) {
-          _cachedMaps = decoded.map((s) => json.decode(s as String) as Map<String, dynamic>).toList();
-        } else {
-          _cachedMaps = decoded.cast<Map<String, dynamic>>();
+      if (secureData != null) {
+        try {
+          final List<dynamic> decoded = json.decode(secureData);
+          // BOLT: Support both legacy double-encoded (List<String>) and optimized single-encoded (List<Map>) formats.
+          if (decoded.isNotEmpty && decoded.first is String) {
+            _cachedMaps = decoded.map((s) => json.decode(s as String) as Map<String, dynamic>).toList();
+          } else {
+            _cachedMaps = decoded.cast<Map<String, dynamic>>();
+          }
+        } catch (e) {
+          _cachedMaps = [];
         }
-      } catch (e) {
-        _cachedMaps = [];
-      }
-    } else {
-      // One-time migration from SharedPreferences to FlutterSecureStorage
-      _prefs ??= await SharedPreferences.getInstance();
-      final legacyStrings = _prefs!.getStringList(keyHistory);
-
-      if (legacyStrings != null) {
-        _cachedMaps = legacyStrings.map((s) => json.decode(s) as Map<String, dynamic>).toList();
-        await _secureStorage.write(
-          key: keyHistory,
-          value: json.encode(_cachedMaps),
-        );
-        await _prefs!.remove(keyHistory);
       } else {
-        _cachedMaps = [];
-      }
-    }
+        // One-time migration from SharedPreferences to FlutterSecureStorage
+        _prefs ??= await SharedPreferences.getInstance();
+        final legacyStrings = _prefs!.getStringList(keyHistory);
 
-    for (final map in _cachedMaps!) {
+        if (legacyStrings != null) {
+          _cachedMaps = legacyStrings.map((s) => json.decode(s) as Map<String, dynamic>).toList();
+          await _secureStorage.write(
+            key: keyHistory,
+            value: json.encode(_cachedMaps),
+          );
+          await _prefs!.remove(keyHistory);
+        } else {
+          _cachedMaps = [];
+        }
+      }
+    } catch (e) {
+      // SENTINEL: Undecryptable storage (corrupt keystore entry) — treat as
+      // empty history. Best-effort cleanup so future writes succeed.
+      _cachedMaps = [];
       try {
-        final reading = LocalReadingHistory.fromJson(map);
-        _cachedObjects!.add(reading);
-        _indexedObjects!.putIfAbsent(reading.profileId, () => []).add(reading);
-      } catch (e) {
-        // Skip malformed entries
+        await _secureStorage.delete(key: keyHistory);
+      } catch (_) {
+        // Best-effort delete; ignore secondary failures.
       }
+    } finally {
+      // BOLT: Always build the in-memory index from whatever data we have.
+      for (final map in _cachedMaps ?? []) {
+        try {
+          final reading = LocalReadingHistory.fromJson(map);
+          _cachedObjects!.add(reading);
+          _indexedObjects!.putIfAbsent(reading.profileId, () => []).add(reading);
+        } catch (e) {
+          // Skip malformed entries
+        }
+      }
+      // BOLT: Always complete — even on error — so callers are never suspended.
+      _loadCompleter!.complete();
     }
-
-    _loadCompleter!.complete();
   }
 
   /// Adds a single [reading] to the history and persists it.
