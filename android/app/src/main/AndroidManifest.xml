@@ -2,6 +2,11 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- SENTINEL: Required on Android 12+ (API 31+) so the OS allows this app
+         to schedule exact alarms for reading reminders. Without this the
+         "Alarms & Reminders" toggle on the system permissions page is greyed
+         out and requestExactAlarmsPermission() always returns false. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <application
         android:label="EDA - Envio de Leituras"
         android:name="${applicationName}"

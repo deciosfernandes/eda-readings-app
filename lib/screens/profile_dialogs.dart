@@ -524,11 +524,18 @@ class ProfileDialogs {
         ),
       );
     } finally {
-      // BOLT: Ensure all controllers are disposed to prevent memory leaks.
-      nameCtrl.dispose();
-      cilCtrl.dispose();
-      contractCtrl.dispose();
-      scrollController.dispose();
+      // BOLT: Delay disposal until after the sheet's exit animation completes.
+      // showModalBottomSheet resolves immediately on Navigator.pop() but the
+      // route's exit animation continues rebuilding TextField widgets for
+      // ~300ms — disposing controllers before that transition finishes causes
+      // a "TextEditingController used after disposed" assertion in
+      // _AnimatedState.didUpdateWidget during the closing frame.
+      Future.delayed(const Duration(milliseconds: 400), () {
+        nameCtrl.dispose();
+        cilCtrl.dispose();
+        contractCtrl.dispose();
+        scrollController.dispose();
+      });
     }
 
     // SENTINEL: Post-close async work — runs after the sheet has fully closed
